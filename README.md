@@ -44,6 +44,10 @@ Fetch a live document listing from a representative backend:
 python3 scripts/03_fetch_document_listing.py --family idox --docs-url 'https://planning.cornwall.gov.uk/online-applications/applicationDetails.do?activeTab=documents&keyVal=R5GHN2FGMTR00'
 ```
 
+## Proof-of-concept sample data
+
+`results/poc_sample_applications.csv` contains a small representative sample of `2021` PlanIt application records used in the proof of concept, including a mix of portal families and rows with and without `documentation_url`.
+
 ## Authority Mapping
 
 Portal-family enrichment uses `data/buildwithtract_authority_mapping.csv`, derived from:
