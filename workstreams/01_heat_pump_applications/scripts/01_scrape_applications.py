@@ -13,7 +13,6 @@ Usage:
 import argparse
 import asyncio
 import csv
-import json
 import logging
 import sys
 from pathlib import Path
@@ -30,9 +29,11 @@ def _add_repo_root_to_path() -> None:
 
 _add_repo_root_to_path()
 
+REPO_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "src").is_dir())
+BUILDWITHTRACT_MAPPING_CSV = REPO_ROOT / "data" / "buildwithtract_authority_mapping.csv"
+
 from src.config import (
     ASHP_SEARCH_TERMS,
-    DATA_DIR,
     SCRAPE_YEAR_END,
     SCRAPE_YEAR_START,
 )
@@ -56,34 +57,33 @@ logger = logging.getLogger(__name__)
 
 
 def load_authority_portal_types() -> dict[str, str]:
-    """Load portal type classification from UKPlanning scraper list."""
-    csv_path = DATA_DIR / "ukplanning_scraper_list.csv"
+    """Load portal type classification from the buildwithtract authority mapping."""
+    csv_path = BUILDWITHTRACT_MAPPING_CSV
     if not csv_path.exists():
         logger.warning(f"Authority CSV not found: {csv_path}")
         return {}
 
     portal_types = {}
-    idox_types = {"Idox", "IdoxReq", "IdoxNI"}
 
     with open(csv_path) as f:
         for row in csv.DictReader(f):
-            name = row.get("scraper", "").strip()
-            scraper_type = row.get("scraper_type", "").strip()
+            name = row.get("authority_name", "").strip()
+            scraper_type = row.get("portal_family", "").strip()
             if not name:
                 continue
 
-            if scraper_type in idox_types:
+            if scraper_type == "Idox":
                 portal_types[name.lower()] = "idox"
-            elif scraper_type == "PlanningExplorer":
+            elif scraper_type == "Northgate":
                 portal_types[name.lower()] = "northgate"
-            elif scraper_type == "SwiftLG":
-                portal_types[name.lower()] = "swiftlg"
-            elif scraper_type == "Ocella2":
-                portal_types[name.lower()] = "ocella"
-            elif scraper_type == "Civica":
-                portal_types[name.lower()] = "civica"
-            elif scraper_type == "None":
-                portal_types[name.lower()] = "none"
+            elif scraper_type == "Agile":
+                portal_types[name.lower()] = "agile"
+            elif scraper_type == "SmartAdmin":
+                portal_types[name.lower()] = "smartadmin"
+            elif scraper_type == "Arcus":
+                portal_types[name.lower()] = "arcus"
+            elif scraper_type == "NIPP":
+                portal_types[name.lower()] = "nipp"
             else:
                 portal_types[name.lower()] = "other"
 
