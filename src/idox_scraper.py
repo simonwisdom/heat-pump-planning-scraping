@@ -181,7 +181,7 @@ class IdoxDocumentScraper:
             await self.rate_limiter.acquire(domain)
             try:
                 resp = await self.client.get(url)
-            except httpx.HTTPError as exc:
+            except Exception as exc:
                 if not self._is_tls_verification_error(exc):
                     raise
                 logger.warning("TLS verification failed for %s; retrying insecurely", domain)
