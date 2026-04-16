@@ -11,7 +11,11 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 
-from .config import IDOX_MAX_CONCURRENT_DOMAINS, IDOX_RATE_LIMIT_PER_DOMAIN, IDOX_USER_AGENT
+from .config import (
+    IDOX_MAX_CONCURRENT_DOMAINS,
+    IDOX_RATE_LIMIT_PER_DOMAIN,
+    IDOX_USER_AGENT,
+)
 
 logger = logging.getLogger(__name__)
 

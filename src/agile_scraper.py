@@ -18,6 +18,26 @@ from .idox_scraper import DomainRateLimiter
 
 logger = logging.getLogger(__name__)
 
+AGILE_AUTHORITIES = (
+    "CANNOCK",
+    "EXMOOR",
+    "FLINTSHIRE",
+    "ISLINGTON",
+    "LDNPA",
+    "MIDDLESBROUGH",
+    "MOLE",
+    "NFNPA",
+    "OPDC",
+    "PCNPA",
+    "PEMBROKESHIRE",
+    "REDBRIDGE",
+    "RUGBY",
+    "SLOUGH",
+    "SNOWDONIA",
+    "TMBC",
+    "YORKSHIREDALES",
+)
+
 
 def _normalise_client_name(client_name: str) -> str:
     return client_name.strip().upper()
@@ -50,11 +70,7 @@ def parse_agile_documents(documents: list[dict], client_name: str) -> list[dict]
             "drawing_number": str(doc.get("documentId") or ""),
             "document_url": _build_download_url(doc.get("documentHash")),
         }
-        if (
-            not parsed_doc["document_type"]
-            and not parsed_doc["description"]
-            and not parsed_doc["document_url"]
-        ):
+        if not parsed_doc["document_type"] and not parsed_doc["description"] and not parsed_doc["document_url"]:
             continue
         parsed_documents.append(parsed_doc)
     return parsed_documents
@@ -75,6 +91,24 @@ async def search_applications(client_name: str, query: str, size: int = 25) -> d
     params = {"proposal": query, "size": size}
     async with httpx.AsyncClient(timeout=30.0, headers={"User-Agent": IDOX_USER_AGENT}) as client:
         return await _request_json(client, f"{AGILE_BASE_URL}/api/application/search", client_name, params)
+
+
+async def get_application_detail(app_id: str | int, client_name: str) -> dict[str, Any]:
+    async with httpx.AsyncClient(timeout=30.0, headers={"User-Agent": IDOX_USER_AGENT}) as client:
+        return await _request_json(client, f"{AGILE_BASE_URL}/api/application/{app_id}", client_name)
+
+
+async def get_application_documents(app_id: str | int, client_name: str) -> list[dict]:
+    async with httpx.AsyncClient(timeout=30.0, headers={"User-Agent": IDOX_USER_AGENT}) as client:
+        documents = await _request_json(
+            client,
+            f"{AGILE_BASE_URL}/api/application/{app_id}/document",
+            client_name,
+        )
+    if not isinstance(documents, list):
+        logger.warning("Unexpected response type for Agile document list %s", app_id)
+        return []
+    return documents
 
 
 class AgileDocumentScraper:

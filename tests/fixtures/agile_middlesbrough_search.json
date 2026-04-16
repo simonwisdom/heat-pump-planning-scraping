@@ -1,0 +1,32 @@
+{
+  "total": 3,
+  "results": [
+    {
+      "id": 38131,
+      "reference": "23/0088/FUL",
+      "proposal": "Installation of air source heat pump",
+      "location": "1 Example Street, Middlesbrough",
+      "decisionText": "Approved",
+      "registrationDate": "2023-02-14",
+      "decisionDate": "2023-04-20"
+    },
+    {
+      "id": 40218,
+      "reference": "24/0099/FUL",
+      "proposal": "Replacement heating with heat pump and cylinder",
+      "location": "2 Sample Avenue, Middlesbrough",
+      "decisionText": "Approved",
+      "registrationDate": "2024-01-03",
+      "decisionDate": "2024-03-11"
+    },
+    {
+      "id": 43990,
+      "reference": "25/0012/FUL",
+      "proposal": "Retrospective heat pump enclosure",
+      "location": "3 Demo Court, Middlesbrough",
+      "decisionText": "Pending",
+      "registrationDate": "2025-02-21",
+      "decisionDate": null
+    }
+  ]
+}

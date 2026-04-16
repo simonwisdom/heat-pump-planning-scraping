@@ -210,9 +210,7 @@ def now_iso() -> str:
 
 def upsert_application(conn: sqlite3.Connection, data: dict) -> bool:
     """Insert or update an application. Returns True if new, False if updated."""
-    existing = conn.execute(
-        "SELECT id FROM applications WHERE uid = ?", (data["uid"],)
-    ).fetchone()
+    existing = conn.execute("SELECT id FROM applications WHERE uid = ?", (data["uid"],)).fetchone()
 
     other_fields = data.get("other_fields") or {}
     if isinstance(other_fields, str):
@@ -246,31 +244,31 @@ def upsert_application(conn: sqlite3.Connection, data: dict) -> bool:
 
     if existing:
         set_clause = ", ".join(f"{k} = :{k}" for k in values if k != "uid")
-        conn.execute(
-            f"UPDATE applications SET {set_clause} WHERE uid = :uid", values
-        )
+        conn.execute(f"UPDATE applications SET {set_clause} WHERE uid = :uid", values)
         return False
     else:
         cols = ", ".join(values.keys())
         placeholders = ", ".join(f":{k}" for k in values.keys())
-        conn.execute(
-            f"INSERT INTO applications ({cols}) VALUES ({placeholders})", values
-        )
+        conn.execute(f"INSERT INTO applications ({cols}) VALUES ({placeholders})", values)
         return True
 
 
 def upsert_document(conn: sqlite3.Connection, data: dict) -> bool:
     """Insert or update a document record. Returns True if new."""
+    document_url = (data.get("document_url") or "").strip()
+    if not document_url:
+        raise ValueError("document_url is required")
+
     existing = conn.execute(
         "SELECT id FROM documents WHERE application_uid = ? AND document_url = ?",
-        (data["application_uid"], data["document_url"]),
+        (data["application_uid"], document_url),
     ).fetchone()
 
     values = {
         "application_uid": data["application_uid"],
         "document_type": data.get("document_type"),
         "description": data.get("description"),
-        "document_url": data.get("document_url"),
+        "document_url": document_url,
         "documentation_url": data.get("documentation_url"),
         "date_published": data.get("date_published"),
         "drawing_number": data.get("drawing_number"),
@@ -278,9 +276,7 @@ def upsert_document(conn: sqlite3.Connection, data: dict) -> bool:
     }
 
     if existing:
-        set_clause = ", ".join(
-            f"{k} = :{k}" for k in values if k != "application_uid"
-        )
+        set_clause = ", ".join(f"{k} = :{k}" for k in values if k != "application_uid")
         conn.execute(
             f"UPDATE documents SET {set_clause} "
             f"WHERE application_uid = :application_uid AND document_url = :document_url",
@@ -290,17 +286,14 @@ def upsert_document(conn: sqlite3.Connection, data: dict) -> bool:
     else:
         cols = ", ".join(values.keys())
         placeholders = ", ".join(f":{k}" for k in values.keys())
-        conn.execute(
-            f"INSERT INTO documents ({cols}) VALUES ({placeholders})", values
-        )
+        conn.execute(f"INSERT INTO documents ({cols}) VALUES ({placeholders})", values)
         return True
 
 
 def log_scrape_start(conn: sqlite3.Connection, stage: str, source: str, params: dict | None = None) -> int:
     """Log the start of a scrape run. Returns the log ID."""
     cursor = conn.execute(
-        "INSERT INTO scrape_log (stage, source, params_json, started_at, status) "
-        "VALUES (?, ?, ?, ?, 'running')",
+        "INSERT INTO scrape_log (stage, source, params_json, started_at, status) VALUES (?, ?, ?, ?, 'running')",
         (stage, source, json.dumps(params) if params else None, now_iso()),
     )
     conn.commit()
@@ -322,7 +315,15 @@ def log_scrape_end(
         "UPDATE scrape_log SET completed_at = ?, records_processed = ?, "
         "records_new = ?, records_failed = ?, error_log = ?, status = ? "
         "WHERE id = ?",
-        (now_iso(), records_processed, records_new, records_failed, error_log, status, log_id),
+        (
+            now_iso(),
+            records_processed,
+            records_new,
+            records_failed,
+            error_log,
+            status,
+            log_id,
+        ),
     )
     conn.commit()
 
@@ -330,6 +331,48 @@ def log_scrape_end(
 def get_application_count(conn: sqlite3.Connection) -> int:
     """Get total number of applications in the database."""
     return conn.execute("SELECT COUNT(*) FROM applications").fetchone()[0]
+
+
+def get_application_years(conn: sqlite3.Connection) -> list[int]:
+    """Get sorted distinct start years currently present in the applications table."""
+    rows = conn.execute(
+        """
+        SELECT DISTINCT substr(start_date, 1, 4) AS year
+        FROM applications
+        WHERE start_date IS NOT NULL
+          AND length(start_date) >= 4
+        ORDER BY year
+        """
+    ).fetchall()
+
+    years: list[int] = []
+    for row in rows:
+        year_value = row["year"]
+        if year_value and year_value.isdigit():
+            years.append(int(year_value))
+
+    return years
+
+
+def get_resume_start_year(
+    conn: sqlite3.Connection,
+    *,
+    min_year: int,
+    max_year: int,
+) -> int | None:
+    """Return the first missing year in the configured scrape range.
+
+    This uses the presence of any application rows in a year as the resume signal.
+    If you need to rerun or backfill a year explicitly, pass `--year` or `--start-year`
+    to the stage-1 scraper instead of relying on this heuristic.
+    """
+    existing_years = set(get_application_years(conn))
+
+    for year in range(min_year, max_year + 1):
+        if year not in existing_years:
+            return year
+
+    return None
 
 
 def get_applications_needing_docs(conn: sqlite3.Connection, portal_type: str = "idox") -> list[sqlite3.Row]:
@@ -346,3 +389,64 @@ def get_applications_needing_docs(conn: sqlite3.Connection, portal_type: str = "
         """,
         (portal_type,),
     ).fetchall()
+
+
+def get_applications_needing_download(
+    conn: sqlite3.Connection,
+    portal_type: str = "idox",
+    authority: str | None = None,
+    limit: int | None = None,
+) -> list[sqlite3.Row]:
+    """Get applications that need document download.
+
+    Includes both:
+    - Apps with listed documents still at download_status='pending'
+    - Apps with no document listings yet (will be listed + downloaded in one pass)
+    """
+    sql = """
+        SELECT a.uid, a.documentation_url, a.authority_name, a.reference
+        FROM applications a
+        WHERE a.portal_type = ?
+          AND a.documentation_url IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM documents d
+              WHERE d.application_uid = a.uid
+                AND d.download_status = 'downloaded'
+          )
+    """
+    params: list = [portal_type]
+    if authority:
+        sql += "  AND a.authority_name = ?\n"
+        params.append(authority)
+    sql += "ORDER BY a.authority_name, a.start_date DESC\n"
+    if limit:
+        sql += "LIMIT ?\n"
+        params.append(limit)
+    return conn.execute(sql, params).fetchall()
+
+
+def mark_documents_downloaded(
+    conn: sqlite3.Connection,
+    application_uid: str,
+    file_map: dict[str, tuple[str, int]],
+) -> int:
+    """Update documents with downloaded file paths and sizes.
+
+    Args:
+        file_map: {document_url: (file_path, file_size_bytes)}
+
+    Returns:
+        Number of rows updated.
+    """
+    updated = 0
+    for doc_url, (fpath, fsize) in file_map.items():
+        cur = conn.execute(
+            """
+            UPDATE documents
+            SET file_path = ?, file_size_bytes = ?, download_status = 'downloaded'
+            WHERE application_uid = ? AND document_url = ?
+            """,
+            (fpath, fsize, application_uid, doc_url),
+        )
+        updated += cur.rowcount
+    return updated

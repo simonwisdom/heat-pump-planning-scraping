@@ -3,13 +3,14 @@
 import asyncio
 import logging
 import time
-from urllib.parse import quote
+from collections.abc import Callable
 
 import httpx
 
 from .config import (
     PLANIT_BASE_URL,
     PLANIT_MAX_RESULTS,
+    PLANIT_MIN_REQUEST_GAP,
     PLANIT_PAGE_SIZE,
     PLANIT_RATE_LIMIT_COOLDOWN_BASE,
     PLANIT_RATE_LIMIT_COOLDOWN_MAX,
@@ -27,24 +28,32 @@ class RateLimiter:
         max_requests: int = PLANIT_RATE_LIMIT_REQUESTS,
         cooldown_base: float = PLANIT_RATE_LIMIT_COOLDOWN_BASE,
         cooldown_max: float = PLANIT_RATE_LIMIT_COOLDOWN_MAX,
+        min_request_gap: float = PLANIT_MIN_REQUEST_GAP,
     ):
         self.max_requests = max_requests
         self.cooldown_base = cooldown_base
         self.cooldown_max = cooldown_max
+        self.min_request_gap = min_request_gap
         self.request_count = 0
         self.consecutive_429s = 0
         self._last_request_time = 0.0
+        self._retry_after_override: float | None = None
 
     async def wait_if_needed(self):
         """Wait if we've hit the request limit."""
-        # Always wait at least 2 seconds between requests
+        # Enforce minimum gap between every request to avoid bursts
         elapsed = time.monotonic() - self._last_request_time
-        if elapsed < 2.0:
-            await asyncio.sleep(2.0 - elapsed)
+        if elapsed < self.min_request_gap:
+            await asyncio.sleep(self.min_request_gap - elapsed)
 
         if self.request_count >= self.max_requests:
-            wait = self.cooldown_base * (1.5 ** self.consecutive_429s)
-            wait = min(wait, self.cooldown_max)
+            # Use one-time retry_after if set, otherwise normal backoff
+            if self._retry_after_override is not None:
+                wait = min(self._retry_after_override, self.cooldown_max)
+                self._retry_after_override = None
+            else:
+                wait = self.cooldown_base * (1.5**self.consecutive_429s)
+                wait = min(wait, self.cooldown_max)
             logger.info(f"Rate limit pause: {wait:.0f}s (request #{self.request_count})")
             await asyncio.sleep(wait)
             self.request_count = 0
@@ -57,10 +66,11 @@ class RateLimiter:
         self.consecutive_429s += 1
         self.request_count = self.max_requests  # Force wait on next call
         if retry_after:
-            self.cooldown_base = max(self.cooldown_base, retry_after)
+            self._retry_after_override = retry_after
+        next_wait = retry_after or self.cooldown_base * (1.5**self.consecutive_429s)
         logger.warning(
             f"429 received (consecutive: {self.consecutive_429s}). "
-            f"Next cooldown: {self.cooldown_base * (1.5 ** self.consecutive_429s):.0f}s"
+            f"Next cooldown: {min(next_wait, self.cooldown_max):.0f}s"
         )
 
     def record_success(self):
@@ -91,9 +101,12 @@ class PlanItClient:
 
     async def _request(self, endpoint: str, params: dict) -> dict:
         """Make a rate-limited request to the PlanIt API."""
+        import re
+
         url = f"{self.base_url}/{endpoint}"
 
-        for attempt in range(5):
+        max_attempts = 10
+        for attempt in range(max_attempts):
             await self.rate_limiter.wait_if_needed()
 
             try:
@@ -101,19 +114,16 @@ class PlanItClient:
                 self.rate_limiter.record_request()
 
                 if resp.status_code == 429:
-                    # Try to parse retry-after from error message
                     try:
                         error_data = resp.json()
                         error_msg = error_data.get("error", "")
-                        # Parse "try again in Ns" from error message
-                        import re
                         match = re.search(r"(\d+)s", error_msg)
                         retry_after = float(match.group(1)) if match else None
                     except Exception:
                         retry_after = None
 
                     self.rate_limiter.record_429(retry_after)
-                    logger.warning(f"429 on attempt {attempt + 1}, will retry")
+                    logger.warning(f"429 on attempt {attempt + 1}/{max_attempts}, will retry")
                     continue
 
                 resp.raise_for_status()
@@ -131,7 +141,14 @@ class PlanItClient:
                     continue
                 raise
 
-        raise PlanItError(f"Failed after 5 attempts for {url}")
+            except (httpx.TimeoutException, httpx.NetworkError) as e:
+                logger.warning(f"Network/timeout error on attempt {attempt + 1}/{max_attempts}: {e}")
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(15.0)
+                    continue
+                raise PlanItError(f"Network error after {max_attempts} attempts for {url}: {e}")
+
+        raise PlanItError(f"Failed after {max_attempts} attempts for {url}")
 
     async def search_applications(
         self,
@@ -153,13 +170,22 @@ class PlanItClient:
             app_type: Filter by type (Full, Outline, Heritage, etc.).
             app_state: Filter by state (Permitted, Rejected, etc.).
             auth: Filter by authority name.
-            pg_sz: Page size (max 5000).
+            pg_sz: Requested page size, capped to the configured PlanIt limit.
             index: Offset for pagination.
 
         Returns:
             Dict with 'records', 'total', 'from', 'to' keys.
         """
-        params = {"pg_sz": pg_sz, "index": index}
+        safe_pg_sz = max(1, min(pg_sz, PLANIT_PAGE_SIZE))
+        if safe_pg_sz != pg_sz:
+            logger.warning(
+                "Requested PlanIt page size %s exceeds configured limit %s; using %s instead",
+                pg_sz,
+                PLANIT_PAGE_SIZE,
+                safe_pg_sz,
+            )
+
+        params = {"pg_sz": safe_pg_sz, "index": index}
 
         if search:
             params["search"] = search
@@ -181,6 +207,7 @@ class PlanItClient:
         search: str,
         start_date: str,
         end_date: str,
+        on_page: "Callable[[list[dict]], None] | None" = None,
         **kwargs,
     ) -> list[dict]:
         """Fetch all pages for a search query.
@@ -188,6 +215,10 @@ class PlanItClient:
         Paginates through results using index offset.
         If the total exceeds PLANIT_MAX_RESULTS, automatically splits the
         date range in half and recurses to get complete results.
+
+        Args:
+            on_page: Optional callback invoked with each page of records as
+                     they arrive, enabling incremental persistence.
 
         Returns list of all application records.
         """
@@ -199,17 +230,16 @@ class PlanItClient:
             pg_sz=1,
             **kwargs,
         )
-        total = probe.get("total", 0)
+        total = probe.get("total") or 0
         logger.info(f"Query total: {total} results for {start_date} to {end_date}")
 
-        if total > PLANIT_MAX_RESULTS:
-            return await self._split_and_fetch(
-                search, start_date, end_date, total, **kwargs
-            )
+        if not total:
+            return []
 
-        return await self._fetch_all_pages(
-            search, start_date, end_date, total, **kwargs
-        )
+        if total > PLANIT_MAX_RESULTS:
+            return await self._split_and_fetch(search, start_date, end_date, total, on_page=on_page, **kwargs)
+
+        return await self._fetch_all_pages(search, start_date, end_date, total, on_page=on_page, **kwargs)
 
     async def _split_and_fetch(
         self,
@@ -217,6 +247,7 @@ class PlanItClient:
         start_date: str,
         end_date: str,
         total: int,
+        on_page: "Callable[[list[dict]], None] | None" = None,
         **kwargs,
     ) -> list[dict]:
         """Split a date range in half and fetch both halves."""
@@ -231,9 +262,7 @@ class PlanItClient:
                 f"Cannot split further ({start_date} to {end_date}, "
                 f"{total} results). Fetching up to {PLANIT_MAX_RESULTS}."
             )
-            return await self._fetch_all_pages(
-                search, start_date, end_date, total, **kwargs
-            )
+            return await self._fetch_all_pages(search, start_date, end_date, total, on_page=on_page, **kwargs)
 
         second_start = (mid + timedelta(days=1)).isoformat()
         logger.info(
@@ -245,6 +274,7 @@ class PlanItClient:
             search=search,
             start_date=start_date,
             end_date=mid.isoformat(),
+            on_page=on_page,
             **kwargs,
         )
 
@@ -252,6 +282,7 @@ class PlanItClient:
             search=search,
             start_date=second_start,
             end_date=end_date,
+            on_page=on_page,
             **kwargs,
         )
 
@@ -263,6 +294,7 @@ class PlanItClient:
         start_date: str,
         end_date: str,
         total: int,
+        on_page: "Callable[[list[dict]], None] | None" = None,
         **kwargs,
     ) -> list[dict]:
         """Fetch all pages for a query known to be within limits."""
@@ -281,6 +313,9 @@ class PlanItClient:
             records = data.get("records", [])
             all_records.extend(records)
             logger.info(f"  Fetched {len(all_records)}/{total}")
+
+            if on_page and records:
+                on_page(records)
 
             if len(records) < PLANIT_PAGE_SIZE or len(all_records) >= total:
                 break
@@ -309,4 +344,5 @@ class PlanItClient:
 
 class PlanItError(Exception):
     """Error from PlanIt API."""
+
     pass

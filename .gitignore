@@ -15,13 +15,25 @@ build/
 *.db
 *.sqlite
 *.sqlite3
-
-# PDFs (downloaded documents)
 *.pdf
+*.parquet
+*.xlsx
+
+# Local data, docs, and output (not in repo)
+_local/
 
 # Environment
 .env
 .env.*
+
+# Agent instructions (local only)
+CLAUDE.md
+AGENTS.md
+
+# Tool artifacts
+.codex-logs/
+.playwright-mcp/
+.claude/
 
 # OS
 .DS_Store
