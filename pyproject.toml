@@ -3,22 +3,25 @@ name = "ashp-planning-scraper"
 version = "0.1.0"
 description = "Scraper for UK ASHP planning applications and documents"
 requires-python = ">=3.11"
+license = { file = "LICENSE" }
 dependencies = [
     "httpx>=0.27",
     "beautifulsoup4>=4.12",
     "lxml>=5.0",
-    "pdfplumber>=0.11",
-    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "pre-commit>=4.0",
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
+    "ruff>=0.11.6",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+testpaths = ["tests"]
+norecursedirs = ["_local", "build", "dist"]
 
 [tool.ruff]
 line-length = 120

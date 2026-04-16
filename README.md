@@ -7,7 +7,8 @@ Built for Nesta research into heat pump planning applications, sound assessments
 ## Setup
 
 ```bash
-uv sync
+uv sync --extra dev
+uv run pre-commit install
 ```
 
 ## Project structure
@@ -79,3 +80,7 @@ Portal-family classification uses `data/buildwithtract_authority_mapping.csv`, d
 ```bash
 uv run pytest
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).

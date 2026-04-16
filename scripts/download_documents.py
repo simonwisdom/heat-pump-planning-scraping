@@ -18,12 +18,14 @@ import argparse
 import asyncio
 import csv
 import io
+import json
 import os
 import re
 import sqlite3
 import sys
 import time
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -114,7 +116,7 @@ def rclone_sync(local_dir: Path, remote_path: str, clear_local: bool = False) ->
 
     cmd = [
         "rclone",
-        "sync",
+        "copy",
         str(local_dir),
         remote_path,
         "--transfers",
@@ -223,6 +225,71 @@ def persist_new_documents(
     return inserted
 
 
+def get_cumulative_stats(conn: sqlite3.Connection) -> dict:
+    """Query the DB for overall download progress across all runs."""
+    doc_row = conn.execute(
+        "SELECT"
+        "  COUNT(*) AS total_docs,"
+        "  SUM(CASE WHEN download_status = 'downloaded' THEN 1 ELSE 0 END) AS downloaded,"
+        "  SUM(CASE WHEN download_status = 'pending' THEN 1 ELSE 0 END) AS pending,"
+        "  SUM(CASE WHEN file_size_bytes IS NOT NULL THEN file_size_bytes ELSE 0 END) AS total_bytes"
+        " FROM documents"
+    ).fetchone()
+    app_row = conn.execute(
+        "SELECT"
+        "  COUNT(DISTINCT d.application_uid) AS apps_with_downloads"
+        " FROM documents d"
+        " WHERE d.download_status = 'downloaded'"
+    ).fetchone()
+    total_apps = conn.execute("SELECT COUNT(*) FROM applications").fetchone()[0]
+    return {
+        "total_applications": total_apps,
+        "applications_downloaded": app_row["apps_with_downloads"],
+        "total_docs": doc_row["total_docs"],
+        "docs_downloaded": doc_row["downloaded"],
+        "docs_pending": doc_row["pending"],
+        "total_bytes": doc_row["total_bytes"],
+    }
+
+
+def write_progress(
+    output_dir: Path,
+    conn: sqlite3.Connection,
+    *,
+    started_at: str,
+    processed: int,
+    total: int,
+    success: int,
+    failed: int,
+    files_downloaded: int,
+    bytes_downloaded: int,
+    elapsed: float,
+    last_app: str,
+    last_status: str,
+) -> None:
+    """Write a progress.json file for external monitoring."""
+    rate = processed / elapsed if elapsed > 0 else 0
+    eta = (total - processed) / rate if rate > 0 else 0
+    progress = {
+        "current_run": {
+            "started_at": started_at,
+            "processed": processed,
+            "total": total,
+            "success": success,
+            "failed": failed,
+            "files_downloaded": files_downloaded,
+            "bytes_downloaded": bytes_downloaded,
+            "apps_per_minute": round(rate * 60, 1),
+            "eta_seconds": int(eta),
+            "last_app": last_app,
+            "last_status": last_status,
+        },
+        "cumulative": get_cumulative_stats(conn),
+    }
+    path = output_dir / "progress.json"
+    path.write_text(json.dumps(progress, indent=2) + "\n")
+
+
 def setup_logging(output_dir: Path) -> None:
     """Configure file + console logging."""
     log_path = output_dir / "download.log"
@@ -288,9 +355,8 @@ async def run_download(args: argparse.Namespace) -> int:
     total_files = 0
     total_bytes = 0
     failures = 0
+    run_started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     start_time = time.monotonic()
-
-    from datetime import datetime, timezone
 
     logger.info(
         "Starting download run: %d candidates, limit=%s, authority=%s",
@@ -339,6 +405,20 @@ async def run_download(args: argparse.Namespace) -> int:
                             }
                         )
                         failures += 1
+                        write_progress(
+                            args.output_dir,
+                            conn,
+                            started_at=run_started_at,
+                            processed=i,
+                            total=len(candidates),
+                            success=i - failures,
+                            failed=failures,
+                            files_downloaded=total_files,
+                            bytes_downloaded=total_bytes,
+                            elapsed=time.monotonic() - start_time,
+                            last_app=f"{authority}/{reference}",
+                            last_status="no_zip",
+                        )
                         continue
 
                     # Ensure document rows exist in DB (handles combined mode)
@@ -393,6 +473,20 @@ async def run_download(args: argparse.Namespace) -> int:
                         rate * 60,
                         int(eta),
                     )
+                    write_progress(
+                        args.output_dir,
+                        conn,
+                        started_at=run_started_at,
+                        processed=i,
+                        total=len(candidates),
+                        success=i - failures,
+                        failed=failures,
+                        files_downloaded=total_files,
+                        bytes_downloaded=total_bytes,
+                        elapsed=elapsed,
+                        last_app=f"{authority}/{reference}",
+                        last_status="success",
+                    )
 
                 except Exception as exc:
                     failures += 1
@@ -421,6 +515,20 @@ async def run_download(args: argparse.Namespace) -> int:
                             "timestamp": now,
                             "elapsed_s": round(app_elapsed, 1),
                         }
+                    )
+                    write_progress(
+                        args.output_dir,
+                        conn,
+                        started_at=run_started_at,
+                        processed=i,
+                        total=len(candidates),
+                        success=i - failures,
+                        failed=failures,
+                        files_downloaded=total_files,
+                        bytes_downloaded=total_bytes,
+                        elapsed=time.monotonic() - start_time,
+                        last_app=f"{authority}/{reference}",
+                        last_status="error",
                     )
 
                 # Periodic sync via rclone (set SYNC_REMOTE env var to enable)
