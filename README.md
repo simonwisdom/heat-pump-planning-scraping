@@ -29,6 +29,7 @@ scripts/                    # Runnable pipeline scripts
   scrape_applications_noise.py          # Noise/sound assessment apps
   scrape_document_listings.py           # Fetch doc metadata from Idox portals
   download_documents_idox.py                 # Download document zips from Idox
+  extract_decision_texts.py             # Build machine-readable text corpus for priority docs
   pins/                                 # Planning Inspectorate appeals pipeline
     pins_01_parse_xlsx.py               #   Raw XLSX -> parquet
     pins_02_type_tables.py              #   Typed parquet with header inference
@@ -65,6 +66,13 @@ uv run python scripts/download_documents_idox.py --limit 50
 
 # Optional: sync to rclone remote as you go
 SYNC_REMOTE="myremote:path/to/docs/" SYNC_CLEAR=1 uv run python scripts/download_documents_idox.py
+```
+
+Extract machine-readable text for decision notices, officer/delegated reports,
+and noise/acoustic documents:
+
+```bash
+uv run --with pdfplumber python scripts/extract_decision_texts.py
 ```
 
 To enable rclone sync, install [rclone](https://rclone.org/install/) and configure a remote with `rclone config`. Then set `SYNC_REMOTE` to your remote path to automatically sync downloaded files every 50 apps (configurable via `SYNC_EVERY`).
