@@ -1,5 +1,6 @@
 """Configuration constants for the ASHP planning scraper."""
 
+import os
 from pathlib import Path
 
 # Paths (canonical workstream locations)
@@ -29,9 +30,9 @@ ASHP_SEARCH_TERMS = [
 SCRAPE_YEAR_START = 2015
 SCRAPE_YEAR_END = 2026
 
-# Idox scraping
-IDOX_RATE_LIMIT_PER_DOMAIN = 2.0  # seconds between requests to same domain
-IDOX_MAX_CONCURRENT_DOMAINS = 3
+# Idox scraping (overridable via env vars)
+IDOX_RATE_LIMIT_PER_DOMAIN = float(os.environ.get("IDOX_DOMAIN_DELAY", "2.0"))
+IDOX_MAX_CONCURRENT_DOMAINS = int(os.environ.get("MAX_CONCURRENT_DOMAINS", "3"))
 IDOX_USER_AGENT = "NestaPlanningResearch/1.0 (ASHP planning data research; https://www.nesta.org.uk)"
 
 # Agile Applications API

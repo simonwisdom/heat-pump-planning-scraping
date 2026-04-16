@@ -11,6 +11,7 @@ import asyncio
 import logging
 import re
 import time
+from contextlib import asynccontextmanager
 from typing import Callable
 from urllib.parse import urlencode, urljoin, urlparse
 
@@ -44,7 +45,12 @@ _BLOCK_PAGE_PATTERNS = [
 
 
 class DomainRateLimiter:
-    """Rate limiter that tracks per-domain request timing."""
+    """Rate limiter that tracks per-domain request timing.
+
+    Uses per-domain locks to prevent concurrent same-domain requests
+    from violating the delay, plus a global semaphore to cap total
+    concurrent domains.
+    """
 
     def __init__(
         self,
@@ -53,17 +59,45 @@ class DomainRateLimiter:
     ):
         self.per_domain_delay = per_domain_delay
         self._last_request: dict[str, float] = {}
+        self._domain_locks: dict[str, asyncio.Lock] = {}
         self._semaphore = asyncio.Semaphore(max_concurrent)
 
-    async def acquire(self, domain: str):
+    def _get_lock(self, domain: str) -> asyncio.Lock:
+        if domain not in self._domain_locks:
+            self._domain_locks[domain] = asyncio.Lock()
+        return self._domain_locks[domain]
+
+    @asynccontextmanager
+    async def throttle(self, domain: str):
+        """Acquire semaphore + per-domain lock, yield, then release both."""
         await self._semaphore.acquire()
+        lock = self._get_lock(domain)
+        await lock.acquire()
+        last = self._last_request.get(domain, 0.0)
+        elapsed = time.monotonic() - last
+        if elapsed < self.per_domain_delay:
+            await asyncio.sleep(self.per_domain_delay - elapsed)
+        try:
+            yield
+        finally:
+            self._last_request[domain] = time.monotonic()
+            lock.release()
+            self._semaphore.release()
+
+    async def acquire(self, domain: str):
+        """Legacy acquire — prefer throttle() context manager."""
+        await self._semaphore.acquire()
+        lock = self._get_lock(domain)
+        await lock.acquire()
         last = self._last_request.get(domain, 0.0)
         elapsed = time.monotonic() - last
         if elapsed < self.per_domain_delay:
             await asyncio.sleep(self.per_domain_delay - elapsed)
 
     def release(self, domain: str):
+        """Legacy release — prefer throttle() context manager."""
         self._last_request[domain] = time.monotonic()
+        self._get_lock(domain).release()
         self._semaphore.release()
 
 
@@ -280,17 +314,15 @@ class IdoxDocumentScraper:
         domain = urlparse(url).netloc
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                await self.rate_limiter.acquire(domain)
-                try:
-                    resp = await self.client.get(url)
-                except Exception as exc:
-                    if not self._is_tls_verification_error(exc):
-                        raise
-                    logger.warning("TLS verification failed for %s; retrying insecurely", domain)
-                    self.stats["tls_retry_used"] += 1
-                    resp = await self.insecure_client.get(url)
-                finally:
-                    self.rate_limiter.release(domain)
+                async with self.rate_limiter.throttle(domain):
+                    try:
+                        resp = await self.client.get(url)
+                    except Exception as exc:
+                        if not self._is_tls_verification_error(exc):
+                            raise
+                        logger.warning("TLS verification failed for %s; retrying insecurely", domain)
+                        self.stats["tls_retry_used"] += 1
+                        resp = await self.insecure_client.get(url)
 
                 if resp.status_code in RETRYABLE_STATUS_CODES:
                     if attempt < MAX_RETRIES:
@@ -340,20 +372,18 @@ class IdoxDocumentScraper:
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                await self.rate_limiter.acquire(domain)
-                try:
-                    resp = await self.client.post(url, content=body, headers=headers)
-                except Exception as exc:
-                    if not self._is_tls_verification_error(exc):
-                        raise
-                    logger.warning(
-                        "TLS verification failed for POST %s; retrying insecurely",
-                        domain,
-                    )
-                    self.stats["tls_retry_used"] += 1
-                    resp = await self.insecure_client.post(url, content=body, headers=headers)
-                finally:
-                    self.rate_limiter.release(domain)
+                async with self.rate_limiter.throttle(domain):
+                    try:
+                        resp = await self.client.post(url, content=body, headers=headers)
+                    except Exception as exc:
+                        if not self._is_tls_verification_error(exc):
+                            raise
+                        logger.warning(
+                            "TLS verification failed for POST %s; retrying insecurely",
+                            domain,
+                        )
+                        self.stats["tls_retry_used"] += 1
+                        resp = await self.insecure_client.post(url, content=body, headers=headers)
 
                 if resp.status_code in RETRYABLE_STATUS_CODES:
                     if attempt < MAX_RETRIES:

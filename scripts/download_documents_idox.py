@@ -390,166 +390,61 @@ async def run_download(args: argparse.Namespace) -> int:
         args.authority,
     )
 
+    max_workers = int(os.environ.get("MAX_CONCURRENT_APPS", "1"))
+    logger.info("Download workers: %d", max_workers)
+
     try:
         async with IdoxDocumentScraper() as scraper:
-            for i, row in enumerate(candidates, 1):
+            # -- Producer-consumer pipeline --
+            # Workers fetch zips concurrently; consumer does sync DB/disk work.
+            result_queue: asyncio.Queue = asyncio.Queue(maxsize=2)
+            work_queue: asyncio.Queue = asyncio.Queue()
+
+            for row in candidates:
+                await work_queue.put(row)
+            for _ in range(max_workers):
+                await work_queue.put(None)  # poison pills
+
+            async def download_worker():
+                while True:
+                    row = await work_queue.get()
+                    if row is None:
+                        break
+                    t0 = time.monotonic()
+                    try:
+                        docs, zips, reason = await scraper.download_zip(row["documentation_url"])
+                        elapsed = time.monotonic() - t0
+                        await result_queue.put((row, docs, zips, reason, None, elapsed))
+                    except Exception as exc:
+                        elapsed = time.monotonic() - t0
+                        await result_queue.put((row, [], [], None, exc, elapsed))
+
+            workers = [asyncio.create_task(download_worker()) for _ in range(max_workers)]
+
+            # -- Single consumer: DB writes, unpack, progress, rclone --
+            processed = 0
+            while processed < len(candidates):
+                row, documents, zips, zip_reason, exc, app_elapsed = await result_queue.get()
+                processed += 1
+
                 uid = row["uid"]
                 authority = row["authority_name"] or "unknown"
                 reference = row["reference"] or uid
                 docs_url = row["documentation_url"]
-                app_start = time.monotonic()
                 now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
-                try:
-                    documents, zips, zip_reason = await scraper.download_zip(docs_url)
-
-                    if not zips:
-                        app_elapsed = time.monotonic() - app_start
-                        logger.warning(
-                            "[%d/%d] %s/%s: no zip returned (listed %d docs, %.1fs)",
-                            i,
-                            len(candidates),
-                            authority,
-                            reference,
-                            len(documents),
-                            app_elapsed,
-                        )
-                        results.append(
-                            {
-                                "uid": uid,
-                                "authority_name": authority,
-                                "reference": reference,
-                                "documentation_url": docs_url,
-                                "documents_listed": len(documents),
-                                "files_downloaded": 0,
-                                "total_bytes": 0,
-                                "status": "no_zip",
-                                "error": "",
-                                "timestamp": now,
-                                "elapsed_s": round(app_elapsed, 1),
-                            }
-                        )
-                        failures += 1
-                        record_download_attempt(
-                            conn,
-                            scrape_log_id=log_id,
-                            application_uid=uid,
-                            status="no_zip",
-                            failure_code=zip_reason or "no_zip",
-                            failure_message=zip_reason,
-                            host_name=host_name,
-                            documents_listed=len(documents),
-                            elapsed_s=round(app_elapsed, 1),
-                        )
-                        write_progress(
-                            args.output_dir,
-                            conn,
-                            started_at=run_started_at,
-                            processed=i,
-                            total=len(candidates),
-                            success=i - failures,
-                            failed=failures,
-                            files_downloaded=total_files,
-                            bytes_downloaded=total_bytes,
-                            elapsed=time.monotonic() - start_time,
-                            last_app=f"{authority}/{reference}",
-                            last_status="no_zip",
-                        )
-                        continue
-
-                    # Ensure document rows exist in DB (handles combined mode)
-                    persist_new_documents(conn, dict(row), documents)
-
-                    # Unpack and match
-                    auth_dir = sanitize_dirname(authority)
-                    ref_dir = sanitize_dirname(reference)
-                    target_dir = args.output_dir / auth_dir / ref_dir
-
-                    file_map = unpack_and_match(zips, documents, target_dir, args.output_dir)
-
-                    # Update DB
-                    if file_map:
-                        with transaction(conn):
-                            mark_documents_downloaded(conn, uid, file_map)
-
-                    app_files = len(file_map)
-                    app_bytes = sum(s for _, s in file_map.values())
-                    total_files += app_files
-                    total_bytes += app_bytes
-                    app_elapsed = time.monotonic() - app_start
-
-                    results.append(
-                        {
-                            "uid": uid,
-                            "authority_name": authority,
-                            "reference": reference,
-                            "documentation_url": docs_url,
-                            "documents_listed": len(documents),
-                            "files_downloaded": app_files,
-                            "total_bytes": app_bytes,
-                            "status": "success",
-                            "error": "",
-                            "timestamp": now,
-                            "elapsed_s": round(app_elapsed, 1),
-                        }
-                    )
-
-                    record_download_attempt(
-                        conn,
-                        scrape_log_id=log_id,
-                        application_uid=uid,
-                        status="success",
-                        host_name=host_name,
-                        documents_listed=len(documents),
-                        files_downloaded=app_files,
-                        bytes_downloaded=app_bytes,
-                        elapsed_s=round(app_elapsed, 1),
-                    )
-
-                    elapsed = time.monotonic() - start_time
-                    rate = i / elapsed if elapsed > 0 else 0
-                    eta = (len(candidates) - i) / rate if rate > 0 else 0
-                    logger.info(
-                        "[%d/%d] %s/%s: %d files, %d KB, %.1fs (%.1f apps/min, ETA %ds)",
-                        i,
-                        len(candidates),
-                        authority,
-                        reference,
-                        app_files,
-                        app_bytes // 1024,
-                        app_elapsed,
-                        rate * 60,
-                        int(eta),
-                    )
-                    write_progress(
-                        args.output_dir,
-                        conn,
-                        started_at=run_started_at,
-                        processed=i,
-                        total=len(candidates),
-                        success=i - failures,
-                        failed=failures,
-                        files_downloaded=total_files,
-                        bytes_downloaded=total_bytes,
-                        elapsed=elapsed,
-                        last_app=f"{authority}/{reference}",
-                        last_status="success",
-                    )
-
-                except Exception as exc:
+                if exc is not None:
                     failures += 1
-                    app_elapsed = time.monotonic() - app_start
+                    error_msg = f"{type(exc).__name__}: {exc}"
                     logger.error(
-                        "[%d/%d] %s/%s: %s: %s (%.1fs)",
-                        i,
+                        "[%d/%d] %s/%s: %s (%.1fs)",
+                        processed,
                         len(candidates),
                         authority,
                         reference,
-                        type(exc).__name__,
-                        exc,
+                        error_msg,
                         app_elapsed,
                     )
-                    error_msg = f"{type(exc).__name__}: {exc}"
                     results.append(
                         {
                             "uid": uid,
@@ -575,24 +470,124 @@ async def run_download(args: argparse.Namespace) -> int:
                         host_name=host_name,
                         elapsed_s=round(app_elapsed, 1),
                     )
-                    write_progress(
-                        args.output_dir,
+                elif not zips:
+                    failures += 1
+                    logger.warning(
+                        "[%d/%d] %s/%s: no zip returned (listed %d docs, %.1fs)",
+                        processed,
+                        len(candidates),
+                        authority,
+                        reference,
+                        len(documents),
+                        app_elapsed,
+                    )
+                    results.append(
+                        {
+                            "uid": uid,
+                            "authority_name": authority,
+                            "reference": reference,
+                            "documentation_url": docs_url,
+                            "documents_listed": len(documents),
+                            "files_downloaded": 0,
+                            "total_bytes": 0,
+                            "status": "no_zip",
+                            "error": "",
+                            "timestamp": now,
+                            "elapsed_s": round(app_elapsed, 1),
+                        }
+                    )
+                    record_download_attempt(
                         conn,
-                        started_at=run_started_at,
-                        processed=i,
-                        total=len(candidates),
-                        success=i - failures,
-                        failed=failures,
-                        files_downloaded=total_files,
-                        bytes_downloaded=total_bytes,
-                        elapsed=time.monotonic() - start_time,
-                        last_app=f"{authority}/{reference}",
-                        last_status="error",
+                        scrape_log_id=log_id,
+                        application_uid=uid,
+                        status="no_zip",
+                        failure_code=zip_reason or "no_zip",
+                        failure_message=zip_reason,
+                        host_name=host_name,
+                        documents_listed=len(documents),
+                        elapsed_s=round(app_elapsed, 1),
+                    )
+                else:
+                    # Success — unpack + persist
+                    persist_new_documents(conn, dict(row), documents)
+
+                    auth_dir = sanitize_dirname(authority)
+                    ref_dir = sanitize_dirname(reference)
+                    target_dir = args.output_dir / auth_dir / ref_dir
+                    file_map = unpack_and_match(zips, documents, target_dir, args.output_dir)
+
+                    if file_map:
+                        with transaction(conn):
+                            mark_documents_downloaded(conn, uid, file_map)
+
+                    app_files = len(file_map)
+                    app_bytes = sum(s for _, s in file_map.values())
+                    total_files += app_files
+                    total_bytes += app_bytes
+
+                    results.append(
+                        {
+                            "uid": uid,
+                            "authority_name": authority,
+                            "reference": reference,
+                            "documentation_url": docs_url,
+                            "documents_listed": len(documents),
+                            "files_downloaded": app_files,
+                            "total_bytes": app_bytes,
+                            "status": "success",
+                            "error": "",
+                            "timestamp": now,
+                            "elapsed_s": round(app_elapsed, 1),
+                        }
+                    )
+                    record_download_attempt(
+                        conn,
+                        scrape_log_id=log_id,
+                        application_uid=uid,
+                        status="success",
+                        host_name=host_name,
+                        documents_listed=len(documents),
+                        files_downloaded=app_files,
+                        bytes_downloaded=app_bytes,
+                        elapsed_s=round(app_elapsed, 1),
                     )
 
-                # Periodic sync via rclone (set SYNC_REMOTE env var to enable)
-                if sync_remote and i % sync_every == 0:
+                    elapsed = time.monotonic() - start_time
+                    rate = processed / elapsed if elapsed > 0 else 0
+                    eta = (len(candidates) - processed) / rate if rate > 0 else 0
+                    logger.info(
+                        "[%d/%d] %s/%s: %d files, %d KB, %.1fs (%.1f apps/min, ETA %ds)",
+                        processed,
+                        len(candidates),
+                        authority,
+                        reference,
+                        app_files,
+                        app_bytes // 1024,
+                        app_elapsed,
+                        rate * 60,
+                        int(eta),
+                    )
+
+                # Progress + periodic rclone
+                write_progress(
+                    args.output_dir,
+                    conn,
+                    started_at=run_started_at,
+                    processed=processed,
+                    total=len(candidates),
+                    success=processed - failures,
+                    failed=failures,
+                    files_downloaded=total_files,
+                    bytes_downloaded=total_bytes,
+                    elapsed=time.monotonic() - start_time,
+                    last_app=f"{authority}/{reference}",
+                    last_status="error" if exc else ("no_zip" if not zips else "success"),
+                )
+
+                if sync_remote and processed % sync_every == 0:
                     rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)
+
+            await asyncio.gather(*workers)
 
             # Log scraper-level stats
             logger.info("Scraper stats: %s", scraper.stats)
