@@ -28,7 +28,7 @@ scripts/                    # Runnable pipeline scripts
   scrape_applications_heat_pump_broad.py # Broader heat pump search
   scrape_applications_noise.py          # Noise/sound assessment apps
   scrape_document_listings.py           # Fetch doc metadata from Idox portals
-  download_documents.py                 # Download document zips from Idox
+  download_documents_idox.py                 # Download document zips from Idox
   pins/                                 # Planning Inspectorate appeals pipeline
     pins_01_parse_xlsx.py               #   Raw XLSX -> parquet
     pins_02_type_tables.py              #   Typed parquet with header inference
@@ -61,10 +61,10 @@ uv run python scripts/scrape_document_listings.py
 Download document files:
 
 ```bash
-uv run python scripts/download_documents.py --limit 50
+uv run python scripts/download_documents_idox.py --limit 50
 
 # Optional: sync to rclone remote as you go
-SYNC_REMOTE="myremote:path/to/docs/" SYNC_CLEAR=1 uv run python scripts/download_documents.py
+SYNC_REMOTE="myremote:path/to/docs/" SYNC_CLEAR=1 uv run python scripts/download_documents_idox.py
 ```
 
 To enable rclone sync, install [rclone](https://rclone.org/install/) and configure a remote with `rclone config`. Then set `SYNC_REMOTE` to your remote path to automatically sync downloaded files every 50 apps (configurable via `SYNC_EVERY`).
