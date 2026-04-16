@@ -18,33 +18,33 @@
     <link rel="stylesheet" type="text/css" href="/publisher/css/custom-theme/jquery-ui-1.10.0.custom.css"/>
     <link rel="stylesheet" type="text/css" href="/publisher/css/custom-theme/jquery.ui.1.10.0.ie.css"/>
 
-    
-		 
+
+
 			 <link rel="stylesheet" type="text/css" href="http://eplanning.idox.birmingham.gov.uk/header/birmingham/css/styles.css"/>
-		
-		
-       
-    
+
+
+
+
 </head>
 
 <body>
 
     <div class="container-fluid">
 
-        
+
         <div class="row header">
-            
-                
+
+
                     <div class="container">
     <div class="logoRow">
         <div class="inner">
-            <a href="https://www.birmingham.gov.uk" class="logo"><span>Birmingham City Council</span></a>            
+            <a href="https://www.birmingham.gov.uk" class="logo"><span>Birmingham City Council</span></a>
             <ul>
     			<li><a href="https://eplanning.birmingham.gov.uk/Northgate/PlanningExplorer/Accessibility.aspx"><span class="icon-description">Accessibility</span></a></li>
     		</ul>
     		<div class="clearBoth"></div>
         </div>
-    </div>    
+    </div>
     <div class="subMenu">
         <div class="inner">
             <ul>
@@ -61,17 +61,17 @@
     </div>
     <div class="clearBoth"></div>
 </div>
-                
-                
-            
+
+
+
         </div>
-        
+
 
         <div class="row main">
-            
-            
-                
-                
+
+
+
+
                     <div class="summary panel panel-default">
                         <div class="panel-heading">
                             Case Summary
@@ -97,14 +97,14 @@
                             </div>
                         </div>
                     </div>
-                
-            
+
+
         </div>
 
-        
+
         <div class="row footer">
-            
-                
+
+
                     <div class="container">
     <div class="footerSocial">
         <div class="inner">
@@ -132,21 +132,21 @@
 				<li><a href="https://www.birmingham.gov.uk/privacy">Privacy</a></li>
 			</ul>
 			<p>Council House, Victoria Square, Birmingham B1 1BB<br><a href="https://www.birmingham.gov.uk/copyright">Content licensed under OGL2.0, except where otherwise stated.</a></p>
-			
+
 			<a href="https://www.birmingham.gov.uk/" class="logo"><span>Birmingham City Council</span></a>
-			<div class="clearBoth"></div>			
+			<div class="clearBoth"></div>
         </div>
     </div>
 </div>
-                
-                
-            
+
+
+
         </div>
-        
+
 
     </div>
 
-    
+
     <div id="sessionTimeoutDialog" title="Your session has expired">
         <p>Your session has expired. If you want to continue viewing the page please click on the "Reload" button to reload the page.</p>
     </div>
@@ -159,7 +159,7 @@
 
     <script type="text/javascript" language="javascript">
         var ctx = "/publisher"
-        
+
 
         var timer;
         //session timeout in milliseconds (i.e. 1 minute = 60000 milliseconds)
@@ -192,16 +192,16 @@
             // initialise datatables
             $('#documents').dataTable( {
                 "columnDefs": [
-                    
-                    
+
+
                         { "title": "Date ", "targets": 0, "searchable": true, "sortable": true , "type" : "dateUk", "orderSequence": [ "desc", "asc"]},
-                    
+
                         { "title": "Description", "targets": 1, "searchable": true, "sortable": true , "type" : "string", "orderSequence": [ "asc", "desc"]},
-                    
+
                         { "title": "Document Sub Type", "targets": 2, "searchable": true, "sortable": true , "type" : "string", "orderSequence": [ "asc", "desc"]},
-                    
-                    
-                    
+
+
+
                     { "title": 'View', "targets": 3, "searchable": false, sortable: false, "width": "5%", "sClass": "dt-center"},
                     { "title": 'Measure', "targets": 4, "searchable": false, sortable: false, "width": "5%", "sClass": "dt-center" }
                 ],

@@ -21,6 +21,7 @@ import io
 import json
 import os
 import re
+import socket
 import sqlite3
 import sys
 import time
@@ -42,12 +43,34 @@ from src.db import (
     log_scrape_end,
     log_scrape_start,
     mark_documents_downloaded,
+    record_download_attempt,
     transaction,
     upsert_document,
 )
 from src.idox_scraper import IdoxDocumentScraper
 
 logger = logging.getLogger(__name__)
+
+
+def classify_failure(error_str: str) -> str:
+    """Map an error message to a short failure code."""
+    e = error_str.lower()
+    if "name or service not known" in e or "nodename nor servname" in e:
+        return "dns_error"
+    if "403" in e:
+        return "http_403"
+    if "500" in e:
+        return "http_500"
+    if "server disconnected" in e or "connection reset" in e:
+        return "connection_reset"
+    if "captcha" in e or "block" in e or "access denied" in e:
+        return "blocked"
+    if "timeout" in e or "timed out" in e:
+        return "timeout"
+    if "certificate" in e or "ssl" in e or "tls" in e:
+        return "tls_error"
+    return "unknown"
+
 
 RESULT_FIELDNAMES = [
     "uid",
@@ -313,6 +336,8 @@ async def run_download(args: argparse.Namespace) -> int:
     if sync_remote:
         logger.info("Sync enabled: %s (every %d apps, clear=%s)", sync_remote, sync_every, sync_clear)
 
+    host_name = socket.gethostname()
+
     db_path = args.db_path or DB_PATH
     conn = get_db(db_path)
 
@@ -405,6 +430,16 @@ async def run_download(args: argparse.Namespace) -> int:
                             }
                         )
                         failures += 1
+                        record_download_attempt(
+                            conn,
+                            scrape_log_id=log_id,
+                            application_uid=uid,
+                            status="no_zip",
+                            failure_code="no_zip",
+                            host_name=host_name,
+                            documents_listed=len(documents),
+                            elapsed_s=round(app_elapsed, 1),
+                        )
                         write_progress(
                             args.output_dir,
                             conn,
@@ -458,6 +493,18 @@ async def run_download(args: argparse.Namespace) -> int:
                         }
                     )
 
+                    record_download_attempt(
+                        conn,
+                        scrape_log_id=log_id,
+                        application_uid=uid,
+                        status="success",
+                        host_name=host_name,
+                        documents_listed=len(documents),
+                        files_downloaded=app_files,
+                        bytes_downloaded=app_bytes,
+                        elapsed_s=round(app_elapsed, 1),
+                    )
+
                     elapsed = time.monotonic() - start_time
                     rate = i / elapsed if elapsed > 0 else 0
                     eta = (len(candidates) - i) / rate if rate > 0 else 0
@@ -501,6 +548,7 @@ async def run_download(args: argparse.Namespace) -> int:
                         exc,
                         app_elapsed,
                     )
+                    error_msg = f"{type(exc).__name__}: {exc}"
                     results.append(
                         {
                             "uid": uid,
@@ -511,10 +559,20 @@ async def run_download(args: argparse.Namespace) -> int:
                             "files_downloaded": 0,
                             "total_bytes": 0,
                             "status": "error",
-                            "error": f"{type(exc).__name__}: {exc}",
+                            "error": error_msg,
                             "timestamp": now,
                             "elapsed_s": round(app_elapsed, 1),
                         }
+                    )
+                    record_download_attempt(
+                        conn,
+                        scrape_log_id=log_id,
+                        application_uid=uid,
+                        status="error",
+                        failure_code=classify_failure(error_msg),
+                        failure_message=error_msg[:500],
+                        host_name=host_name,
+                        elapsed_s=round(app_elapsed, 1),
                     )
                     write_progress(
                         args.output_dir,

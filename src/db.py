@@ -177,6 +177,26 @@ CREATE TABLE IF NOT EXISTS scrape_log (
     error_log TEXT,
     status TEXT DEFAULT 'running'
 );
+
+
+-- Per-application download attempt log (persists across runs/machines)
+CREATE TABLE IF NOT EXISTS download_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scrape_log_id INTEGER REFERENCES scrape_log(id),
+    application_uid TEXT NOT NULL REFERENCES applications(uid),
+    attempted_at TEXT NOT NULL,
+    status TEXT NOT NULL,
+    failure_code TEXT,
+    failure_message TEXT,
+    host_name TEXT,
+    documents_listed INTEGER DEFAULT 0,
+    files_downloaded INTEGER DEFAULT 0,
+    bytes_downloaded INTEGER DEFAULT 0,
+    elapsed_s REAL
+);
+
+CREATE INDEX IF NOT EXISTS idx_dl_attempts_app ON download_attempts(application_uid);
+CREATE INDEX IF NOT EXISTS idx_dl_attempts_status ON download_attempts(status);
 """
 
 
@@ -450,3 +470,44 @@ def mark_documents_downloaded(
         )
         updated += cur.rowcount
     return updated
+
+
+def record_download_attempt(
+    conn: sqlite3.Connection,
+    *,
+    scrape_log_id: int | None = None,
+    application_uid: str,
+    status: str,
+    failure_code: str | None = None,
+    failure_message: str | None = None,
+    host_name: str | None = None,
+    documents_listed: int = 0,
+    files_downloaded: int = 0,
+    bytes_downloaded: int = 0,
+    elapsed_s: float | None = None,
+) -> int:
+    """Record a per-application download attempt."""
+    cur = conn.execute(
+        """
+        INSERT INTO download_attempts
+            (scrape_log_id, application_uid, attempted_at, status,
+             failure_code, failure_message, host_name,
+             documents_listed, files_downloaded, bytes_downloaded, elapsed_s)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            scrape_log_id,
+            application_uid,
+            now_iso(),
+            status,
+            failure_code,
+            failure_message,
+            host_name,
+            documents_listed,
+            files_downloaded,
+            bytes_downloaded,
+            elapsed_s,
+        ),
+    )
+    conn.commit()
+    return cur.lastrowid
