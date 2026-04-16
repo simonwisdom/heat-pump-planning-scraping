@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS appeals (
     -- ASHP matching
     is_ashp_related INTEGER DEFAULT 0,
     ashp_match_method TEXT,
+    ashp_match_confidence TEXT,
     linked_application_uid TEXT,
 
     -- Raw data
