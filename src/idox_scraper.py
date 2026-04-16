@@ -441,12 +441,11 @@ class IdoxDocumentScraper:
     async def download_zip(
         self,
         docs_url: str,
-    ) -> tuple[list[dict], list[bytes]]:
+    ) -> tuple[list[dict], list[bytes], str | None]:
         """GET documents page then POST to download all files as zip(s).
 
-        Returns (documents_metadata, list_of_zip_bytes). Each zip corresponds
-        to a batch of up to IDOX_ZIP_BATCH_SIZE files. Returns ([], []) on
-        failure.
+        Returns (documents_metadata, list_of_zip_bytes, failure_reason).
+        failure_reason is None on success, or a short code string on failure.
         """
         parsed = urlparse(docs_url)
         base_url = f"{parsed.scheme}://{parsed.netloc}"
@@ -456,25 +455,25 @@ class IdoxDocumentScraper:
         resp = await self._get_with_retry(url)
         if resp is None:
             self.stats["failed"] += 1
-            return [], []
+            return [], [], "get_failed"
 
         if resp.status_code != 200:
             logger.warning("HTTP %s for %s", resp.status_code, url)
             self.stats["failed"] += 1
-            return [], []
+            return [], [], f"http_{resp.status_code}"
 
         html = resp.text
 
         if looks_like_block_page(html):
             logger.warning("Possible CAPTCHA/block page for %s", url)
             self.stats["captcha_blocked"] += 1
-            return [], []
+            return [], [], "blocked"
 
         # Step 2: Parse document metadata
         documents = parse_idox_documents(html, base_url)
         if not documents:
             self.stats["no_docs"] += 1
-            return [], []
+            return [], [], "no_documents"
 
         # Step 3: Extract form data for zip download
         csrf = extract_csrf_token(html)
@@ -484,13 +483,13 @@ class IdoxDocumentScraper:
         if not csrf or not download_url:
             logger.warning("Missing CSRF or download URL for %s, cannot zip-download", url)
             self.stats["success"] += 1
-            return documents, []
+            return documents, [], "no_download_form"
 
         file_values = [d["file_checkbox_value"] for d in documents if d.get("file_checkbox_value")]
         if not file_values:
             logger.warning("No checkbox values found for %s", url)
             self.stats["success"] += 1
-            return documents, []
+            return documents, [], "no_checkboxes"
 
         # Step 4: Batch into chunks of IDOX_ZIP_BATCH_SIZE and POST each
         zips: list[bytes] = []
@@ -532,7 +531,9 @@ class IdoxDocumentScraper:
             zips.append(content)
 
         self.stats["success"] += 1
-        return documents, zips
+        if zips:
+            return documents, zips, None
+        return documents, zips, "zip_post_failed"
 
     async def scrape_batch(
         self,

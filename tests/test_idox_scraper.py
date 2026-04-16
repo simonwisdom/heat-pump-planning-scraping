@@ -330,13 +330,14 @@ async def test_download_zip_success(monkeypatch, cornwall_html):
         monkeypatch.setattr(scraper.client, "get", mock_get)
         monkeypatch.setattr(scraper.client, "post", mock_post)
 
-        documents, zips = await scraper.download_zip(
+        documents, zips, reason = await scraper.download_zip(
             "https://planning.cornwall.gov.uk/online-applications/"
             "applicationDetails.do?keyVal=T6QTZLFGFU500&activeTab=documents"
         )
 
     assert len(documents) == 6
     assert len(zips) == 1
+    assert reason is None
     assert len(get_calls) == 1
     assert len(post_calls) == 1
 
@@ -366,9 +367,10 @@ async def test_download_zip_no_form(monkeypatch):
     async with IdoxDocumentScraper() as scraper:
         monkeypatch.setattr(scraper.client, "get", mock_get)
 
-        documents, zips = await scraper.download_zip(
+        documents, zips, reason = await scraper.download_zip(
             "https://example.gov.uk/online-applications/applicationDetails.do?keyVal=X"
         )
 
     assert len(documents) == 1
     assert zips == []
+    assert reason == "no_download_form"

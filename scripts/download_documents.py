@@ -401,7 +401,7 @@ async def run_download(args: argparse.Namespace) -> int:
                 now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
                 try:
-                    documents, zips = await scraper.download_zip(docs_url)
+                    documents, zips, zip_reason = await scraper.download_zip(docs_url)
 
                     if not zips:
                         app_elapsed = time.monotonic() - app_start
@@ -435,7 +435,8 @@ async def run_download(args: argparse.Namespace) -> int:
                             scrape_log_id=log_id,
                             application_uid=uid,
                             status="no_zip",
-                            failure_code="no_zip",
+                            failure_code=zip_reason or "no_zip",
+                            failure_message=zip_reason,
                             host_name=host_name,
                             documents_listed=len(documents),
                             elapsed_s=round(app_elapsed, 1),
