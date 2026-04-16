@@ -61,8 +61,12 @@ Download document files:
 
 ```bash
 uv run python scripts/download_documents.py --limit 50
-uv run python scripts/download_documents.py --gdrive-path "gdrive:planning-docs/" --clear-after-sync
+
+# Optional: sync to rclone remote as you go
+SYNC_REMOTE="myremote:path/to/docs/" SYNC_CLEAR=1 uv run python scripts/download_documents.py
 ```
+
+To enable rclone sync, install [rclone](https://rclone.org/install/) and configure a remote with `rclone config`. Then set `SYNC_REMOTE` to your remote path to automatically sync downloaded files every 50 apps (configurable via `SYNC_EVERY`).
 
 Data is stored in SQLite databases under `_local/workstreams/`. These are created automatically on first run.
 

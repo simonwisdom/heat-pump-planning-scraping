@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Download all documents for Idox applications as zip archives.
 
-Prerequisites: run 02_expand_idox_documents.py first to populate document
+Prerequisites: run scrape_document_listings.py first to populate document
 listings in the DB.  This script reads applications whose documents have
 download_status='pending', fetches the zip from the portal (1 GET + 1 POST
 per app), unpacks, and records file paths back to the DB.
+
+Optional rclone sync via environment variables:
+    SYNC_REMOTE  rclone remote path (e.g. "myremote:path/to/docs/")
+    SYNC_EVERY   sync every N apps (default: 50)
+    SYNC_CLEAR   delete local files after sync ("1" to enable)
 """
 
 from __future__ import annotations
@@ -13,6 +18,7 @@ import argparse
 import asyncio
 import csv
 import io
+import os
 import re
 import sqlite3
 import sys
@@ -68,23 +74,6 @@ def parse_args() -> argparse.Namespace:
         help="Root directory for downloaded PDFs",
     )
     parser.add_argument("--dry-run", action="store_true", help="List candidates without downloading")
-    parser.add_argument(
-        "--gdrive-path",
-        type=str,
-        default=None,
-        help="rclone remote path to sync to (e.g. gdrive:nesta/planning-docs/)",
-    )
-    parser.add_argument(
-        "--sync-every",
-        type=int,
-        default=50,
-        help="Sync to gdrive every N apps (default: 50)",
-    )
-    parser.add_argument(
-        "--clear-after-sync",
-        action="store_true",
-        help="Delete local files after successful gdrive sync",
-    )
     return parser.parse_args()
 
 
@@ -153,10 +142,11 @@ def unpack_and_match(
     zip_bytes_list: list[bytes],
     documents: list[dict],
     target_dir: Path,
+    output_dir: Path,
 ) -> dict[str, tuple[str, int]]:
     """Unpack zip(s) and match extracted files to document metadata.
 
-    Returns: {document_url: (file_path, file_size_bytes)}
+    Returns: {document_url: (relative_file_path, file_size_bytes)}
     """
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -199,7 +189,8 @@ def unpack_and_match(
             # Match back to document metadata
             doc = stem_to_doc.get(member.filename)
             if doc and doc["document_url"]:
-                file_map[doc["document_url"]] = (str(extracted_path), file_size)
+                rel_path = str(extracted_path.relative_to(output_dir))
+                file_map[doc["document_url"]] = (rel_path, file_size)
 
     return file_map
 
@@ -248,6 +239,13 @@ def setup_logging(output_dir: Path) -> None:
 async def run_download(args: argparse.Namespace) -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     setup_logging(args.output_dir)
+    # Optional rclone sync via environment variables
+    sync_remote = os.environ.get("SYNC_REMOTE")
+    sync_every = int(os.environ.get("SYNC_EVERY", "50"))
+    sync_clear = os.environ.get("SYNC_CLEAR", "").lower() in ("1", "true", "yes")
+    if sync_remote:
+        logger.info("Sync enabled: %s (every %d apps, clear=%s)", sync_remote, sync_every, sync_clear)
+
     db_path = args.db_path or DB_PATH
     conn = get_db(db_path)
 
@@ -351,7 +349,7 @@ async def run_download(args: argparse.Namespace) -> int:
                     ref_dir = sanitize_dirname(reference)
                     target_dir = args.output_dir / auth_dir / ref_dir
 
-                    file_map = unpack_and_match(zips, documents, target_dir)
+                    file_map = unpack_and_match(zips, documents, target_dir, args.output_dir)
 
                     # Update DB
                     if file_map:
@@ -425,24 +423,16 @@ async def run_download(args: argparse.Namespace) -> int:
                         }
                     )
 
-                # Periodic sync to Google Drive
-                if args.gdrive_path and i % args.sync_every == 0:
-                    rclone_sync(
-                        args.output_dir,
-                        args.gdrive_path,
-                        clear_local=args.clear_after_sync,
-                    )
+                # Periodic sync via rclone (set SYNC_REMOTE env var to enable)
+                if sync_remote and i % sync_every == 0:
+                    rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)
 
             # Log scraper-level stats
             logger.info("Scraper stats: %s", scraper.stats)
 
-        # Final sync to Google Drive
-        if args.gdrive_path:
-            rclone_sync(
-                args.output_dir,
-                args.gdrive_path,
-                clear_local=args.clear_after_sync,
-            )
+        # Final sync via rclone
+        if sync_remote:
+            rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)
 
         # Write results CSV
         results_path = args.output_dir / "download_results.csv"
