@@ -6,6 +6,7 @@ import asyncio
 import logging
 import re
 import time
+from pathlib import Path
 from typing import Callable
 from urllib.parse import urljoin, urlparse
 
@@ -37,7 +38,18 @@ def parse_publisher_documents(json_data: dict, base_url: str) -> list[dict]:
         description = row[1] or ""
         doc_type = row[2] or ""
         doc_path = row[3] or ""
-        doc_url = urljoin(base_url, doc_path) if doc_path else None
+        # The JS that wires up the View column prepends "/publisher" to this path
+        # (see ctx = "/publisher" in the listing page script). Constructing the
+        # URL without this prefix produces a 403/404.
+        if doc_path:
+            if doc_path.startswith(("http://", "https://")):
+                doc_url = doc_path
+            elif doc_path.startswith("/publisher/"):
+                doc_url = f"{base_url}{doc_path}"
+            else:
+                doc_url = f"{base_url}/publisher{doc_path if doc_path.startswith('/') else '/' + doc_path}"
+        else:
+            doc_url = None
         doc = {
             "date_published": date_str,
             "document_type": doc_type,
@@ -103,14 +115,22 @@ class PublisherDocumentScraper:
         self._last_request[domain] = time.monotonic()
         self._semaphore.release()
 
+    async def _get_with_rate_limit(self, url: str, domain: str, **kwargs) -> httpx.Response:
+        acquired = False
+        try:
+            await self._rate_limit(domain)
+            acquired = True
+            return await self.client.get(url, **kwargs)
+        finally:
+            if acquired:
+                self._release(domain)
+
     async def scrape_documents(self, docs_url: str) -> list[dict]:
         parsed = urlparse(docs_url)
         domain = parsed.netloc
         base_url = f"{parsed.scheme}://{domain}"
         try:
-            await self._rate_limit(domain)
-            resp = await self.client.get(docs_url)
-            self._release(domain)
+            resp = await self._get_with_rate_limit(docs_url, domain)
             if resp.status_code != 200:
                 logger.warning("HTTP %s for %s", resp.status_code, docs_url)
                 self.stats["failed"] += 1
@@ -123,15 +143,14 @@ class PublisherDocumentScraper:
                 return []
 
             ajax_url = urljoin(base_url, ajax_path)
-            await self._rate_limit(domain)
-            ajax_resp = await self.client.get(
+            ajax_resp = await self._get_with_rate_limit(
                 ajax_url,
+                domain,
                 headers={
                     "X-Requested-With": "XMLHttpRequest",
                     "Accept": "application/json, text/javascript, */*; q=0.01",
                 },
             )
-            self._release(domain)
             if ajax_resp.status_code != 200:
                 logger.warning("AJAX HTTP %s for %s", ajax_resp.status_code, ajax_url)
                 self.stats["failed"] += 1
@@ -148,19 +167,79 @@ class PublisherDocumentScraper:
         except httpx.HTTPError as exc:
             logger.error("HTTP error for %s: %s", docs_url, exc)
             self.stats["failed"] += 1
-            try:
-                self._release(domain)
-            except ValueError:
-                pass
             return []
         except Exception as exc:
             logger.error("Unexpected error for %s: %s", docs_url, exc)
             self.stats["failed"] += 1
-            try:
-                self._release(domain)
-            except ValueError:
-                pass
             return []
+
+    async def download_document(
+        self,
+        document_url: str,
+        target_path: Path,
+        referer: str,
+        max_retries: int = 3,
+    ) -> int:
+        """Download a single document to disk. Returns bytes written, or 0 on failure.
+
+        Publisher issues session-scoped hashes, so this must be called from the same
+        scraper/session that produced the document_url via scrape_documents().
+        Retries on transient errors (timeouts, 429, 5xx) with exponential backoff.
+        Accepts any content-type on a 200 response; Publisher serves PDFs, TIFFs,
+        emails (.msg), etc.
+        """
+        parsed = urlparse(document_url)
+        domain = parsed.netloc
+
+        for attempt in range(max_retries):
+            acquired = False
+            try:
+                await self._rate_limit(domain)
+                acquired = True
+                resp = await self.client.get(document_url, headers={"Referer": referer})
+                if resp.status_code == 200:
+                    if not resp.content:
+                        logger.warning("Empty 200 response for %s", document_url)
+                        return 0
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    target_path.write_bytes(resp.content)
+                    return len(resp.content)
+                if resp.status_code in (429, 500, 502, 503, 504) and attempt < max_retries - 1:
+                    backoff = 2**attempt
+                    logger.info(
+                        "HTTP %s for %s (attempt %d/%d), retrying in %ds",
+                        resp.status_code,
+                        document_url,
+                        attempt + 1,
+                        max_retries,
+                        backoff,
+                    )
+                    await asyncio.sleep(backoff)
+                    continue
+                logger.warning("HTTP %s for %s", resp.status_code, document_url)
+                return 0
+            except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                if attempt < max_retries - 1:
+                    backoff = 2**attempt
+                    logger.info(
+                        "%s for %s (attempt %d/%d), retrying in %ds",
+                        type(exc).__name__,
+                        document_url,
+                        attempt + 1,
+                        max_retries,
+                        backoff,
+                    )
+                    await asyncio.sleep(backoff)
+                    continue
+                logger.error("Network error for %s: %s", document_url, exc)
+                return 0
+            except Exception as exc:
+                logger.error("Download error for %s: %s", document_url, exc)
+                return 0
+            finally:
+                if acquired:
+                    self._release(domain)
+        return 0
 
     async def scrape_batch(
         self,

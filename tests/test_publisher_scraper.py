@@ -35,7 +35,7 @@ def test_parse_birmingham_fixture(birmingham_json):
     decision_notices = [d for d in docs if d["document_type"] == "Decision Notice"]
     assert len(decision_notices) >= 1
     dn = decision_notices[0]
-    assert dn["document_url"].startswith("http://eplanning.idox.birmingham.gov.uk/docs/")
+    assert dn["document_url"].startswith("http://eplanning.idox.birmingham.gov.uk/publisher/docs/")
     assert dn["date_published"]
 
 
@@ -52,7 +52,7 @@ def test_parse_document_urls_resolved(birmingham_json):
     docs = parse_publisher_documents(birmingham_json, base_url)
     for doc in docs:
         if doc["document_url"]:
-            assert doc["document_url"].startswith("http://eplanning.idox.birmingham.gov.uk/docs/")
+            assert doc["document_url"].startswith("http://eplanning.idox.birmingham.gov.uk/publisher/docs/")
 
 
 def test_parse_empty_data():
