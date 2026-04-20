@@ -205,10 +205,14 @@ def get_db(db_path: Path | None = None) -> sqlite3.Connection:
     """Get a database connection, creating schema if needed."""
     path = db_path or DB_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(path))
+    conn = sqlite3.connect(str(path), timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
+    # 30s server-side wait on locked DB; paired with the connect-level timeout
+    # so concurrent downloaders (idox/publisher/northgate) don't raise
+    # OperationalError('database is locked') under normal contention.
+    conn.execute("PRAGMA busy_timeout=30000")
     conn.executescript(SCHEMA)
     return conn
 
@@ -420,19 +424,28 @@ def get_applications_needing_download(
 ) -> list[sqlite3.Row]:
     """Get applications that need document download.
 
-    Includes both:
-    - Apps with listed documents still at download_status='pending'
-    - Apps with no document listings yet (will be listed + downloaded in one pass)
+    An app is a candidate when at least one document is still missing:
+    - No documents listed yet (needs listing + download)
+    - Or any listed document has download_status != 'downloaded' (pending/failed)
+
+    Apps with a mix of downloaded + pending docs are included — previously they
+    were excluded as soon as one doc succeeded, which permanently stranded the
+    rest after a partial run.
     """
     sql = """
         SELECT a.uid, a.documentation_url, a.authority_name, a.reference
         FROM applications a
         WHERE a.portal_type = ?
           AND a.documentation_url IS NOT NULL
-          AND NOT EXISTS (
-              SELECT 1 FROM documents d
-              WHERE d.application_uid = a.uid
-                AND d.download_status = 'downloaded'
+          AND (
+              NOT EXISTS (
+                  SELECT 1 FROM documents d WHERE d.application_uid = a.uid
+              )
+              OR EXISTS (
+                  SELECT 1 FROM documents d
+                  WHERE d.application_uid = a.uid
+                    AND d.download_status != 'downloaded'
+              )
           )
     """
     params: list = [portal_type]

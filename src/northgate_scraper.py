@@ -269,6 +269,18 @@ def rewrite_legacy_url(docs_url: str) -> str:
 # ---------- Handler routing ----------
 
 
+def _http_status_failure_code(status_code: int) -> str:
+    if status_code == 403:
+        return "http_403"
+    if status_code == 404:
+        return "http_404"
+    if status_code == 429:
+        return "http_429"
+    if 500 <= status_code < 600:
+        return "http_5xx"
+    return f"http_{status_code}"
+
+
 def _handler_for_url(docs_url: str) -> str:
     host = urlparse(docs_url).netloc.lower()
     if "camden.gov.uk" in host:
@@ -363,7 +375,14 @@ class NorthgateDocumentScraper:
             if acquired:
                 self._release(domain)
 
-    async def scrape_documents(self, docs_url: str) -> list[dict]:
+    async def scrape_documents(self, docs_url: str) -> tuple[list[dict], str | None]:
+        """Scrape the document listing for an application.
+
+        Returns (documents, failure_code). failure_code is None on success
+        (including empty listings, which are a valid "no docs" state);
+        otherwise one of: unsupported_host, http_403, http_404, http_5xx,
+        timeout, network_error, parse_error, unexpected_error.
+        """
         docs_url = rewrite_legacy_url(docs_url)
         handler = _handler_for_url(docs_url)
         try:
@@ -378,29 +397,40 @@ class NorthgateDocumentScraper:
             else:
                 logger.warning("Unsupported Northgate host: %s", docs_url)
                 self.stats["unsupported"] += 1
-                return []
-        except httpx.HTTPError as exc:
-            logger.error("HTTP error for %s: %s", docs_url, exc)
+                return [], "unsupported_host"
+        except httpx.HTTPStatusError as exc:
+            code = _http_status_failure_code(exc.response.status_code)
+            logger.error("HTTP %s for %s: %s", exc.response.status_code, docs_url, exc)
             self.stats["failed"] += 1
-            return []
+            return [], code
+        except httpx.TimeoutException as exc:
+            logger.error("Timeout for %s: %s", docs_url, exc)
+            self.stats["failed"] += 1
+            return [], "timeout"
+        except httpx.HTTPError as exc:
+            logger.error("Network error for %s: %s", docs_url, exc)
+            self.stats["failed"] += 1
+            return [], "network_error"
+        except (json.JSONDecodeError, ValueError) as exc:
+            logger.error("Parse error for %s: %s", docs_url, exc)
+            self.stats["failed"] += 1
+            return [], "parse_error"
         except Exception as exc:
             logger.error("Unexpected error for %s: %s", docs_url, exc)
             self.stats["failed"] += 1
-            return []
+            return [], "unexpected_error"
 
         if not docs:
             self.stats["no_docs"] += 1
         else:
             self.stats["success"] += 1
-        return docs
+        return docs, None
 
     async def _scrape_camden(self, docs_url: str) -> list[dict]:
         # The old HPRMWebDrawer host in the DB redirects to CMWebDrawer;
         # follow_redirects handles that transparently.
         resp = await self._get(docs_url)
-        if resp.status_code != 200:
-            logger.warning("Camden landing HTTP %s for %s", resp.status_code, docs_url)
-            return []
+        resp.raise_for_status()
         parsed = urlparse(str(resp.url))
         base_url = f"{parsed.scheme}://{parsed.netloc}"
         return parse_camden_documents(resp.text, base_url)
@@ -423,9 +453,7 @@ class NorthgateDocumentScraper:
             headers=headers,
             json_body=True,
         )
-        if search.status_code != 200:
-            logger.warning("Conwy pagedsearch HTTP %s for ref %s", search.status_code, ref)
-            return []
+        search.raise_for_status()
         key_number = parse_conwy_key_number(search.json())
         if not key_number:
             return []
@@ -436,14 +464,7 @@ class NorthgateDocumentScraper:
             headers=headers,
             json_body=True,
         )
-        if doc_list.status_code != 200:
-            logger.warning(
-                "Conwy doc/list HTTP %s for ref %s (key %s)",
-                doc_list.status_code,
-                ref,
-                key_number,
-            )
-            return []
+        doc_list.raise_for_status()
         return parse_conwy_documents(doc_list.json())
 
     async def _scrape_publicaccess(self, docs_url: str) -> list[dict]:
@@ -452,18 +473,14 @@ class NorthgateDocumentScraper:
         # follows redirects by default; we use the final URL to resolve
         # the view-document path to an absolute URL.
         resp = await self._get(docs_url)
-        if resp.status_code != 200:
-            logger.warning("PublicAccess landing HTTP %s for %s", resp.status_code, docs_url)
-            return []
+        resp.raise_for_status()
         parsed = urlparse(str(resp.url))
         base_url = f"{parsed.scheme}://{parsed.netloc}"
         return parse_publicaccess_documents(resp.text, base_url)
 
     async def _scrape_wandsworth(self, docs_url: str) -> list[dict]:
         landing = await self._get(docs_url)
-        if landing.status_code != 200:
-            logger.warning("Wandsworth landing HTTP %s for %s", landing.status_code, docs_url)
-            return []
+        landing.raise_for_status()
         html = landing.text
         fields = extract_viewstate_fields(html)
         doctypes = extract_wandsworth_doctypes(html)

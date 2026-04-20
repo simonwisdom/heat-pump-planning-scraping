@@ -284,13 +284,16 @@ async def process_app(
     output_dir: Path,
 ) -> tuple[list[dict], dict[str, tuple[str, int]], str | None]:
     docs_url = row["documentation_url"]
+    resolved_docs_url = rewrite_legacy_url(docs_url)
     authority = row["authority_name"] or "unknown"
     reference = row["reference"] or row["uid"]
 
-    if _handler_for_url(rewrite_legacy_url(docs_url)) == "unsupported":
+    if _handler_for_url(resolved_docs_url) == "unsupported":
         return [], {}, "unsupported_host"
 
-    documents = await scraper.scrape_documents(docs_url)
+    documents, listing_failure = await scraper.scrape_documents(docs_url)
+    if listing_failure:
+        return [], {}, listing_failure
     if not documents:
         return [], {}, "no_documents_listed"
 
@@ -308,7 +311,9 @@ async def process_app(
             doc_url,
         )
         target_path = target_dir / filename
-        bytes_written, final_path = await scraper.download_document(doc_url, target_path, referer=docs_url)
+        # Referer must match the host we actually fetched the listing from,
+        # otherwise migrated hosts (Runnymede/Conwy) can 403 anti-hotlink.
+        bytes_written, final_path = await scraper.download_document(doc_url, target_path, referer=resolved_docs_url)
         if bytes_written > 0:
             rel_path = str(final_path.relative_to(output_dir))
             file_map[doc_url] = (rel_path, bytes_written)
@@ -327,7 +332,7 @@ async def run_download(args: argparse.Namespace) -> int:
     setup_logging(args.output_dir)
 
     sync_remote = os.environ.get("SYNC_REMOTE")
-    sync_every = int(os.environ.get("SYNC_EVERY", "50"))
+    sync_every = max(1, int(os.environ.get("SYNC_EVERY", "50")))
     sync_clear = os.environ.get("SYNC_CLEAR", "").lower() in ("1", "true", "yes")
     if sync_remote:
         logger.info("Sync enabled: %s (every %d apps, clear=%s)", sync_remote, sync_every, sync_clear)
@@ -348,14 +353,13 @@ async def run_download(args: argparse.Namespace) -> int:
         conn.close()
         return 0
 
-    # Drop hosts we don't handle yet (currently: Conwy — Civica SPA needs
-    # a headless browser; all other Northgate-family hosts are supported).
-    # Mirror the runtime legacy-URL rewrite so we classify the same way
-    # scrape_documents() will.
+    # Drop hosts that don't match any of our handlers (camden/wandsworth/
+    # publicaccess/conwy). Mirror the runtime legacy-URL rewrite so we
+    # classify the same way scrape_documents() will.
     supported = [r for r in candidates if _handler_for_url(rewrite_legacy_url(r["documentation_url"])) != "unsupported"]
     skipped = len(candidates) - len(supported)
     if skipped:
-        print(f"Skipping {skipped} apps on unsupported Northgate hosts (Conwy).")
+        print(f"Skipping {skipped} apps on unsupported Northgate hosts.")
     candidates = supported
 
     candidates = interleave_by_authority(candidates)
@@ -396,7 +400,7 @@ async def run_download(args: argparse.Namespace) -> int:
         args.authority,
     )
 
-    max_workers = int(os.environ.get("MAX_CONCURRENT_APPS", "2"))
+    max_workers = max(1, int(os.environ.get("MAX_CONCURRENT_APPS", "2")))
     logger.info("Download workers: %d", max_workers)
 
     try:
@@ -408,8 +412,13 @@ async def run_download(args: argparse.Namespace) -> int:
         for _ in range(max_workers):
             await work_queue.put(None)
 
-        async def worker():
-            async with NorthgateDocumentScraper() as scraper:
+        # Share one scraper (and therefore one rate limiter + one httpx client)
+        # across all workers so per-domain pacing is enforced globally. Creating
+        # it here also ensures a startup failure raises immediately rather than
+        # silently deadlocking the consumer on result_queue.get().
+        async with NorthgateDocumentScraper() as scraper:
+
+            async def worker():
                 while True:
                     row = await work_queue.get()
                     if row is None:
@@ -423,112 +432,181 @@ async def run_download(args: argparse.Namespace) -> int:
                         elapsed = time.monotonic() - t0
                         await result_queue.put((row, [], {}, None, exc, elapsed))
 
-        workers = [asyncio.create_task(worker()) for _ in range(max_workers)]
+            workers = [asyncio.create_task(worker()) for _ in range(max_workers)]
 
-        processed = 0
-        last_status = "pending"
-        while processed < len(candidates):
-            row, documents, file_map, reason, exc, app_elapsed = await result_queue.get()
-            processed += 1
+            # Watchdog: if every worker exits before the consumer has seen all
+            # expected results (e.g. an unhandled exception bubbles out of the
+            # worker body), push a sentinel so the consumer stops waiting and
+            # can surface the error rather than deadlock on result_queue.get().
+            async def _worker_watchdog():
+                await asyncio.gather(*workers, return_exceptions=True)
+                await result_queue.put(None)
 
-            uid = row["uid"]
-            authority = row["authority_name"] or "unknown"
-            reference = row["reference"] or uid
-            docs_url = row["documentation_url"]
-            now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            watchdog = asyncio.create_task(_worker_watchdog())
 
-            if exc is not None:
-                failures += 1
-                error_msg = f"{type(exc).__name__}: {exc}"
-                logger.error(
-                    "[%d/%d] %s/%s: %s (%.1fs)",
-                    processed,
-                    len(candidates),
-                    authority,
-                    reference,
-                    error_msg,
-                    app_elapsed,
-                )
-                results.append(
-                    {
-                        "uid": uid,
-                        "authority_name": authority,
-                        "reference": reference,
-                        "documentation_url": docs_url,
-                        "documents_listed": 0,
-                        "files_downloaded": 0,
-                        "total_bytes": 0,
-                        "status": "error",
-                        "error": error_msg,
-                        "timestamp": now,
-                        "elapsed_s": round(app_elapsed, 1),
-                    }
-                )
-                record_download_attempt(
-                    conn,
-                    scrape_log_id=log_id,
-                    application_uid=uid,
-                    status="error",
-                    failure_code=classify_failure(error_msg),
-                    failure_message=error_msg[:500],
-                    host_name=host_name,
-                    elapsed_s=round(app_elapsed, 1),
-                )
-                last_status = "error"
-            elif not file_map:
-                failures += 1
-                logger.warning(
-                    "[%d/%d] %s/%s: no files downloaded (listed %d docs, %.1fs) [%s]",
-                    processed,
-                    len(candidates),
-                    authority,
-                    reference,
-                    len(documents),
-                    app_elapsed,
-                    reason or "unknown",
-                )
-                results.append(
-                    {
-                        "uid": uid,
-                        "authority_name": authority,
-                        "reference": reference,
-                        "documentation_url": docs_url,
-                        "documents_listed": len(documents),
-                        "files_downloaded": 0,
-                        "total_bytes": 0,
-                        "status": "no_files",
-                        "error": reason or "",
-                        "timestamp": now,
-                        "elapsed_s": round(app_elapsed, 1),
-                    }
-                )
-                record_download_attempt(
-                    conn,
-                    scrape_log_id=log_id,
-                    application_uid=uid,
-                    status="no_files",
-                    failure_code=reason or "no_files",
-                    failure_message=reason,
-                    host_name=host_name,
-                    documents_listed=len(documents),
-                    elapsed_s=round(app_elapsed, 1),
-                )
-                last_status = "no_files"
-            else:
-                persist_documents(conn, dict(row), documents)
-                with transaction(conn):
-                    mark_documents_downloaded(conn, uid, file_map)
+            processed = 0
+            last_status = "pending"
+            while processed < len(candidates):
+                item = await result_queue.get()
+                if item is None:
+                    worker_errors = [w.exception() for w in workers if w.done() and w.exception()]
+                    for err in worker_errors:
+                        logger.error("Worker exited with error: %s", err)
+                    raise RuntimeError(
+                        f"All workers exited after {processed}/{len(candidates)} results; aborting to avoid deadlock"
+                    )
+                row, documents, file_map, reason, exc, app_elapsed = item
+                processed += 1
 
-                app_files = len(file_map)
-                app_bytes = sum(s for _, s in file_map.values())
-                total_files += app_files
-                total_bytes += app_bytes
+                uid = row["uid"]
+                authority = row["authority_name"] or "unknown"
+                reference = row["reference"] or uid
+                docs_url = row["documentation_url"]
+                now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
-                if reason == "partial":
+                if exc is not None:
                     failures += 1
-                    status_str = "partial"
+                    error_msg = f"{type(exc).__name__}: {exc}"
+                    logger.error(
+                        "[%d/%d] %s/%s: %s (%.1fs)",
+                        processed,
+                        len(candidates),
+                        authority,
+                        reference,
+                        error_msg,
+                        app_elapsed,
+                    )
+                    results.append(
+                        {
+                            "uid": uid,
+                            "authority_name": authority,
+                            "reference": reference,
+                            "documentation_url": docs_url,
+                            "documents_listed": 0,
+                            "files_downloaded": 0,
+                            "total_bytes": 0,
+                            "status": "error",
+                            "error": error_msg,
+                            "timestamp": now,
+                            "elapsed_s": round(app_elapsed, 1),
+                        }
+                    )
+                    record_download_attempt(
+                        conn,
+                        scrape_log_id=log_id,
+                        application_uid=uid,
+                        status="error",
+                        failure_code=classify_failure(error_msg),
+                        failure_message=error_msg[:500],
+                        host_name=host_name,
+                        elapsed_s=round(app_elapsed, 1),
+                    )
+                    last_status = "error"
+                elif not file_map:
+                    failures += 1
                     logger.warning(
-                        "[%d/%d] %s/%s: PARTIAL %d/%d files, %d KB, %.1fs",
+                        "[%d/%d] %s/%s: no files downloaded (listed %d docs, %.1fs) [%s]",
+                        processed,
+                        len(candidates),
+                        authority,
+                        reference,
+                        len(documents),
+                        app_elapsed,
+                        reason or "unknown",
+                    )
+                    results.append(
+                        {
+                            "uid": uid,
+                            "authority_name": authority,
+                            "reference": reference,
+                            "documentation_url": docs_url,
+                            "documents_listed": len(documents),
+                            "files_downloaded": 0,
+                            "total_bytes": 0,
+                            "status": "no_files",
+                            "error": reason or "",
+                            "timestamp": now,
+                            "elapsed_s": round(app_elapsed, 1),
+                        }
+                    )
+                    record_download_attempt(
+                        conn,
+                        scrape_log_id=log_id,
+                        application_uid=uid,
+                        status="no_files",
+                        failure_code=reason or "no_files",
+                        failure_message=reason,
+                        host_name=host_name,
+                        documents_listed=len(documents),
+                        elapsed_s=round(app_elapsed, 1),
+                    )
+                    last_status = "no_files"
+                else:
+                    persist_documents(conn, dict(row), documents)
+                    with transaction(conn):
+                        mark_documents_downloaded(conn, uid, file_map)
+
+                    app_files = len(file_map)
+                    app_bytes = sum(s for _, s in file_map.values())
+                    total_files += app_files
+                    total_bytes += app_bytes
+
+                    if reason == "partial":
+                        # Northgate URLs are stable across sessions, so we keep
+                        # the successful subset in the DB. The updated
+                        # get_applications_needing_download query will pick up
+                        # this app again on the next run because at least one
+                        # doc row is still download_status='pending'.
+                        failures += 1
+                        status_str = "partial"
+                        logger.warning(
+                            "[%d/%d] %s/%s: PARTIAL %d/%d files, %d KB, %.1fs -- pending docs will retry on next run",
+                            processed,
+                            len(candidates),
+                            authority,
+                            reference,
+                            app_files,
+                            len(documents),
+                            app_bytes // 1024,
+                            app_elapsed,
+                        )
+                    else:
+                        status_str = "success"
+
+                    results.append(
+                        {
+                            "uid": uid,
+                            "authority_name": authority,
+                            "reference": reference,
+                            "documentation_url": docs_url,
+                            "documents_listed": len(documents),
+                            "files_downloaded": app_files,
+                            "total_bytes": app_bytes,
+                            "status": status_str,
+                            "error": "",
+                            "timestamp": now,
+                            "elapsed_s": round(app_elapsed, 1),
+                        }
+                    )
+                    record_download_attempt(
+                        conn,
+                        scrape_log_id=log_id,
+                        application_uid=uid,
+                        status=status_str,
+                        failure_code="partial" if status_str == "partial" else None,
+                        failure_message=(f"{app_files}/{len(documents)} files" if status_str == "partial" else None),
+                        host_name=host_name,
+                        documents_listed=len(documents),
+                        files_downloaded=app_files,
+                        bytes_downloaded=app_bytes,
+                        elapsed_s=round(app_elapsed, 1),
+                    )
+
+                    elapsed = time.monotonic() - start_time
+                    rate = processed / elapsed if elapsed > 0 else 0
+                    eta = (len(candidates) - processed) / rate if rate > 0 else 0
+                    logger.info(
+                        "[%d/%d] %s/%s: %d/%d files, %d KB, %.1fs (%.1f apps/min, ETA %ds)",
                         processed,
                         len(candidates),
                         authority,
@@ -537,102 +615,63 @@ async def run_download(args: argparse.Namespace) -> int:
                         len(documents),
                         app_bytes // 1024,
                         app_elapsed,
+                        rate * 60,
+                        int(eta),
                     )
-                else:
-                    status_str = "success"
+                    last_status = status_str
 
-                results.append(
-                    {
-                        "uid": uid,
-                        "authority_name": authority,
-                        "reference": reference,
-                        "documentation_url": docs_url,
-                        "documents_listed": len(documents),
-                        "files_downloaded": app_files,
-                        "total_bytes": app_bytes,
-                        "status": status_str,
-                        "error": "",
-                        "timestamp": now,
-                        "elapsed_s": round(app_elapsed, 1),
-                    }
-                )
-                record_download_attempt(
+                write_progress(
+                    args.output_dir,
                     conn,
-                    scrape_log_id=log_id,
-                    application_uid=uid,
-                    status=status_str,
-                    host_name=host_name,
-                    documents_listed=len(documents),
-                    files_downloaded=app_files,
-                    bytes_downloaded=app_bytes,
-                    elapsed_s=round(app_elapsed, 1),
+                    started_at=run_started_at,
+                    processed=processed,
+                    total=len(candidates),
+                    success=processed - failures,
+                    failed=failures,
+                    files_downloaded=total_files,
+                    bytes_downloaded=total_bytes,
+                    elapsed=time.monotonic() - start_time,
+                    last_app=f"{authority}/{reference}",
+                    last_status=last_status,
                 )
 
-                elapsed = time.monotonic() - start_time
-                rate = processed / elapsed if elapsed > 0 else 0
-                eta = (len(candidates) - processed) / rate if rate > 0 else 0
-                logger.info(
-                    "[%d/%d] %s/%s: %d/%d files, %d KB, %.1fs (%.1f apps/min, ETA %ds)",
-                    processed,
-                    len(candidates),
-                    authority,
-                    reference,
-                    app_files,
-                    len(documents),
-                    app_bytes // 1024,
-                    app_elapsed,
-                    rate * 60,
-                    int(eta),
-                )
-                last_status = status_str
+                if sync_remote and processed % sync_every == 0:
+                    rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)
 
-            write_progress(
-                args.output_dir,
-                conn,
-                started_at=run_started_at,
-                processed=processed,
-                total=len(candidates),
-                success=processed - failures,
-                failed=failures,
-                files_downloaded=total_files,
-                bytes_downloaded=total_bytes,
-                elapsed=time.monotonic() - start_time,
-                last_app=f"{authority}/{reference}",
-                last_status=last_status,
-            )
+            await asyncio.gather(*workers)
+            watchdog.cancel()
+            try:
+                await watchdog
+            except asyncio.CancelledError:
+                pass
 
-            if sync_remote and processed % sync_every == 0:
+            if sync_remote:
                 rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)
 
-        await asyncio.gather(*workers)
+            results_path = args.output_dir / "download_results_northgate.csv"
+            with results_path.open("w", encoding="utf-8", newline="") as fh:
+                writer = csv.DictWriter(fh, fieldnames=RESULT_FIELDNAMES)
+                writer.writeheader()
+                writer.writerows(results)
 
-        if sync_remote:
-            rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)
+            elapsed = time.monotonic() - start_time
+            summary = (
+                f"Done: {len(results)} apps, {total_files} files, "
+                f"{total_bytes / 1024 / 1024:.1f} MB, {failures} failures "
+                f"in {elapsed:.0f}s"
+            )
+            logger.info(summary)
+            logger.info("Results CSV: %s", results_path)
 
-        results_path = args.output_dir / "download_results_northgate.csv"
-        with results_path.open("w", encoding="utf-8", newline="") as fh:
-            writer = csv.DictWriter(fh, fieldnames=RESULT_FIELDNAMES)
-            writer.writeheader()
-            writer.writerows(results)
-
-        elapsed = time.monotonic() - start_time
-        summary = (
-            f"Done: {len(results)} apps, {total_files} files, "
-            f"{total_bytes / 1024 / 1024:.1f} MB, {failures} failures "
-            f"in {elapsed:.0f}s"
-        )
-        logger.info(summary)
-        logger.info("Results CSV: %s", results_path)
-
-        log_scrape_end(
-            conn,
-            log_id,
-            records_processed=len(results),
-            records_new=total_files,
-            records_failed=failures,
-            status="completed",
-        )
-        return 0
+            log_scrape_end(
+                conn,
+                log_id,
+                records_processed=len(results),
+                records_new=total_files,
+                records_failed=failures,
+                status="completed",
+            )
+            return 0
 
     except Exception as exc:
         logger.exception("Fatal error during download run")

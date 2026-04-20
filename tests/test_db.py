@@ -261,6 +261,42 @@ def test_get_applications_needing_download(conn):
     assert "dl-done" not in uids
 
 
+def test_get_applications_needing_download_includes_partial_apps(conn):
+    """Apps with a mix of downloaded + pending docs must still be returned,
+    otherwise a partial run strands the remaining docs forever.
+    """
+    upsert_application(conn, _application_payload("dl-partial", docs_url="https://docs/partial"))
+    conn.execute("UPDATE applications SET portal_type = 'northgate' WHERE uid = 'dl-partial'")
+
+    upsert_document(
+        conn,
+        {
+            "application_uid": "dl-partial",
+            "document_type": "Plan",
+            "description": "Got this one",
+            "document_url": "https://files/partial-1.pdf",
+            "documentation_url": "https://docs/partial",
+        },
+    )
+    upsert_document(
+        conn,
+        {
+            "application_uid": "dl-partial",
+            "document_type": "Plan",
+            "description": "Still missing",
+            "document_url": "https://files/partial-2.pdf",
+            "documentation_url": "https://docs/partial",
+        },
+    )
+    conn.execute(
+        "UPDATE documents SET download_status = 'downloaded' "
+        "WHERE application_uid = 'dl-partial' AND document_url = 'https://files/partial-1.pdf'"
+    )
+
+    rows = get_applications_needing_download(conn, portal_type="northgate")
+    assert [row["uid"] for row in rows] == ["dl-partial"]
+
+
 def test_get_applications_needing_download_authority_filter(conn):
     upsert_application(conn, _application_payload("dl-filter", docs_url="https://docs/f"))
     conn.execute("UPDATE applications SET portal_type = 'idox' WHERE uid = 'dl-filter'")
