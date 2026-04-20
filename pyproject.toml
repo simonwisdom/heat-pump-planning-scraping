@@ -8,6 +8,7 @@ dependencies = [
     "httpx>=0.27",
     "beautifulsoup4>=4.12",
     "lxml>=5.0",
+    "truststore>=0.10.4",
 ]
 
 [project.optional-dependencies]
