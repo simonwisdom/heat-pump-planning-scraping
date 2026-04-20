@@ -4,13 +4,13 @@
 This script reads downloaded document metadata from the ASHP SQLite database,
 keeps the first-pass target families from the project proposal
 (`decision`, `officer_report`, `noise` by default), extracts text with
-`pdfplumber`, and writes plain-text files plus a reusable manifest CSV.
+`PyMuPDF` by default, and writes plain-text files plus a reusable manifest CSV.
 
 It is incremental by default: existing successful rows in `summary.csv` are
 reused unless `--force` is passed.
 
 Usage:
-    uv run --with pdfplumber python scripts/extract_decision_texts.py
+    uv run --with pymupdf python scripts/extract_decision_texts.py
 """
 
 from __future__ import annotations
@@ -32,17 +32,24 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.config import DB_PATH, PDF_DIR  # noqa: E402
+from src.pdf_extract import (  # noqa: E402
+    DEFAULT_EXTRACTOR,
+    DEFAULT_FORCE_RESCUE_FAMILIES,
+    DEFAULT_RESCUE_MIN_CHARS_PER_PAGE,
+    ensure_extractor_available,
+    extract_pdf_text,
+    extractor_signature,
+    supported_extractors,
+)
 from src.pdf_quality import (  # noqa: E402
     KEYWORD_GROUPS,
-    classify_pdf_quality,
-    count_keyword_hits,
-    normalize_text,
 )
 
 RCLONE_REMOTE = "nesta-gdrive:nesta/planning-docs/"
+RCLONE_FETCH_TIMEOUT_SECONDS = 180
 OUTPUT_DIR = ROOT / "_local" / "workstreams" / "01_heat_pump_applications" / "data" / "intermediate" / "decision_texts"
 PRIMARY_FAMILIES = ("decision", "officer_report", "noise")
-OPTIONAL_FAMILIES = ("consultee", "statement")
+OPTIONAL_FAMILIES = ("consultee", "statement", "spec_calc")
 ALL_FAMILIES = PRIMARY_FAMILIES + OPTIONAL_FAMILIES
 
 DECISION_STRONG_PATTERNS = re.compile(
@@ -82,6 +89,21 @@ STATEMENT_PATTERNS = re.compile(
     r"heritage[\s_-]?statement|supporting[\s_-]?statement)",
     re.IGNORECASE,
 )
+SPEC_CALC_PATTERNS = re.compile(
+    r"(heat[\s_-]?loss|manual[\s_-]?sound[\s_-]?calculator|sound[\s_-]?calculator|"
+    r"noise[\s_-]?(calculation|calculator)|mcs.?020|microgeneration[\s_-]?certification|"
+    r"technical[\s_-]?spec(?:ification)?|specifications?[\s_-]?air[\s_-]?source[\s_-]?heat[\s_-]?pumps?)",
+    re.IGNORECASE,
+)
+SPEC_CALC_CONTEXT_PATTERNS = re.compile(
+    r"(ashp|air[\s_-]?source[\s_-]?heat[\s_-]?pump|heat[\s_-]?pump|mcs|kw\b|cop\b|sound[\s_-]?power)",
+    re.IGNORECASE,
+)
+SPEC_CALC_LOW_VALUE_PATTERNS = re.compile(
+    r"(solar|window|glaz(?:ed|ing)?|ev[\s_-]?charger|brochure|catalog(ue)?|datasheet|"
+    r"trickle[\s_-]?vent|ventilator|fan[\s_-]?coil|product[\s_-]?data)",
+    re.IGNORECASE,
+)
 LOW_VALUE_PATTERNS = re.compile(
     r"(elevation|floor[\s_-]?plan|site[\s_-]?plan|roof[\s_-]?plan|block[\s_-]?plan|"
     r"location[\s_-]?plan|street[\s_-]?scene|cross[\s_-]?section|section\b|drawing\b|"
@@ -105,10 +127,15 @@ SUMMARY_FIELDS = [
     "pdf_path",
     "text_path",
     "status",
+    "extractor",
+    "extractor_signature",
+    "fallback_reason",
+    "fallback_error",
     "page_count",
     "pages_with_text",
     "word_count",
     "char_count",
+    "chars_per_page",
     "keyword_hits",
     "quality",
     "error",
@@ -144,6 +171,32 @@ def parse_args() -> argparse.Namespace:
         default=",".join(PRIMARY_FAMILIES),
         help=f"Comma-separated families from: {', '.join(ALL_FAMILIES)}",
     )
+    parser.add_argument(
+        "--extractor",
+        type=str,
+        default=DEFAULT_EXTRACTOR,
+        choices=supported_extractors(),
+        help="Primary PDF text extractor",
+    )
+    parser.add_argument(
+        "--rescue-extractor",
+        type=str,
+        default="",
+        choices=("", *supported_extractors()),
+        help="Optional fallback extractor for low-text or forced families",
+    )
+    parser.add_argument(
+        "--rescue-min-chars-per-page",
+        type=float,
+        default=DEFAULT_RESCUE_MIN_CHARS_PER_PAGE,
+        help="Fallback to the rescue extractor below this chars/page threshold",
+    )
+    parser.add_argument(
+        "--force-rescue-families",
+        type=str,
+        default=",".join(DEFAULT_FORCE_RESCUE_FAMILIES),
+        help="Comma-separated families that should always use the rescue extractor when configured",
+    )
     parser.add_argument("--force", action="store_true", help="Reprocess documents even if summary rows already exist")
     parser.add_argument(
         "--remote",
@@ -163,6 +216,14 @@ def parse_families(raw: str) -> tuple[str, ...]:
     if invalid:
         raise ValueError(f"Unknown document families: {', '.join(invalid)}")
 
+    return families
+
+
+def parse_force_rescue_families(raw: str) -> tuple[str, ...]:
+    families = tuple(part.strip() for part in raw.split(",") if part.strip())
+    invalid = sorted(set(families) - set(ALL_FAMILIES))
+    if invalid:
+        raise ValueError(f"Unknown rescue families: {', '.join(invalid)}")
     return families
 
 
@@ -207,6 +268,12 @@ def classify_document_family(document_type: str | None, description: str | None,
         if LOW_VALUE_PATTERNS.search(haystack) and not NOISE_STRONG_TEXT_PATTERNS.search(haystack):
             return None
         return "noise"
+
+    if SPEC_CALC_PATTERNS.search(haystack):
+        if SPEC_CALC_LOW_VALUE_PATTERNS.search(haystack):
+            return None
+        if SPEC_CALC_CONTEXT_PATTERNS.search(haystack) or "mcs" in haystack:
+            return "spec_calc"
 
     return None
 
@@ -309,11 +376,16 @@ def resolve_local_pdf_path(file_path: str, *, pdf_root: Path) -> Path | None:
 def fetch_from_remote(remote: str, relative_pdf_path: str, cache_dir: Path) -> Path | None:
     local_path = cache_dir / relative_pdf_path
     local_path.parent.mkdir(parents=True, exist_ok=True)
-    result = subprocess.run(
-        ["rclone", "copyto", f"{remote}{relative_pdf_path}", str(local_path)],
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            ["rclone", "copyto", f"{remote}{relative_pdf_path}", str(local_path)],
+            capture_output=True,
+            text=True,
+            timeout=RCLONE_FETCH_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"  WARNING: rclone timeout fetching {relative_pdf_path} after {RCLONE_FETCH_TIMEOUT_SECONDS}s")
+        return None
     if result.returncode == 0 and local_path.exists():
         return local_path
 
@@ -341,8 +413,10 @@ def load_existing_summary(summary_path: Path) -> dict[int, dict[str, str]]:
     return rows
 
 
-def existing_row_is_reusable(row: dict[str, str], output_dir: Path) -> bool:
+def existing_row_is_reusable(row: dict[str, str], output_dir: Path, *, extractor_run_signature: str) -> bool:
     status = row.get("status", "")
+    if row.get("extractor_signature", "") != extractor_run_signature:
+        return False
     if status == "missing_local_file":
         return False
     if status == "extracted":
@@ -351,7 +425,9 @@ def existing_row_is_reusable(row: dict[str, str], output_dir: Path) -> bool:
     return status in {"no_text", "extract_error"}
 
 
-def summary_row(candidate: CandidateRow, pdf_path: Path | None) -> dict[str, str | int]:
+def summary_row(
+    candidate: CandidateRow, pdf_path: Path | None, *, extractor_run_signature: str
+) -> dict[str, str | int | float]:
     return {
         "document_id": candidate.document_id,
         "application_uid": candidate.application_uid,
@@ -366,10 +442,15 @@ def summary_row(candidate: CandidateRow, pdf_path: Path | None) -> dict[str, str
         "pdf_path": str(pdf_path) if pdf_path is not None else "",
         "text_path": "",
         "status": "",
+        "extractor": "",
+        "extractor_signature": extractor_run_signature,
+        "fallback_reason": "",
+        "fallback_error": "",
         "page_count": 0,
         "pages_with_text": 0,
         "word_count": 0,
         "char_count": 0,
+        "chars_per_page": 0.0,
         "keyword_hits": 0,
         "quality": "",
         "error": "",
@@ -377,73 +458,23 @@ def summary_row(candidate: CandidateRow, pdf_path: Path | None) -> dict[str, str
     }
 
 
-def build_text_relative_path(candidate: CandidateRow) -> Path:
-    return Path("texts") / Path(candidate.relative_pdf_path).with_suffix(".txt")
+def build_text_relative_path(candidate: CandidateRow, *, extractor: str) -> Path:
+    suffix = ".md" if extractor == "docling" else ".txt"
+    return Path("texts") / Path(candidate.relative_pdf_path).with_suffix(suffix)
 
 
 def expected_keywords(document_family: str) -> tuple[str, ...]:
     return KEYWORD_GROUPS.get(document_family, ())
 
 
-def extract_text(pdf_path: Path, *, keywords: tuple[str, ...]) -> dict[str, str | int | None]:
-    import pdfplumber
-
-    try:
-        with pdfplumber.open(pdf_path) as pdf:
-            page_count = len(pdf.pages)
-            pages_text: list[str] = []
-            for page in pdf.pages:
-                try:
-                    text = page.extract_text() or ""
-                except Exception:
-                    text = ""
-                pages_text.append(text)
-
-        full_text = "\n\n".join(pages_text)
-        normalised = normalize_text(full_text)
-        word_count = len(normalised.split())
-        char_count = len(normalised)
-        pages_with_text = sum(1 for text in pages_text if len(text.strip()) > 10)
-        keyword_hits = count_keyword_hits(normalised, keywords)
-        quality = classify_pdf_quality(
-            page_count=page_count,
-            pages_with_text=pages_with_text,
-            word_count=word_count,
-            char_count=char_count,
-            keyword_hits=keyword_hits,
-        )
-
-        return {
-            "text": full_text,
-            "page_count": page_count,
-            "pages_with_text": pages_with_text,
-            "word_count": word_count,
-            "char_count": char_count,
-            "keyword_hits": keyword_hits,
-            "quality": quality,
-            "error": None,
-        }
-    except Exception as exc:
-        return {
-            "text": "",
-            "page_count": 0,
-            "pages_with_text": 0,
-            "word_count": 0,
-            "char_count": 0,
-            "keyword_hits": 0,
-            "quality": "error",
-            "error": f"{type(exc).__name__}: {exc}",
-        }
-
-
-def write_summary(summary_path: Path, rows: list[dict[str, str | int]]) -> None:
+def write_summary(summary_path: Path, rows: list[dict[str, str | int | float]]) -> None:
     with summary_path.open("w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=SUMMARY_FIELDS)
         writer.writeheader()
         writer.writerows(rows)
 
 
-def print_stats(rows: list[dict[str, str | int]], output_dir: Path, summary_path: Path) -> None:
+def print_stats(rows: list[dict[str, str | int | float]], output_dir: Path, summary_path: Path) -> None:
     print()
     print("=== Summary ===")
     print(f"Documents in manifest: {len(rows)}")
@@ -453,6 +484,7 @@ def print_stats(rows: list[dict[str, str | int]], output_dir: Path, summary_path
 
     status_counts: Counter[str] = Counter()
     quality_counts: Counter[str] = Counter()
+    extractor_counts: Counter[str] = Counter()
     word_counts: list[int] = []
     councils: set[str] = set()
 
@@ -460,6 +492,8 @@ def print_stats(rows: list[dict[str, str | int]], output_dir: Path, summary_path
         status_counts[str(row["status"])] += 1
         if row["quality"]:
             quality_counts[str(row["quality"])] += 1
+        if row["extractor"]:
+            extractor_counts[str(row["extractor"])] += 1
         try:
             word_count = int(row["word_count"])
         except (TypeError, ValueError):
@@ -479,6 +513,12 @@ def print_stats(rows: list[dict[str, str | int]], output_dir: Path, summary_path
         for quality, count in sorted(quality_counts.items()):
             print(f"  {quality}: {count}")
 
+    if extractor_counts:
+        print()
+        print("Extractor breakdown:")
+        for extractor_name, count in sorted(extractor_counts.items()):
+            print(f"  {extractor_name}: {count}")
+
     if word_counts:
         word_counts.sort()
         print()
@@ -490,9 +530,27 @@ def print_stats(rows: list[dict[str, str | int]], output_dir: Path, summary_path
 def main() -> None:
     args = parse_args()
     families = parse_families(args.families)
+    force_rescue_families = parse_force_rescue_families(args.force_rescue_families)
+    rescue_extractor = args.rescue_extractor or None
+    run_signature = extractor_signature(
+        extractor=args.extractor,
+        rescue_extractor=rescue_extractor,
+        rescue_min_chars_per_page=args.rescue_min_chars_per_page,
+        force_rescue_families=force_rescue_families,
+    )
 
     print(f"Loading downloaded documents from DB: {args.db_path}")
     print(f"Target families: {', '.join(families)}")
+    print(f"Primary extractor: {args.extractor}")
+    ensure_extractor_available(args.extractor)
+    if rescue_extractor:
+        ensure_extractor_available(rescue_extractor)
+        families_for_log = ", ".join(force_rescue_families) or "(none)"
+        threshold = args.rescue_min_chars_per_page
+        print(
+            f"Rescue extractor: {rescue_extractor} "
+            f"(threshold < {threshold:g} chars/page; forced families: {families_for_log})"
+        )
     candidates = load_candidates(
         args.db_path,
         families,
@@ -510,7 +568,7 @@ def main() -> None:
     summary_path = args.output_dir / "summary.csv"
     existing_rows = {} if args.force else load_existing_summary(summary_path)
 
-    rows: list[dict[str, str | int]] = []
+    rows: list[dict[str, str | int | float]] = []
     reused = 0
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -519,7 +577,11 @@ def main() -> None:
         print("Extracting text...")
         for candidate in candidates:
             cached_row = existing_rows.get(candidate.document_id)
-            if cached_row and existing_row_is_reusable(cached_row, args.output_dir):
+            if cached_row and existing_row_is_reusable(
+                cached_row,
+                args.output_dir,
+                extractor_run_signature=run_signature,
+            ):
                 rows.append(cached_row)
                 reused += 1
                 print(f"  [SKIP] {candidate.relative_pdf_path}: reusing existing summary row")
@@ -529,7 +591,7 @@ def main() -> None:
             if pdf_path is None and args.remote:
                 pdf_path = fetch_from_remote(args.remote, candidate.relative_pdf_path, cache_dir)
 
-            row = summary_row(candidate, pdf_path)
+            row = summary_row(candidate, pdf_path, extractor_run_signature=run_signature)
 
             if pdf_path is None:
                 row["status"] = "missing_local_file"
@@ -538,30 +600,48 @@ def main() -> None:
                 print(f"  [MISS] {candidate.relative_pdf_path}: no local PDF available")
                 continue
 
-            result = extract_text(pdf_path, keywords=expected_keywords(candidate.document_family))
-            row["page_count"] = result["page_count"]
-            row["pages_with_text"] = result["pages_with_text"]
-            row["word_count"] = result["word_count"]
-            row["char_count"] = result["char_count"]
-            row["keyword_hits"] = result["keyword_hits"]
-            row["quality"] = result["quality"]
-            row["error"] = result["error"] or ""
+            result = extract_pdf_text(
+                pdf_path,
+                keywords=expected_keywords(candidate.document_family),
+                extractor=args.extractor,
+                rescue_extractor=rescue_extractor,
+                document_family=candidate.document_family,
+                rescue_min_chars_per_page=args.rescue_min_chars_per_page,
+                force_rescue_families=force_rescue_families,
+            )
+            row["extractor"] = result.extractor
+            row["fallback_reason"] = result.fallback_reason or ""
+            row["fallback_error"] = result.fallback_error or ""
+            row["page_count"] = result.page_count
+            row["pages_with_text"] = result.pages_with_text
+            row["word_count"] = result.word_count
+            row["char_count"] = result.char_count
+            row["chars_per_page"] = result.chars_per_page
+            row["keyword_hits"] = result.keyword_hits
+            row["quality"] = result.quality
+            row["error"] = result.error or ""
 
-            text_content = str(result["text"])
-            if result["error"] is not None:
+            text_content = result.text
+            if result.error is not None:
                 row["status"] = "extract_error"
                 print(f"  [ERR]  {candidate.relative_pdf_path}: {row['error']}")
             elif text_content.strip():
-                text_relative_path = build_text_relative_path(candidate)
+                text_relative_path = build_text_relative_path(candidate, extractor=result.extractor)
                 text_output_path = args.output_dir / text_relative_path
                 text_output_path.parent.mkdir(parents=True, exist_ok=True)
                 text_output_path.write_text(text_content, encoding="utf-8")
                 row["text_path"] = str(text_relative_path)
                 row["status"] = "extracted"
-                print(f"  [OK]   {candidate.relative_pdf_path}: {row['word_count']} words, {row['quality']}")
+                fallback_note = f" via {row['extractor']}" if row["extractor"] else ""
+                if row["fallback_reason"]:
+                    fallback_note += f" ({row['fallback_reason']})"
+                print(
+                    f"  [OK]   {candidate.relative_pdf_path}: "
+                    f"{row['word_count']} words, {row['quality']}{fallback_note}"
+                )
             else:
                 row["status"] = "no_text"
-                print(f"  [EMPTY] {candidate.relative_pdf_path}: {row['quality']}")
+                print(f"  [EMPTY] {candidate.relative_pdf_path}: {row['quality']} via {row['extractor']}")
 
             rows.append(row)
 

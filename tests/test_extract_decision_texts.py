@@ -158,6 +158,14 @@ def test_classify_document_family_keeps_first_pass_docs_and_skips_low_value_nois
     )
     assert (
         module.classify_document_family(
+            "Supporting information",
+            "Air source heat pump technical specification",
+            "AIR_SOURCE_HEAT_PUMP_TECHNICAL_SPECIFICATION.pdf",
+        )
+        == "spec_calc"
+    )
+    assert (
+        module.classify_document_family(
             "Drawing",
             "APPROVED - Site Plan",
             "APPROVED_SITE_PLAN-1.pdf",
@@ -252,3 +260,48 @@ def test_load_candidates_filters_to_priority_families_and_resolves_pdf_root(tmp_
         pdf_root=pdf_root,
     )
     assert resolved == decision_path
+
+
+def test_build_text_relative_path_uses_md_for_docling():
+    module = load_module()
+    candidate = module.CandidateRow(
+        document_id=1,
+        application_uid="uid",
+        reference="ref",
+        authority_name="Council",
+        planning_decision="",
+        document_type="",
+        description="",
+        date_published="",
+        file_path="pdfs/Council/ref/NOISE_REPORT.pdf",
+        relative_pdf_path="Council/ref/NOISE_REPORT.pdf",
+        document_family="noise",
+    )
+    assert module.build_text_relative_path(candidate, extractor="pymupdf").suffix == ".txt"
+    assert module.build_text_relative_path(candidate, extractor="docling").suffix == ".md"
+
+
+def test_existing_row_reuse_depends_on_extractor_signature(tmp_path):
+    module = load_module()
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    text_path = output_dir / "texts" / "Example Council" / "app-1" / "DECISION_NOTICE-1.txt"
+    text_path.parent.mkdir(parents=True, exist_ok=True)
+    text_path.write_text("decision notice", encoding="utf-8")
+
+    row = {
+        "status": "extracted",
+        "text_path": "texts/Example Council/app-1/DECISION_NOTICE-1.txt",
+        "extractor_signature": "pymupdf|none|40|noise,spec_calc",
+    }
+
+    assert module.existing_row_is_reusable(
+        row,
+        output_dir,
+        extractor_run_signature="pymupdf|none|40|noise,spec_calc",
+    )
+    assert not module.existing_row_is_reusable(
+        row,
+        output_dir,
+        extractor_run_signature="pdfplumber|none|40|noise,spec_calc",
+    )

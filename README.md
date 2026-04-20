@@ -72,7 +72,15 @@ Extract machine-readable text for decision notices, officer/delegated reports,
 and noise/acoustic documents:
 
 ```bash
-uv run --with pdfplumber python scripts/extract_decision_texts.py
+uv run --with pymupdf python scripts/extract_decision_texts.py
+```
+
+To enable OCR/table rescue for scan-heavy or structured PDFs, add a fallback
+extractor:
+
+```bash
+uv run --with pymupdf --with docling python scripts/extract_decision_texts.py \
+  --rescue-extractor docling
 ```
 
 To enable rclone sync, install [rclone](https://rclone.org/install/) and configure a remote with `rclone config`. Then set `SYNC_REMOTE` to your remote path to automatically sync downloaded files every 50 apps (configurable via `SYNC_EVERY`).

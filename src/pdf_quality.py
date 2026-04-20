@@ -31,7 +31,7 @@ KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
     "noise": (
         "noise",
         "sound",
-        "db",
+        " db ",
         "db(a)",
         "bs4142",
         "background level",
@@ -44,6 +44,14 @@ KEYWORD_GROUPS: dict[str, tuple[str, ...]] = {
         "heritage",
         "comment",
         "response",
+    ),
+    "spec_calc": (
+        "mcs 020",
+        "manual sound calculator",
+        "heat loss",
+        "sound power",
+        " kw",
+        "technical specification",
     ),
 }
 
@@ -58,6 +66,16 @@ def infer_document_family(document_type: str | None, description: str | None) ->
         return "officer_report"
     if any(term in haystack for term in ("noise", "sound", "acoustic", "bs4142")):
         return "noise"
+    if any(
+        term in haystack
+        for term in (
+            "heat loss",
+            "manual sound calculator",
+            "technical specification",
+            "mcs 020",
+        )
+    ):
+        return "spec_calc"
     if any(term in haystack for term in ("consultee", "environmental health", "comment", "response")):
         return "consultee"
     if any(term in haystack for term in ("drawing", "plan", "elevation", "site location")):
