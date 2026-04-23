@@ -64,6 +64,8 @@ _URL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("northgate", re.compile(r"/northgate/documentexplorer/", re.IGNORECASE)),
     ("idox", re.compile(r"/online-applications/", re.IGNORECASE)),
     # --- families with no downloader yet (label only, for inventory) ---
+    ("agile", re.compile(r"planning\.agileapplications\.co\.uk/", re.IGNORECASE)),
+    ("arcus", re.compile(r"/pr/s/register-view\?[^ ]*c__r=Arcus_BE", re.IGNORECASE)),
     ("planning_register", re.compile(r"planning-register\.co\.uk/", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planning/planning-documents\?", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planning/documents\?", re.IGNORECASE)),

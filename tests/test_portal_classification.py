@@ -112,6 +112,14 @@ def test_classify_authority_alias_match(authority_csv: Path) -> None:
         ),
         # Inventory-only families
         (
+            "https://planning.agileapplications.co.uk/richmond/search-applications/",
+            "agile",
+        ),
+        (
+            "https://publicregister.haringey.gov.uk/pr/s/register-view?c__r=Arcus_BE_Public_Register",
+            "arcus",
+        ),
+        (
             "https://southhams.planning-register.co.uk/Planning/Display/0628/26/ARC",
             "planning_register",
         ),

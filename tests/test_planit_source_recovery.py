@@ -88,6 +88,15 @@ def test_pick_usable_hint_returns_specific_source_url() -> None:
         ("https://www.rbkc.gov.uk/planning/searches/default.aspx?adv=1#advancedSearch", True),
         ("https://southhams.planning-register.co.uk/Planning/Display/0628/26/ARC", False),
         (None, False),
+        # New: ASP-style search-entry pages
+        ("https://planning.dorsetcouncil.gov.uk/advsearch.aspx", True),
+        # New: bare /pr/s/ landing page (Wiltshire). Must NOT match /pr/s/register-view (Arcus detail page).
+        ("https://development.wiltshire.gov.uk/pr/s/?tabset-167f1=3", True),
+        ("https://development.wiltshire.gov.uk/pr/s/", True),
+        ("https://publicregister.haringey.gov.uk/pr/s/register-view?c__r=Arcus_BE_Public_Register", False),
+        # New: bare St Albans search landing page
+        ("https://planningapplications.stalbans.gov.uk/planning/search-applications", True),
+        ("https://planningapplications.stalbans.gov.uk/planning/search-applications/", True),
     ],
 )
 def test_is_generic_source_url(url: str | None, expected: bool) -> None:

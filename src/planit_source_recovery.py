@@ -16,6 +16,20 @@ _GENERIC_SOURCE_PATH_FRAGMENTS = (
     "/search/planning/advanced",
     "/search/generalsearch.aspx",
     "/searches/default.aspx",
+    "/advsearch.aspx",
+)
+
+# Whole-path equality matches for generic landing pages whose path would
+# otherwise also occur as a prefix of legitimate detail pages.
+# e.g. ``/pr/s/`` is a search landing page, but ``/pr/s/register-view`` is a
+# real Arcus application page — substring matching would conflate the two.
+_GENERIC_EXACT_PATHS = frozenset(
+    {
+        "/pr/s",
+        "/pr/s/",
+        "/planning/search-applications",
+        "/planning/search-applications/",
+    }
 )
 
 
@@ -51,7 +65,11 @@ def is_generic_source_url(url: str | None) -> bool:
     parsed = urlparse(url)
     path = parsed.path.lower()
     fragment = (parsed.fragment or "").lower()
-    return any(part in path for part in _GENERIC_SOURCE_PATH_FRAGMENTS) or fragment == "advancedsearch"
+    if path in _GENERIC_EXACT_PATHS:
+        return True
+    if fragment == "advancedsearch":
+        return True
+    return any(part in path for part in _GENERIC_SOURCE_PATH_FRAGMENTS)
 
 
 def _parse_html(html: str) -> BeautifulSoup:
