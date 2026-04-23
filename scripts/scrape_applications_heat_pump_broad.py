@@ -48,6 +48,7 @@ from src.db import (
     upsert_application,
 )
 from src.planit_client import PlanItClient
+from src.planit_source_recovery import get_portal_hint_url
 from src.portal_classification import (
     classify_portal_type,
 )
@@ -135,8 +136,8 @@ async def scrape_year(
             )
 
             authority = record.get("area_name", "")
-            docs_url = (record.get("other_fields") or {}).get("docs_url")
-            record["_portal_type"] = classify_portal_type(authority, docs_url, portal_types)
+            portal_hint_url = get_portal_hint_url(record.get("other_fields"))
+            record["_portal_type"] = classify_portal_type(authority, portal_hint_url, portal_types)
 
             is_new = upsert_application(conn, record)
             if is_new:

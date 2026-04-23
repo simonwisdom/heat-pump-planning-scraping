@@ -27,6 +27,8 @@ def authority_csv(tmp_path: Path) -> Path:
             "Eden,Agile,https://example.com",
             "Fareham,Arcus,https://example.com",
             "Glasgow,NIPP,https://example.com",
+            "South Hams,Custom,https://southhams.planning-register.co.uk/Search/Advanced",
+            "West Devon,Custom,https://westdevon.planning-register.co.uk/Search/Advanced",
         ]
     )
     path = tmp_path / "mapping.csv"
@@ -73,6 +75,11 @@ def test_classify_authority_unknown_when_missing(authority_csv: Path) -> None:
     assert classify_authority("", mapping) == "unknown"
 
 
+def test_classify_authority_alias_match(authority_csv: Path) -> None:
+    mapping = load_authority_portal_types(authority_csv)
+    assert classify_authority("South West Devon", mapping) == "other"
+
+
 @pytest.mark.parametrize(
     ("url", "expected"),
     [
@@ -104,6 +111,10 @@ def test_classify_authority_unknown_when_missing(authority_csv: Path) -> None:
             "necs_assure",
         ),
         # Inventory-only families
+        (
+            "https://southhams.planning-register.co.uk/Planning/Display/0628/26/ARC",
+            "planning_register",
+        ),
         (
             "https://portal360.argyll-bute.gov.uk/planning/planning-documents?SDescription=21%2F02726",
             "planning_docs",
@@ -195,6 +206,16 @@ def test_classify_portal_type_falls_back_to_url_when_authority_unknown(authority
         mapping,
     )
     assert result == "idox"
+
+
+def test_classify_portal_type_refines_alias_to_planning_register(authority_csv: Path) -> None:
+    mapping = load_authority_portal_types(authority_csv)
+    result = classify_portal_type(
+        "South West Devon",
+        "https://southhams.planning-register.co.uk/Planning/Display/0628/26/ARC",
+        mapping,
+    )
+    assert result == "planning_register"
 
 
 def test_classify_portal_type_keeps_vague_verdict_when_url_unmatched(

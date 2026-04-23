@@ -20,6 +20,19 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+_AUTHORITY_ALIASES: dict[str, tuple[str, ...]] = {
+    # PlanIt's area_name uses combined/regional labels (e.g. "South West Devon",
+    # "Westmorland and Furness (Eden and South Lakeland)") whereas the buildwithtract
+    # CSV is keyed on the underlying single-tier councils. Map combined → component(s).
+    "south west devon": ("south hams", "west devon"),
+    "kensington": ("kensington and chelsea",),
+    "glamorgan": ("vale of glamorgan",),
+    "westmorland and furness": (
+        "westmorland and furness (eden and south lakeland)",
+        "westmorland and furness (barrow)",
+    ),
+}
+
 # Per-authority CSV mapping: ``portal_family`` value → portal_type label we use.
 _PORTAL_FAMILY_MAP: dict[str, str] = {
     "Idox": "idox",
@@ -51,6 +64,7 @@ _URL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("northgate", re.compile(r"/northgate/documentexplorer/", re.IGNORECASE)),
     ("idox", re.compile(r"/online-applications/", re.IGNORECASE)),
     # --- families with no downloader yet (label only, for inventory) ---
+    ("planning_register", re.compile(r"planning-register\.co\.uk/", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planning/planning-documents\?", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planning/documents\?", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planningdocuments\?", re.IGNORECASE)),
@@ -118,6 +132,10 @@ def classify_authority(authority_name: str | None, portal_types: dict[str, str])
     clean = authority_name.lower().strip()
     if clean in portal_types:
         return portal_types[clean]
+
+    for alias in _AUTHORITY_ALIASES.get(clean, ()):
+        if alias in portal_types:
+            return portal_types[alias]
 
     for suffix in (" council", " borough", " district", " city"):
         trimmed = clean.replace(suffix, "").strip()
