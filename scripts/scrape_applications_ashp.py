@@ -12,7 +12,6 @@ Usage:
 
 import argparse
 import asyncio
-import csv
 import logging
 import sys
 from pathlib import Path
@@ -48,6 +47,12 @@ from src.db import (
     upsert_application,
 )
 from src.planit_client import PlanItClient
+from src.portal_classification import (
+    classify_portal_type,
+)
+from src.portal_classification import (
+    load_authority_portal_types as _load_authority_portal_types,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -103,62 +108,8 @@ def resolve_years(conn, args: argparse.Namespace) -> list[int]:
 
 
 def load_authority_portal_types() -> dict[str, str]:
-    """Load portal type classification from the buildwithtract authority mapping."""
-    csv_path = BUILDWITHTRACT_MAPPING_CSV
-    if not csv_path.exists():
-        logger.warning(f"Authority CSV not found: {csv_path}")
-        return {}
-
-    portal_types = {}
-
-    with open(csv_path) as f:
-        for row in csv.DictReader(f):
-            name = row.get("authority_name", "").strip()
-            scraper_type = row.get("portal_family", "").strip()
-            if not name:
-                continue
-
-            if scraper_type == "Idox":
-                portal_types[name.lower()] = "idox"
-            elif scraper_type == "Northgate":
-                portal_types[name.lower()] = "northgate"
-            elif scraper_type == "Agile":
-                portal_types[name.lower()] = "agile"
-            elif scraper_type == "SmartAdmin":
-                portal_types[name.lower()] = "smartadmin"
-            elif scraper_type == "Arcus":
-                portal_types[name.lower()] = "arcus"
-            elif scraper_type == "NIPP":
-                portal_types[name.lower()] = "nipp"
-            else:
-                portal_types[name.lower()] = "other"
-
-    logger.info(f"Loaded portal types for {len(portal_types)} authorities")
-    return portal_types
-
-
-def classify_portal_type(authority_name: str, portal_types: dict[str, str]) -> str:
-    """Classify an authority's portal type by fuzzy matching against known types."""
-    if not authority_name:
-        return "unknown"
-
-    # Direct match
-    clean = authority_name.lower().strip()
-    if clean in portal_types:
-        return portal_types[clean]
-
-    # Try removing common suffixes/words
-    for suffix in [" council", " borough", " district", " city"]:
-        trimmed = clean.replace(suffix, "").strip()
-        if trimmed in portal_types:
-            return portal_types[trimmed]
-
-    # Try camelCase conversion (UKPlanning uses CamelCase names)
-    camel = clean.replace(" ", "").replace("-", "").replace("'", "")
-    if camel in portal_types:
-        return portal_types[camel]
-
-    return "unknown"
+    """Load the per-authority portal mapping from the buildwithtract CSV."""
+    return _load_authority_portal_types(BUILDWITHTRACT_MAPPING_CSV)
 
 
 async def scrape_year(
@@ -191,7 +142,8 @@ async def scrape_year(
             for record in page_records:
                 record["_search_term"] = search_term
                 authority = record.get("area_name", "")
-                record["_portal_type"] = classify_portal_type(authority, portal_types)
+                docs_url = (record.get("other_fields") or {}).get("docs_url")
+                record["_portal_type"] = classify_portal_type(authority, docs_url, portal_types)
 
                 is_new = upsert_application(conn, record)
                 if is_new:
