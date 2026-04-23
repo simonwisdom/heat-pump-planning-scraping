@@ -29,7 +29,7 @@ BUILDWITHTRACT_MAPPING_CSV = REPO_ROOT / "data" / "buildwithtract_authority_mapp
 
 from src.config import DB_PATH
 from src.db import get_db, log_scrape_end, log_scrape_start, transaction
-from src.planit_source_recovery import build_planit_recovery_client, recover_documentation_url
+from src.planit_source_recovery import build_planit_recovery_client, fetch_see_source, pick_usable_hint
 from src.portal_classification import classify_portal_type, load_authority_portal_types
 
 logging.basicConfig(
@@ -92,19 +92,26 @@ async def _recover_one(
     min_delay: float,
     max_delay: float,
 ) -> tuple[sqlite3.Row, str | None, str]:
-    """Recover a single row's source URL behind a semaphore + politeness jitter."""
+    """Recover a single row's source URL.
+
+    The semaphore + politeness jitter only apply when we actually hit PlanIt;
+    rows whose ``other_fields`` already contain a usable URL skip both.
+    """
+    url, method = pick_usable_hint(row["other_fields_json"])
+    if method != "needs_fetch":
+        return row, url, method
+    if not row["planit_link"]:
+        return row, None, "no_planit_link"
     async with semaphore:
         if max_delay > 0:
             await asyncio.sleep(random.uniform(min_delay, max_delay))
         try:
-            url, method = await recover_documentation_url(
-                client,
-                planit_link=row["planit_link"],
-                other_fields=row["other_fields_json"],
-            )
-            return row, url, method
+            recovered = await fetch_see_source(client, row["planit_link"])
         except httpx.HTTPError as exc:
             return row, None, f"http_error:{type(exc).__name__}"
+    if recovered:
+        return row, recovered, "see_source"
+    return row, None, "see_source_missing"
 
 
 def _flush_batch(conn: sqlite3.Connection, batch: list[tuple]) -> None:

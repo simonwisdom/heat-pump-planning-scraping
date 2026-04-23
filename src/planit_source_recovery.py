@@ -103,6 +103,13 @@ def pick_usable_hint(other_fields: dict[str, Any] | str | None) -> tuple[str | N
     return None, "needs_fetch"
 
 
+async def fetch_see_source(client: httpx.AsyncClient, planit_link: str) -> str | None:
+    """Fetch a PlanIt application page and extract its ``See source`` link."""
+    response = await client.get(planit_link)
+    response.raise_for_status()
+    return extract_see_source_url(response.text, str(response.url))
+
+
 async def recover_documentation_url(
     client: httpx.AsyncClient,
     *,
@@ -115,9 +122,7 @@ async def recover_documentation_url(
         return url, method
     if not planit_link:
         return None, "no_planit_link"
-    response = await client.get(planit_link)
-    response.raise_for_status()
-    recovered = extract_see_source_url(response.text, str(response.url))
+    recovered = await fetch_see_source(client, planit_link)
     if recovered:
         return recovered, "see_source"
     return None, "see_source_missing"
