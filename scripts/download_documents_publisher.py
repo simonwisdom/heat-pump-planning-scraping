@@ -328,7 +328,7 @@ async def run_download(args: argparse.Namespace) -> int:
     setup_logging(args.output_dir)
 
     sync_remote = os.environ.get("SYNC_REMOTE")
-    sync_every = int(os.environ.get("SYNC_EVERY", "50"))
+    sync_every = max(1, int(os.environ.get("SYNC_EVERY", "50")))
     sync_clear = os.environ.get("SYNC_CLEAR", "").lower() in ("1", "true", "yes")
     if sync_remote:
         logger.info("Sync enabled: %s (every %d apps, clear=%s)", sync_remote, sync_every, sync_clear)
@@ -387,7 +387,7 @@ async def run_download(args: argparse.Namespace) -> int:
         args.authority,
     )
 
-    max_workers = int(os.environ.get("MAX_CONCURRENT_APPS", "2"))
+    max_workers = max(1, int(os.environ.get("MAX_CONCURRENT_APPS", "2")))
     logger.info("Download workers: %d", max_workers)
 
     try:
@@ -420,9 +420,28 @@ async def run_download(args: argparse.Namespace) -> int:
 
         workers = [asyncio.create_task(worker()) for _ in range(max_workers)]
 
+        # Watchdog: if every worker exits before the consumer has seen all
+        # expected results (e.g. an unhandled exception bubbles out of the
+        # worker body, including failures inside __aenter__), push a sentinel
+        # so the consumer stops waiting and can surface the error.
+        async def _worker_watchdog():
+            await asyncio.gather(*workers, return_exceptions=True)
+            await result_queue.put(None)
+
+        watchdog = asyncio.create_task(_worker_watchdog())
+
         processed = 0
+        last_status = "pending"
         while processed < len(candidates):
-            row, documents, file_map, reason, exc, app_elapsed = await result_queue.get()
+            item = await result_queue.get()
+            if item is None:
+                worker_errors = [w.exception() for w in workers if w.done() and w.exception()]
+                for err in worker_errors:
+                    logger.error("Worker exited with error: %s", err)
+                raise RuntimeError(
+                    f"All workers exited after {processed}/{len(candidates)} results; aborting to avoid deadlock"
+                )
+            row, documents, file_map, reason, exc, app_elapsed = item
             processed += 1
 
             uid = row["uid"]
@@ -631,6 +650,11 @@ async def run_download(args: argparse.Namespace) -> int:
                 rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)
 
         await asyncio.gather(*workers)
+        watchdog.cancel()
+        try:
+            await watchdog
+        except asyncio.CancelledError:
+            pass
 
         if sync_remote:
             rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Download all documents for Idox applications as zip archives.
+"""Download all documents for planning_docs applications.
 
-Prerequisites: run scrape_document_listings.py first to populate document
-listings in the DB.  This script reads applications whose documents have
-download_status='pending', fetches the zip from the portal (1 GET + 1 POST
-per app), unpacks, and records file paths back to the DB.
+Covers Civica-style `/planning/planning-documents` backends by using their
+JSON API directly (`keyobject/pagedsearch` + `doc/list`) and then downloading
+the returned documents in the same run.
 
 Optional rclone sync via environment variables:
     SYNC_REMOTE  rclone remote path (e.g. "myremote:path/to/docs/")
@@ -17,15 +16,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 import csv
-import io
 import json
+import logging
 import os
 import re
 import socket
 import sqlite3
 import sys
 import time
-import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -33,8 +31,6 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-
-import logging
 
 from src.config import DB_PATH, PDF_DIR
 from src.db import (
@@ -47,29 +43,9 @@ from src.db import (
     transaction,
     upsert_document,
 )
-from src.idox_scraper import IdoxDocumentScraper
+from src.planning_docs_scraper import PlanningDocsDocumentScraper
 
 logger = logging.getLogger(__name__)
-
-
-def classify_failure(error_str: str) -> str:
-    """Map an error message to a short failure code."""
-    e = error_str.lower()
-    if "name or service not known" in e or "nodename nor servname" in e:
-        return "dns_error"
-    if "403" in e:
-        return "http_403"
-    if "500" in e:
-        return "http_500"
-    if "server disconnected" in e or "connection reset" in e:
-        return "connection_reset"
-    if "captcha" in e or "block" in e or "access denied" in e:
-        return "blocked"
-    if "timeout" in e or "timed out" in e:
-        return "timeout"
-    if "certificate" in e or "ssl" in e or "tls" in e:
-        return "tls_error"
-    return "unknown"
 
 
 RESULT_FIELDNAMES = [
@@ -87,6 +63,25 @@ RESULT_FIELDNAMES = [
 ]
 
 
+def classify_failure(error_str: str) -> str:
+    e = (error_str or "").lower()
+    if "name or service not known" in e or "nodename nor servname" in e:
+        return "dns_error"
+    if "403" in e:
+        return "http_403"
+    if "404" in e:
+        return "http_404"
+    if "500" in e:
+        return "http_500"
+    if "server disconnected" in e or "connection reset" in e:
+        return "connection_reset"
+    if "timeout" in e or "timed out" in e:
+        return "timeout"
+    if "certificate" in e or "ssl" in e or "tls" in e:
+        return "tls_error"
+    return "unknown"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db-path", type=Path, default=None)
@@ -96,19 +91,13 @@ def parse_args() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=PDF_DIR,
-        help="Root directory for downloaded PDFs",
+        help="Root directory for downloaded files",
     )
     parser.add_argument("--dry-run", action="store_true", help="List candidates without downloading")
-    parser.add_argument(
-        "--only-never-attempted",
-        action="store_true",
-        help="Skip apps that already have a row in download_attempts (process only first-timers)",
-    )
     return parser.parse_args()
 
 
 def interleave_by_authority(rows: list) -> list:
-    """Round-robin across authorities so we don't hammer one portal."""
     from collections import defaultdict
 
     by_authority: dict[str, list] = defaultdict(list)
@@ -122,20 +111,43 @@ def interleave_by_authority(rows: list) -> list:
             result.append(by_authority[authority].pop(0))
             if not by_authority[authority]:
                 empty.append(authority)
-        for a in empty:
-            del by_authority[a]
+        for authority in empty:
+            del by_authority[authority]
     return result
 
 
+_FS_UNSAFE = re.compile(r"[^\w.-]+")
+
+
 def sanitize_dirname(name: str) -> str:
-    """Make a string safe for use as a directory name."""
     safe = re.sub(r'[<>:"/\\|?*]', "_", name)
     safe = safe.strip(". ")
     return safe or "_unnamed"
 
 
+def slugify(text: str, maxlen: int = 40) -> str:
+    text = re.sub(r"\s+", " ", text).strip()
+    text = _FS_UNSAFE.sub("_", text).strip("_")
+    return text[:maxlen] if text else ""
+
+
+def strip_known_extension(text: str) -> str:
+    return re.sub(r"\.(?:pdf|rtf|docx?|xlsx?|pptx?|tiff?|jpe?g|png|gif|msg|txt)\s*$", "", text, flags=re.I)
+
+
+def synthesize_filename(idx: int, doc_type: str, description: str) -> str:
+    parts = []
+    type_slug = slugify(strip_known_extension(doc_type))
+    desc_slug = slugify(strip_known_extension(description))
+    if type_slug:
+        parts.append(type_slug)
+    if desc_slug and desc_slug != type_slug:
+        parts.append(desc_slug)
+    base = "_".join(parts) or "document"
+    return f"{idx:03d}_{base}.pdf"
+
+
 def rclone_sync(local_dir: Path, remote_path: str, clear_local: bool = False) -> bool:
-    """Sync local_dir to an rclone remote path. Returns True on success."""
     import shutil
     import subprocess
 
@@ -158,80 +170,14 @@ def rclone_sync(local_dir: Path, remote_path: str, clear_local: bool = False) ->
         return False
 
     if clear_local:
-        # Remove all authority subdirectories but keep the output dir itself
-        # and any CSVs/logs at the root level
         for child in local_dir.iterdir():
             if child.is_dir():
                 shutil.rmtree(child)
         print(f"  Cleared local staging ({local_dir})")
-
     return True
 
 
-def unpack_and_match(
-    zip_bytes_list: list[bytes],
-    documents: list[dict],
-    target_dir: Path,
-    output_dir: Path,
-) -> dict[str, tuple[str, int]]:
-    """Unpack zip(s) and match extracted files to document metadata.
-
-    Returns: {document_url: (relative_file_path, file_size_bytes)}
-    """
-    target_dir.mkdir(parents=True, exist_ok=True)
-
-    # Build lookup: zip filename stem → document_url
-    # The checkbox value is like "HASH/FILENAME.pdf" and the zip member
-    # is just "FILENAME.pdf" (the part after the slash).
-    stem_to_doc: dict[str, dict] = {}
-    for doc in documents:
-        cbv = doc.get("file_checkbox_value")
-        if cbv and doc.get("document_url"):
-            zip_name = cbv.split("/", 1)[1] if "/" in cbv else cbv
-            stem_to_doc[zip_name] = doc
-
-    file_map: dict[str, tuple[str, int]] = {}
-
-    for zip_bytes in zip_bytes_list:
-        try:
-            zf = zipfile.ZipFile(io.BytesIO(zip_bytes))
-        except zipfile.BadZipFile:
-            continue
-
-        for member in zf.infolist():
-            if member.is_dir():
-                continue
-
-            out_path = target_dir / member.filename
-            # Handle filename collisions
-            if out_path.exists():
-                stem = out_path.stem
-                suffix = out_path.suffix
-                counter = 1
-                while out_path.exists():
-                    out_path = target_dir / f"{stem}_{counter}{suffix}"
-                    counter += 1
-
-            zf.extract(member, target_dir)
-            extracted_path = target_dir / member.filename
-            file_size = extracted_path.stat().st_size
-
-            # Match back to document metadata
-            doc = stem_to_doc.get(member.filename)
-            if doc and doc["document_url"]:
-                rel_path = str(extracted_path.relative_to(output_dir))
-                file_map[doc["document_url"]] = (rel_path, file_size)
-
-    return file_map
-
-
-def persist_new_documents(
-    conn: sqlite3.Connection,
-    app: dict,
-    documents: list[dict],
-) -> int:
-    """Insert document metadata rows that don't exist yet (for combined
-    list+download mode). Returns count of newly inserted rows."""
+def persist_documents(conn: sqlite3.Connection, app: dict, documents: list[dict]) -> int:
     inserted = 0
     with transaction(conn):
         for doc in documents:
@@ -254,7 +200,6 @@ def persist_new_documents(
 
 
 def get_cumulative_stats(conn: sqlite3.Connection) -> dict:
-    """Query the DB for overall download progress across all runs."""
     doc_row = conn.execute(
         "SELECT"
         "  COUNT(*) AS total_docs,"
@@ -264,10 +209,8 @@ def get_cumulative_stats(conn: sqlite3.Connection) -> dict:
         " FROM documents"
     ).fetchone()
     app_row = conn.execute(
-        "SELECT"
-        "  COUNT(DISTINCT d.application_uid) AS apps_with_downloads"
-        " FROM documents d"
-        " WHERE d.download_status = 'downloaded'"
+        "SELECT COUNT(DISTINCT d.application_uid) AS apps_with_downloads"
+        " FROM documents d WHERE d.download_status = 'downloaded'"
     ).fetchone()
     total_apps = conn.execute("SELECT COUNT(*) FROM applications").fetchone()[0]
     return {
@@ -295,7 +238,6 @@ def write_progress(
     last_app: str,
     last_status: str,
 ) -> None:
-    """Write a progress.json file for external monitoring."""
     rate = processed / elapsed if elapsed > 0 else 0
     eta = (total - processed) / rate if rate > 0 else 0
     progress = {
@@ -314,13 +256,12 @@ def write_progress(
         },
         "cumulative": get_cumulative_stats(conn),
     }
-    path = output_dir / "progress.json"
+    path = output_dir / "progress_planning_docs.json"
     path.write_text(json.dumps(progress, indent=2) + "\n")
 
 
 def setup_logging(output_dir: Path) -> None:
-    """Configure file + console logging."""
-    log_path = output_dir / "download.log"
+    log_path = output_dir / "download_planning_docs.log"
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -331,10 +272,49 @@ def setup_logging(output_dir: Path) -> None:
     )
 
 
+async def process_app(
+    scraper: PlanningDocsDocumentScraper,
+    row: sqlite3.Row,
+    output_dir: Path,
+) -> tuple[list[dict], dict[str, tuple[str, int]], str | None]:
+    docs_url = row["documentation_url"]
+    authority = row["authority_name"] or "unknown"
+    reference = row["reference"] or row["uid"]
+
+    documents, listing_failure = await scraper.scrape_documents(docs_url)
+    if listing_failure:
+        return [], {}, listing_failure
+    if not documents:
+        return [], {}, "no_documents_listed"
+
+    target_dir = output_dir / sanitize_dirname(authority) / sanitize_dirname(reference)
+    file_map: dict[str, tuple[str, int]] = {}
+
+    for idx, doc in enumerate(documents, start=1):
+        if not doc.get("document_url"):
+            continue
+        target_path = target_dir / synthesize_filename(
+            idx,
+            doc.get("document_type", ""),
+            doc.get("description", ""),
+        )
+        bytes_written, final_path = await scraper.download_document(doc, target_path, referer=docs_url)
+        if bytes_written <= 0:
+            continue
+        rel_path = str(final_path.relative_to(output_dir))
+        file_map[str(doc["document_url"])] = (rel_path, bytes_written)
+
+    if not file_map:
+        return documents, {}, "all_downloads_failed"
+    if len(file_map) < len(documents):
+        return documents, file_map, "partial"
+    return documents, file_map, None
+
+
 async def run_download(args: argparse.Namespace) -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     setup_logging(args.output_dir)
-    # Optional rclone sync via environment variables
+
     sync_remote = os.environ.get("SYNC_REMOTE")
     sync_every = max(1, int(os.environ.get("SYNC_EVERY", "50")))
     sync_clear = os.environ.get("SYNC_CLEAR", "").lower() in ("1", "true", "yes")
@@ -342,26 +322,18 @@ async def run_download(args: argparse.Namespace) -> int:
         logger.info("Sync enabled: %s (every %d apps, clear=%s)", sync_remote, sync_every, sync_clear)
 
     host_name = socket.gethostname()
-
     db_path = args.db_path or DB_PATH
     conn = get_db(db_path)
 
     candidates = get_applications_needing_download(
         conn,
-        portal_type="idox",
+        portal_type="planning_docs",
         authority=args.authority,
     )
-
     if not candidates:
         print("No applications needing download found.")
         conn.close()
         return 0
-
-    if args.only_never_attempted:
-        attempted = {row[0] for row in conn.execute("SELECT DISTINCT application_uid FROM download_attempts")}
-        before = len(candidates)
-        candidates = [c for c in candidates if c["uid"] not in attempted]
-        print(f"Filtered to never-attempted: {len(candidates)} of {before}")
 
     candidates = interleave_by_authority(candidates)
     if args.limit:
@@ -379,7 +351,7 @@ async def run_download(args: argparse.Namespace) -> int:
     log_id = log_scrape_start(
         conn,
         stage="document_download",
-        source="idox",
+        source="planning_docs",
         params={
             "limit": args.limit,
             "authority": args.authority,
@@ -395,65 +367,61 @@ async def run_download(args: argparse.Namespace) -> int:
     start_time = time.monotonic()
 
     logger.info(
-        "Starting download run: %d candidates, limit=%s, authority=%s",
+        "Starting planning_docs run: %d candidates, limit=%s, authority=%s",
         len(candidates),
         args.limit,
         args.authority,
     )
 
-    max_workers = max(1, int(os.environ.get("MAX_CONCURRENT_APPS", "1")))
+    max_workers = max(1, int(os.environ.get("MAX_CONCURRENT_APPS", "2")))
     logger.info("Download workers: %d", max_workers)
 
     try:
-        async with IdoxDocumentScraper() as scraper:
-            # -- Producer-consumer pipeline --
-            # Workers fetch zips concurrently; consumer does sync DB/disk work.
-            result_queue: asyncio.Queue = asyncio.Queue(maxsize=2)
-            work_queue: asyncio.Queue = asyncio.Queue()
+        result_queue: asyncio.Queue = asyncio.Queue(maxsize=2)
+        work_queue: asyncio.Queue = asyncio.Queue()
 
-            for row in candidates:
-                await work_queue.put(row)
-            for _ in range(max_workers):
-                await work_queue.put(None)  # poison pills
+        for row in candidates:
+            await work_queue.put(row)
+        for _ in range(max_workers):
+            await work_queue.put(None)
 
-            async def download_worker():
+        async with PlanningDocsDocumentScraper() as scraper:
+
+            async def worker():
                 while True:
                     row = await work_queue.get()
                     if row is None:
                         break
                     t0 = time.monotonic()
                     try:
-                        docs, zips, reason = await scraper.download_zip(row["documentation_url"])
+                        documents, file_map, reason = await process_app(scraper, row, args.output_dir)
                         elapsed = time.monotonic() - t0
-                        await result_queue.put((row, docs, zips, reason, None, elapsed))
+                        await result_queue.put((row, documents, file_map, reason, None, elapsed))
                     except Exception as exc:
                         elapsed = time.monotonic() - t0
-                        await result_queue.put((row, [], [], None, exc, elapsed))
+                        await result_queue.put((row, [], {}, None, exc, elapsed))
 
-            workers = [asyncio.create_task(download_worker()) for _ in range(max_workers)]
+            workers = [asyncio.create_task(worker()) for _ in range(max_workers)]
 
-            # Watchdog: if every worker exits before the consumer has seen all
-            # expected results (e.g. an unhandled exception bubbles out of the
-            # worker body), push a sentinel so the consumer stops waiting and
-            # can surface the error rather than deadlock on result_queue.get().
-            async def _worker_watchdog():
+            async def worker_watchdog():
                 await asyncio.gather(*workers, return_exceptions=True)
                 await result_queue.put(None)
 
-            watchdog = asyncio.create_task(_worker_watchdog())
+            watchdog = asyncio.create_task(worker_watchdog())
 
-            # -- Single consumer: DB writes, unpack, progress, rclone --
             processed = 0
+            last_status = "pending"
             while processed < len(candidates):
                 item = await result_queue.get()
                 if item is None:
-                    worker_errors = [w.exception() for w in workers if w.done() and w.exception()]
+                    worker_errors = [worker.exception() for worker in workers if worker.done() and worker.exception()]
                     for err in worker_errors:
                         logger.error("Worker exited with error: %s", err)
                     raise RuntimeError(
                         f"All workers exited after {processed}/{len(candidates)} results; aborting to avoid deadlock"
                     )
-                row, documents, zips, zip_reason, exc, app_elapsed = item
+
+                row, documents, file_map, reason, exc, app_elapsed = item
                 processed += 1
 
                 uid = row["uid"]
@@ -499,16 +467,55 @@ async def run_download(args: argparse.Namespace) -> int:
                         host_name=host_name,
                         elapsed_s=round(app_elapsed, 1),
                     )
-                elif not zips:
+                    last_status = "error"
+                elif reason == "no_documents_listed":
                     failures += 1
                     logger.warning(
-                        "[%d/%d] %s/%s: no zip returned (listed %d docs, %.1fs)",
+                        "[%d/%d] %s/%s: portal listed zero documents (%.1fs)",
+                        processed,
+                        len(candidates),
+                        authority,
+                        reference,
+                        app_elapsed,
+                    )
+                    results.append(
+                        {
+                            "uid": uid,
+                            "authority_name": authority,
+                            "reference": reference,
+                            "documentation_url": docs_url,
+                            "documents_listed": 0,
+                            "files_downloaded": 0,
+                            "total_bytes": 0,
+                            "status": "no_files",
+                            "error": "",
+                            "timestamp": now,
+                            "elapsed_s": round(app_elapsed, 1),
+                        }
+                    )
+                    record_download_attempt(
+                        conn,
+                        scrape_log_id=log_id,
+                        application_uid=uid,
+                        status="no_files",
+                        failure_code="no_documents_listed",
+                        failure_message="portal listed zero documents",
+                        host_name=host_name,
+                        elapsed_s=round(app_elapsed, 1),
+                    )
+                    last_status = "no_files"
+                elif not file_map:
+                    failures += 1
+                    failure_code = reason or "all_downloads_failed"
+                    logger.warning(
+                        "[%d/%d] %s/%s: listed %d docs but downloaded none (%.1fs) [%s]",
                         processed,
                         len(candidates),
                         authority,
                         reference,
                         len(documents),
                         app_elapsed,
+                        failure_code,
                     )
                     results.append(
                         {
@@ -519,8 +526,8 @@ async def run_download(args: argparse.Namespace) -> int:
                             "documents_listed": len(documents),
                             "files_downloaded": 0,
                             "total_bytes": 0,
-                            "status": "no_zip",
-                            "error": "",
+                            "status": "no_files",
+                            "error": failure_code,
                             "timestamp": now,
                             "elapsed_s": round(app_elapsed, 1),
                         }
@@ -529,30 +536,44 @@ async def run_download(args: argparse.Namespace) -> int:
                         conn,
                         scrape_log_id=log_id,
                         application_uid=uid,
-                        status="no_zip",
-                        failure_code=zip_reason or "no_zip",
-                        failure_message=zip_reason,
+                        status="no_files",
+                        failure_code=failure_code,
+                        failure_message=failure_code,
                         host_name=host_name,
                         documents_listed=len(documents),
                         elapsed_s=round(app_elapsed, 1),
                     )
+                    last_status = "no_files"
                 else:
-                    # Success — unpack + persist
-                    persist_new_documents(conn, dict(row), documents)
-
-                    auth_dir = sanitize_dirname(authority)
-                    ref_dir = sanitize_dirname(reference)
-                    target_dir = args.output_dir / auth_dir / ref_dir
-                    file_map = unpack_and_match(zips, documents, target_dir, args.output_dir)
-
-                    if file_map:
-                        with transaction(conn):
-                            mark_documents_downloaded(conn, uid, file_map)
+                    persist_documents(conn, dict(row), documents)
+                    with transaction(conn):
+                        mark_documents_downloaded(conn, uid, file_map)
 
                     app_files = len(file_map)
-                    app_bytes = sum(s for _, s in file_map.values())
+                    app_bytes = sum(size for _, size in file_map.values())
                     total_files += app_files
                     total_bytes += app_bytes
+
+                    if reason == "partial":
+                        # planning_docs URLs aren't session-scoped, so the
+                        # successful subset stays in the DB. The next run
+                        # picks this app up again because at least one doc
+                        # row is still download_status='pending'.
+                        failures += 1
+                        status_str = "partial"
+                        logger.warning(
+                            "[%d/%d] %s/%s: PARTIAL %d/%d files, %d KB, %.1fs -- pending docs will retry on next run",
+                            processed,
+                            len(candidates),
+                            authority,
+                            reference,
+                            app_files,
+                            len(documents),
+                            app_bytes // 1024,
+                            app_elapsed,
+                        )
+                    else:
+                        status_str = "success"
 
                     results.append(
                         {
@@ -563,7 +584,7 @@ async def run_download(args: argparse.Namespace) -> int:
                             "documents_listed": len(documents),
                             "files_downloaded": app_files,
                             "total_bytes": app_bytes,
-                            "status": "success",
+                            "status": status_str,
                             "error": "",
                             "timestamp": now,
                             "elapsed_s": round(app_elapsed, 1),
@@ -573,7 +594,9 @@ async def run_download(args: argparse.Namespace) -> int:
                         conn,
                         scrape_log_id=log_id,
                         application_uid=uid,
-                        status="success",
+                        status=status_str,
+                        failure_code="partial" if status_str == "partial" else None,
+                        failure_message=(f"{app_files}/{len(documents)} files" if status_str == "partial" else None),
                         host_name=host_name,
                         documents_listed=len(documents),
                         files_downloaded=app_files,
@@ -585,19 +608,20 @@ async def run_download(args: argparse.Namespace) -> int:
                     rate = processed / elapsed if elapsed > 0 else 0
                     eta = (len(candidates) - processed) / rate if rate > 0 else 0
                     logger.info(
-                        "[%d/%d] %s/%s: %d files, %d KB, %.1fs (%.1f apps/min, ETA %ds)",
+                        "[%d/%d] %s/%s: %d/%d files, %d KB, %.1fs (%.1f apps/min, ETA %ds)",
                         processed,
                         len(candidates),
                         authority,
                         reference,
                         app_files,
+                        len(documents),
                         app_bytes // 1024,
                         app_elapsed,
                         rate * 60,
                         int(eta),
                     )
+                    last_status = status_str
 
-                # Progress + periodic rclone
                 write_progress(
                     args.output_dir,
                     conn,
@@ -610,7 +634,7 @@ async def run_download(args: argparse.Namespace) -> int:
                     bytes_downloaded=total_bytes,
                     elapsed=time.monotonic() - start_time,
                     last_app=f"{authority}/{reference}",
-                    last_status="error" if exc else ("no_zip" if not zips else "success"),
+                    last_status=last_status,
                 )
 
                 if sync_remote and processed % sync_every == 0:
@@ -623,54 +647,55 @@ async def run_download(args: argparse.Namespace) -> int:
             except asyncio.CancelledError:
                 pass
 
-            # Log scraper-level stats
             logger.info("Scraper stats: %s", scraper.stats)
 
-        # Final sync via rclone
-        if sync_remote:
-            rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)
+            if sync_remote:
+                rclone_sync(args.output_dir, sync_remote, clear_local=sync_clear)
 
-        # Write results CSV
-        results_path = args.output_dir / "download_results.csv"
-        with results_path.open("w", encoding="utf-8", newline="") as fh:
-            writer = csv.DictWriter(fh, fieldnames=RESULT_FIELDNAMES)
-            writer.writeheader()
-            writer.writerows(results)
+            results_path = args.output_dir / "download_results_planning_docs.csv"
+            with results_path.open("w", encoding="utf-8", newline="") as fh:
+                writer = csv.DictWriter(fh, fieldnames=RESULT_FIELDNAMES)
+                writer.writeheader()
+                writer.writerows(results)
 
-        elapsed = time.monotonic() - start_time
-        summary = (
-            f"Done: {len(results)} apps, {total_files} files, "
-            f"{total_bytes / 1024 / 1024:.1f} MB, {failures} failures "
-            f"in {elapsed:.0f}s"
-        )
-        logger.info(summary)
-        logger.info("Results CSV: %s", results_path)
+            elapsed = time.monotonic() - start_time
+            summary = (
+                f"Done: {len(results)} apps, {total_files} files, "
+                f"{total_bytes / 1024 / 1024:.1f} MB, {failures} failures "
+                f"in {elapsed:.0f}s"
+            )
+            logger.info(summary)
+            logger.info("Results CSV: %s", results_path)
 
-        log_scrape_end(
-            conn,
-            log_id,
-            records_processed=len(results),
-            records_new=total_files,
-            records_failed=failures,
-            status="completed",
-        )
-        return 0
-
+            log_scrape_end(
+                conn,
+                log_id,
+                status="completed",
+                records_processed=len(results),
+                records_new=total_files,
+                records_failed=failures,
+                error_log=summary,
+            )
+            return 0
     except Exception as exc:
-        logger.exception("Fatal error during download run")
+        logger.exception("Download run failed: %s", exc)
         log_scrape_end(
             conn,
             log_id,
+            status="failed",
             records_processed=len(results),
             records_new=total_files,
-            records_failed=failures,
-            error_log=f"{type(exc).__name__}: {exc}",
-            status="failed",
+            records_failed=failures + 1,
+            error_log=str(exc),
         )
-        raise
+        return 1
     finally:
         conn.close()
 
 
+def main() -> int:
+    return asyncio.run(run_download(parse_args()))
+
+
 if __name__ == "__main__":
-    raise SystemExit(asyncio.run(run_download(parse_args())))
+    raise SystemExit(main())
