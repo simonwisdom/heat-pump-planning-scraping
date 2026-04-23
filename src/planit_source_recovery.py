@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
@@ -18,10 +17,6 @@ _GENERIC_SOURCE_PATH_FRAGMENTS = (
     "/search/generalsearch.aspx",
     "/searches/default.aspx",
 )
-
-# Matches "See source", "see  source", "See Source »", "See source (external)", etc.
-# Anchored at the start; `\s+` (not `\s*`) requires real whitespace between the words.
-_SEE_SOURCE_RE = re.compile(r"^\s*see\s+source\b", re.IGNORECASE)
 
 
 def parse_other_fields(other_fields: dict[str, Any] | str | None) -> dict[str, Any]:
@@ -67,12 +62,25 @@ def _parse_html(html: str) -> BeautifulSoup:
 
 
 def extract_see_source_url(html: str, page_url: str) -> str | None:
-    """Extract the council/source link from a PlanIt application page HTML."""
+    """Extract the council/source link from a PlanIt application page HTML.
+
+    PlanIt renders the labelled "See source" anchor with client-side JavaScript,
+    so it's invisible to a non-JS parser. But the same page exposes the same URL
+    as a plain anchor whose visible text is the application reference. In
+    practice the page has exactly two external links: a generic search page
+    (which ``is_generic_source_url`` recognises) and the specific application
+    page. Pick the first external anchor that is not generic.
+    """
     soup = _parse_html(html)
+    page_host = urlparse(page_url).netloc.lower()
     for anchor in soup.find_all("a", href=True):
-        text = anchor.get_text(" ", strip=True)
-        if _SEE_SOURCE_RE.match(text):
-            return urljoin(page_url, anchor["href"])
+        href = urljoin(page_url, anchor["href"])
+        host = urlparse(href).netloc.lower()
+        if not host or host == page_host:
+            continue
+        if is_generic_source_url(href):
+            continue
+        return href
     return None
 
 

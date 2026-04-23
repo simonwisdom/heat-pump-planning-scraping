@@ -14,44 +14,48 @@ from src.planit_source_recovery import (
 )
 
 
-def test_extract_see_source_url_resolves_relative_links() -> None:
+def test_extract_see_source_url_picks_non_generic_external_anchor() -> None:
     html = """
     <html>
       <body>
-        <a href="/ignored">Something else</a>
-        <a href="/Planning/Display/0628/26/ARC">See source</a>
+        <a href="/internal">Internal</a>
+        <a href="https://southhams.planning-register.co.uk/Search/Advanced">South West Devon</a>
+        <a href="https://southhams.planning-register.co.uk/Planning/Display/0628/26/ARC">0628/26/ARC</a>
       </body>
     </html>
     """
-
-    recovered = extract_see_source_url(html, "https://southhams.planning-register.co.uk/app/123")
-
+    recovered = extract_see_source_url(html, "https://www.planit.org.uk/planapplic/SouthWestDevon/0628/26/ARC/")
     assert recovered == "https://southhams.planning-register.co.uk/Planning/Display/0628/26/ARC"
 
 
-@pytest.mark.parametrize(
-    "anchor_text",
-    [
-        "See source",
-        "see source",
-        "See Source »",
-        "  See   source  ",
-        "See source (external)",
-    ],
-)
-def test_extract_see_source_url_tolerates_text_variants(anchor_text: str) -> None:
-    html = f'<a href="/dest">{anchor_text}</a>'
-    assert extract_see_source_url(html, "https://example.com/p/1") == "https://example.com/dest"
+def test_extract_see_source_url_skips_same_host_anchors() -> None:
+    html = """
+    <a href="/planarea/Wealden/">Wealden</a>
+    <a href="https://planning.wealden.gov.uk/Planning/Display/WD/2023/2718/F">WD/2023/2718/F</a>
+    """
+    recovered = extract_see_source_url(html, "https://www.planit.org.uk/planapplic/Wealden/WD/2023/2718/F/")
+    assert recovered == "https://planning.wealden.gov.uk/Planning/Display/WD/2023/2718/F"
 
 
-def test_extract_see_source_url_handles_nested_inline_tags() -> None:
-    html = '<a href="/dest">See <span>source</span></a>'
-    assert extract_see_source_url(html, "https://example.com/p/1") == "https://example.com/dest"
+def test_extract_see_source_url_ignores_js_template_strings_in_script_blocks() -> None:
+    # PlanIt includes JS templates that look like <a>See source</a> inside <script>.
+    # bs4 treats <script> contents as text, so these must not be picked up.
+    html = """
+    <script>var x = '<a href="https://bad.example/">See source</a>';</script>
+    <a href="https://planning.wealden.gov.uk/Planning/Display/WD/2023/2718/F">WD/2023/2718/F</a>
+    """
+    recovered = extract_see_source_url(html, "https://www.planit.org.uk/planapplic/Wealden/WD/2023/2718/F/")
+    assert recovered == "https://planning.wealden.gov.uk/Planning/Display/WD/2023/2718/F"
 
 
-def test_extract_see_source_url_returns_none_when_missing() -> None:
-    html = '<a href="/x">Other</a><a href="/y">More info</a>'
-    assert extract_see_source_url(html, "https://example.com/p/1") is None
+def test_extract_see_source_url_returns_none_when_only_generic_anchors() -> None:
+    html = '<a href="https://southhams.planning-register.co.uk/Search/Advanced">South West Devon</a>'
+    assert extract_see_source_url(html, "https://www.planit.org.uk/planapplic/SouthWestDevon/X/") is None
+
+
+def test_extract_see_source_url_returns_none_when_no_external_anchors() -> None:
+    html = '<a href="/internal">Internal</a><a href="#top">Top</a>'
+    assert extract_see_source_url(html, "https://www.planit.org.uk/p/1") is None
 
 
 def test_get_portal_hint_url_prefers_docs_url_then_source_url() -> None:
@@ -114,8 +118,9 @@ def test_recover_documentation_url_fetches_see_source_for_generic_source_url() -
             200,
             text=(
                 "<html><body>"
+                '<a href="https://southhams.planning-register.co.uk/Search/Advanced">South West Devon</a>'
                 '<a href="https://southhams.planning-register.co.uk/Planning/Display/0628/26/ARC">'
-                "See source</a></body></html>"
+                "0628/26/ARC</a></body></html>"
             ),
         )
 
