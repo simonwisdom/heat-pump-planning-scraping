@@ -52,6 +52,29 @@ from src.idox_scraper import IdoxDocumentScraper
 logger = logging.getLogger(__name__)
 
 
+def select_failure_code_uids(conn: sqlite3.Connection, codes: list[str]) -> set[str]:
+    """Return application_uids whose latest download_attempt's failure_code is in ``codes``."""
+    if not codes:
+        return set()
+    placeholders = ",".join("?" * len(codes))
+    rows = conn.execute(
+        f"""
+        WITH latest AS (
+            SELECT application_uid, failure_code,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY application_uid
+                       ORDER BY attempted_at DESC, id DESC
+                   ) AS rn
+            FROM download_attempts
+        )
+        SELECT application_uid FROM latest
+        WHERE rn = 1 AND failure_code IN ({placeholders})
+        """,
+        codes,
+    )
+    return {row[0] for row in rows}
+
+
 def classify_failure(error_str: str) -> str:
     """Map an error message to a short failure code."""
     e = error_str.lower()
@@ -103,6 +126,15 @@ def parse_args() -> argparse.Namespace:
         "--only-never-attempted",
         action="store_true",
         help="Skip apps that already have a row in download_attempts (process only first-timers)",
+    )
+    parser.add_argument(
+        "--only-failure-codes",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated failure codes (e.g. 'get_failed,no_zip'); retry only apps whose "
+            "latest attempt failed with one of these codes."
+        ),
     )
     return parser.parse_args()
 
@@ -362,6 +394,15 @@ async def run_download(args: argparse.Namespace) -> int:
         before = len(candidates)
         candidates = [c for c in candidates if c["uid"] not in attempted]
         print(f"Filtered to never-attempted: {len(candidates)} of {before}")
+
+    if args.only_failure_codes:
+        codes = sorted({c.strip() for c in args.only_failure_codes.split(",") if c.strip()})
+        if not codes:
+            raise SystemExit("--only-failure-codes must list at least one code")
+        matching = select_failure_code_uids(conn, codes)
+        before = len(candidates)
+        candidates = [c for c in candidates if c["uid"] in matching]
+        print(f"Filtered to latest failure_code in {codes}: {len(candidates)} of {before}")
 
     candidates = interleave_by_authority(candidates)
     if args.limit:
