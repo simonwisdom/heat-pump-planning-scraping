@@ -281,18 +281,34 @@ def _http_status_failure_code(status_code: int) -> str:
     return f"http_{status_code}"
 
 
+# PublicAccess family signatures. The publicaccess parser is host-agnostic
+# (it reads the JSON `var model` Rows out of the listing HTML), so any
+# council on PublicAccess_LIVE works. AniteIM.WebSearch is the legacy
+# Northgate name (some hosts may now be retired). ExternalEntryPoint.aspx
+# 302-redirects to a PublicAccess_*/SearchResult URL.
+_PUBLICACCESS_URL_RE = re.compile(
+    r"(?:/PublicAccess_LIVE/|/AniteIM\.WebSearch/|ExternalEntryPoint\.aspx)",
+    re.IGNORECASE,
+)
+
+
 def _handler_for_url(docs_url: str) -> str:
-    host = urlparse(docs_url).netloc.lower()
+    parsed = urlparse(docs_url)
+    host = parsed.netloc.lower()
+
+    # Custom-parser hosts — bespoke document-listing layouts (CMWebDrawer
+    # table, Wandsworth ASP.NET postbacks, Civica EDM JSON) that the
+    # publicaccess parser cannot handle.
     if "camden.gov.uk" in host:
         return "camden"
     if "wandsworth.gov.uk" in host:
         return "wandsworth"
-    if "planningdms-live.blackburn.gov.uk" in host:
-        return "publicaccess"
-    if "docs.runnymede.gov.uk" in host or "documents.runnymede.gov.uk" in host:
-        return "publicaccess"
     if "edm.secure.conwy.gov.uk" in host or host in _CONWY_LEGACY_HOSTS:
         return "conwy"
+
+    if _PUBLICACCESS_URL_RE.search(docs_url):
+        return "publicaccess"
+
     return "unsupported"
 
 

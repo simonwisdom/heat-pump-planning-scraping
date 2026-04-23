@@ -68,6 +68,53 @@ def test_handler_dispatch():
     assert _handler_for_url("https://edm.conwy.gov.uk/Planning/lg/dialog.page?ref_no=0%2F41790") == "conwy"
 
 
+def test_handler_dispatch_publicaccess_by_url_pattern():
+    """Any council host serving PublicAccess_LIVE / AniteIM / ExternalEntryPoint
+    should dispatch to the publicaccess handler — the parser is host-agnostic."""
+    # Arbitrary councils on PublicAccess_LIVE (none of these are in the host whitelist)
+    assert (
+        _handler_for_url("https://hbc-edrms.necswscloud.com/PublicAccess_LIVE/SearchResult/RunThirdPartySearch?id=1")
+        == "publicaccess"
+    )
+    assert (
+        _handler_for_url(
+            "https://iaw-corp-live.reading.gov.uk/PublicAccess_LIVE/SearchResult/RunThirdPartySearch?FOLDER1_REF=221800"
+        )
+        == "publicaccess"
+    )
+    assert (
+        _handler_for_url("https://pap.charnwood.gov.uk/PublicAccess_LIVE/SearchResult/RunThirdPartySearch?id=2")
+        == "publicaccess"
+    )
+    # AniteIM legacy URLs on non-Runnymede hosts (may be live or dead — try anyway)
+    assert (
+        _handler_for_url("http://documents.reading.gov.uk/AniteIM.WebSearch/ExternalEntryPoint.aspx?x")
+        == "publicaccess"
+    )
+    assert (
+        _handler_for_url("http://planningdocuments.dudley.gov.uk/AniteIM.WebSearch/ExternalEntryPoint.aspx?x")
+        == "publicaccess"
+    )
+    # Bare ExternalEntryPoint.aspx on a council host (302s to PublicAccess_*)
+    assert (
+        _handler_for_url("http://documents.reading.gov.uk/AniteIM.WebSearch/ExternalEntryPoint.aspx?x=1")
+        == "publicaccess"
+    )
+
+
+def test_handler_dispatch_unsupported_for_unknown_systems():
+    """URLs that don't match any handler signature should remain unsupported."""
+    # North York Moors uses /northgate/documentexplorer/ — different system,
+    # no handler for it.
+    assert (
+        _handler_for_url(
+            "http://planning.northyorkmoors.org.uk/northgate/documentexplorer/application/folderview.aspx?type=NLPL_DC_PLANAPP&key=817381"
+        )
+        == "unsupported"
+    )
+    assert _handler_for_url("https://example.com/totally-unrecognised") == "unsupported"
+
+
 # ---------- Legacy URL rewriting ----------
 
 
