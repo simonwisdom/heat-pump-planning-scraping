@@ -102,6 +102,11 @@ def parse_args() -> argparse.Namespace:
         help="Root directory for downloaded PDFs",
     )
     parser.add_argument("--dry-run", action="store_true", help="List candidates without downloading")
+    parser.add_argument(
+        "--only-never-attempted",
+        action="store_true",
+        help="Skip apps that already have a row in download_attempts (process only first-timers)",
+    )
     return parser.parse_args()
 
 
@@ -361,6 +366,12 @@ async def run_download(args: argparse.Namespace) -> int:
     if skipped:
         print(f"Skipping {skipped} apps on unsupported Northgate hosts.")
     candidates = supported
+
+    if args.only_never_attempted:
+        attempted = {row[0] for row in conn.execute("SELECT DISTINCT application_uid FROM download_attempts")}
+        before = len(candidates)
+        candidates = [c for c in candidates if c["uid"] not in attempted]
+        print(f"Filtered to never-attempted: {len(candidates)} of {before}")
 
     candidates = interleave_by_authority(candidates)
     if args.limit:
