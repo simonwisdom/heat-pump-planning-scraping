@@ -6,9 +6,10 @@ Two layers of classification:
 2. URL pattern match against ``documentation_url`` (empirical, per-record).
 
 Used at scrape time to populate ``applications.portal_type``. The combined
-``classify_portal_type`` prefers the authority verdict when it names a known
-portal family, and falls back to URL matching when the authority is unknown
-or maps to a generic ``Custom`` ("other") entry.
+``classify_portal_type`` treats the URL signature as empirical ground truth:
+when a ``documentation_url`` matches a known portal family the URL verdict
+wins, even if the authority CSV names a different family. The authority
+verdict is only used when the URL yields no signature.
 """
 
 from __future__ import annotations
@@ -93,6 +94,9 @@ _URL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("aifusion", re.compile(r"/publicportalviewer/", re.IGNORECASE)),
     ("civica_cx", re.compile(r"civicacx\.co\.uk/", re.IGNORECASE)),
     ("oracle_ords", re.compile(r"/ords/[^/]+/f\?p=Planning", re.IGNORECASE)),
+    ("mvm", re.compile(r"/MVM/Online/(?:DMS/)?DocumentViewer\.aspx", re.IGNORECASE)),
+    ("ocella", re.compile(r"/OcellaWeb/showDocuments", re.IGNORECASE)),
+    ("ocella_casetracker", re.compile(r"/casetracker/ocella_crossreference\.asp", re.IGNORECASE)),
     ("liverpool_doc_explorer", re.compile(r"/DocumentExplorer/Application/folderview", re.IGNORECASE)),
     ("bathnes_custom", re.compile(r"bathnes\.gov\.uk/planningdocuments=", re.IGNORECASE)),
     ("ipswich_custom", re.compile(r"ppc\.ipswich\.gov\.uk/xappndocs", re.IGNORECASE)),
@@ -102,8 +106,8 @@ _URL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ),
 )
 
-# Portal verdicts that should be treated as "no useful classification" and
-# overridden by a URL match if one is available.
+# Portal verdicts that should be treated as "no useful classification" so
+# callers can distinguish a confident authority verdict from an empty one.
 _VAGUE_VERDICTS = frozenset({"unknown", "other"})
 
 
@@ -167,19 +171,18 @@ def classify_portal_type(
     documentation_url: str | None,
     portal_types: dict[str, str],
 ) -> str:
-    """Combined classifier: authority lookup, with URL fallback for vague verdicts.
+    """Combined classifier: URL signature wins, authority verdict is fallback.
 
-    The authority CSV is curated and trusted when it names a specific portal
-    family. When the authority is unknown to the CSV, or maps to the generic
-    ``Custom`` bucket (returned as ``"other"``), the documentation URL is
-    matched against known signatures to recover a more specific label.
+    The ``documentation_url`` is empirical per-record evidence of which portal
+    actually serves a given app's documents; when it matches a known family
+    signature that verdict wins over the curated authority CSV. This matters
+    when the CSV is out of date (an authority has migrated to a different
+    system, or a single authority routes some apps through a different
+    portal). The authority verdict is used only when the URL is missing or
+    unrecognised.
     """
-    authority_verdict = classify_authority(authority_name, portal_types)
-    if authority_verdict not in _VAGUE_VERDICTS:
-        return authority_verdict
-
     url_verdict = classify_url(documentation_url)
     if url_verdict is not None:
         return url_verdict
 
-    return authority_verdict
+    return classify_authority(authority_name, portal_types)

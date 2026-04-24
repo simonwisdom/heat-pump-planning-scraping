@@ -182,16 +182,36 @@ def test_classify_url_returns_none_for_no_match() -> None:
     assert classify_url("https://example.com/random/path") is None
 
 
-def test_classify_portal_type_trusts_authority_when_specific(authority_csv: Path) -> None:
-    """A specific authority verdict overrides URL pattern matches."""
+def test_classify_portal_type_url_signature_wins_over_specific_authority(
+    authority_csv: Path,
+) -> None:
+    """URL signature is empirical ground truth and overrides a stale CSV verdict."""
     mapping = load_authority_portal_types(authority_csv)
-    # Aberdeen → idox per CSV; URL would match planning_docs but authority wins.
+    # Aberdeen → idox per CSV, but the URL is an arcus register-view: prefer arcus.
     result = classify_portal_type(
         "Aberdeen",
-        "https://aberdeen.gov.uk/planning/planning-documents?SDescription=X",
+        "https://www.aberdeen.gov.uk/pr/s/register-view?c__r=Arcus_BE&c__case=1",
+        mapping,
+    )
+    assert result == "arcus"
+
+
+def test_classify_portal_type_uses_authority_when_url_unrecognised(
+    authority_csv: Path,
+) -> None:
+    """With no URL signature, fall back to the authority verdict."""
+    mapping = load_authority_portal_types(authority_csv)
+    result = classify_portal_type(
+        "Aberdeen",
+        "https://aberdeen.gov.uk/some-opaque-viewer/doc?id=123",
         mapping,
     )
     assert result == "idox"
+
+
+def test_classify_portal_type_uses_authority_when_url_missing(authority_csv: Path) -> None:
+    mapping = load_authority_portal_types(authority_csv)
+    assert classify_portal_type("Aberdeen", None, mapping) == "idox"
 
 
 def test_classify_portal_type_falls_back_to_url_when_authority_other(authority_csv: Path) -> None:
