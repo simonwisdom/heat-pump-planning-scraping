@@ -64,6 +64,15 @@ _URL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("northgate", re.compile(r"/CMWebDrawer/", re.IGNORECASE)),
     ("northgate", re.compile(r"/northgate/documentexplorer/", re.IGNORECASE)),
     ("idox", re.compile(r"/online-applications/", re.IGNORECASE)),
+    # Broad fallback: any ``applicationDetails.do`` URL not already matched
+    # above. This catches the many idox deployment variants that don't use
+    # the ``/online-applications/`` path — ``/idoxpa-web/``, ``/wam/``,
+    # ``/publicaccess/``, ``/newplanningaccess/``, ``/OnlinePlanning/``,
+    # ``/PlanningData-live/``, ``/public-access/``, ``/eplanning/``,
+    # ``/buildingstandards/``, ``/online/``. Order matters: this pattern is
+    # listed after the northgate ``PublicAccess_LIVE`` rule so Northgate
+    # still wins for that path.
+    ("idox", re.compile(r"/applicationDetails\.do", re.IGNORECASE)),
     # --- families with no downloader yet (label only, for inventory) ---
     ("agile", re.compile(r"planning\.agileapplications\.co\.uk/", re.IGNORECASE)),
     ("arcus", re.compile(r"/pr/s/register-view\?[^ ]*c__r=Arcus_BE", re.IGNORECASE)),

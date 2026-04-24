@@ -86,6 +86,22 @@ def test_classify_authority_alias_match(authority_csv: Path) -> None:
         # Existing-downloader portals
         ("https://planningsearch.rbkc.gov.uk/publisher/mvc/listDocuments?identifier=X", "publisher"),
         ("https://idox.example.gov.uk/online-applications/applicationDetails.do?keyVal=Y", "idox"),
+        # Broad idox fallback: variant paths all serve applicationDetails.do
+        ("https://wam.highland.gov.uk/wam/applicationDetails.do?activeTab=documents&keyVal=x", "idox"),
+        ("https://citydev-portal.edinburgh.gov.uk/idoxpa-web/applicationDetails.do?keyVal=x", "idox"),
+        ("https://newplanningaccess.eastriding.gov.uk/newplanningaccess/applicationDetails.do?x", "idox"),
+        ("https://eplanning.lochlomond-trossachs.org/OnlinePlanning/applicationDetails.do?x", "idox"),
+        ("https://planning.stockport.gov.uk/PlanningData-live/applicationDetails.do?x", "idox"),
+        ("https://plans.nwleics.gov.uk/public-access/applicationDetails.do?x", "idox"),
+        ("https://publicaccess.moray.gov.uk/eplanning/applicationDetails.do?x", "idox"),
+        ("https://planning.cne-siar.gov.uk/PublicAccess/applicationDetails.do?x", "idox"),
+        ("https://pa.swindon.gov.uk/publicaccess/applicationDetails.do?x", "idox"),
+        # The PublicAccess_LIVE path must still win for Northgate despite the
+        # broad idox fallback — that rule is listed earlier in _URL_PATTERNS.
+        (
+            "https://www.hullcc.gov.uk/padcbc/publicaccess-live/applicationDetails.do?x",
+            "idox",  # '-live' is not _LIVE; matches the broad idox rule
+        ),
         (
             "https://hbc-edrms.necswscloud.com/PublicAccess_LIVE/SearchResult/RunThirdPartySearch?id=1",
             "northgate",
