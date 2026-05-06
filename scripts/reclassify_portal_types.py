@@ -200,7 +200,7 @@ def main() -> int:
                 print(f"Applying {len(url_rewrite_uids):,} documentation_url rewrites…")
                 conn.executemany(
                     "UPDATE applications SET documentation_url = ? WHERE uid = ?",
-                    url_rewrite_uids,
+                    [(new_url, uid) for uid, new_url in url_rewrite_uids],
                 )
         print("Done.")
     else:
