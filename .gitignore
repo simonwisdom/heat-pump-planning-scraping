@@ -10,6 +10,7 @@ build/
 
 # Testing
 .pytest_cache/
+test-results/
 
 # Data files
 *.db
