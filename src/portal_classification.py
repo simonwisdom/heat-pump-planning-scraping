@@ -73,15 +73,21 @@ _URL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     # listed after the northgate ``PublicAccess_LIVE`` rule so Northgate
     # still wins for that path.
     ("idox", re.compile(r"/applicationDetails\.do", re.IGNORECASE)),
-    # --- families with no downloader yet (label only, for inventory) ---
+    # --- named non-Idox families and custom routes ---
     ("agile", re.compile(r"planning\.agileapplications\.co\.uk/", re.IGNORECASE)),
     ("arcus", re.compile(r"/pr/s/register-view\?[^ ]*c__r=Arcus_BE", re.IGNORECASE)),
+    ("arcus", re.compile(r"/pr\d+/s/register-view\?[^ ]*c__r=Arcus_BE", re.IGNORECASE)),
     ("planning_register", re.compile(r"planning-register\.co\.uk/", re.IGNORECASE)),
+    ("civica_w2", re.compile(r"/Planning/Display/", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planning/planning-documents\?", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planning/documents\?", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planningdocuments\?", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/forms/planning/planning-documents", re.IGNORECASE)),
     ("guernsey_direct", re.compile(r"buildingexplorer\.gov\.gg/Northgate/Images/", re.IGNORECASE)),
+    (
+        "guernsey_direct",
+        re.compile(r"planningexplorer\.gov\.gg/portal/servlets/ApplicationSearchServlet", re.IGNORECASE),
+    ),
     ("shale_dialog", re.compile(r"shale\.dialog\.DIALOG_NAME=gfplanning", re.IGNORECASE)),
     (
         "msp_idox",
@@ -99,6 +105,7 @@ _URL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ),
     ("unidoc", re.compile(r"/UniDoc/Document/Search/", re.IGNORECASE)),
     ("eplanningviewer", re.compile(r"/eplanningviewer/", re.IGNORECASE)),
+    ("eplanningviewer", re.compile(r"/EDMSExternal/Fred/Index/", re.IGNORECASE)),
     ("aifusion", re.compile(r"aifusion\.io/", re.IGNORECASE)),
     ("aifusion", re.compile(r"/publicportalviewer/", re.IGNORECASE)),
     ("civica_cx", re.compile(r"civicacx\.co\.uk/", re.IGNORECASE)),
@@ -118,6 +125,22 @@ _URL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 # Portal verdicts that should be treated as "no useful classification" so
 # callers can distinguish a confident authority verdict from an empty one.
 _VAGUE_VERDICTS = frozenset({"unknown", "other"})
+
+# Hosts that have been retired in favour of a live replacement. Any
+# ``documentation_url`` referencing the retired host should be rewritten
+# before fetching. Used by :func:`normalise_documentation_url` and by the
+# scrapers that perform the rewrite at fetch time.
+_HOST_REWRITES: dict[str, str] = {
+    # Neath Port Talbot moved their Oracle APEX portal off the original host.
+    # The retired DNS no longer resolves; the live replacement serves the
+    # exact same APEX page paths.
+    "appsportal.npt.gov.uk": "appsportal2.npt.gov.uk",
+    # Barnsley retired the legacy PlanningExplorerMVC host. The live
+    # ``planningexplorer.barnsley.gov.uk`` exposes the same routes minus the
+    # ``/PlanningExplorerMVC`` path prefix; rewriting only the host is not
+    # sufficient on its own — see ``normalise_documentation_url``.
+    "wwwapplications.barnsley.gov.uk": "planningexplorer.barnsley.gov.uk",
+}
 
 
 def load_authority_portal_types(csv_path: Path) -> dict[str, str]:
@@ -163,6 +186,51 @@ def classify_authority(authority_name: str | None, portal_types: dict[str, str])
         return portal_types[camel]
 
     return "unknown"
+
+
+def normalise_documentation_url(url: str | None) -> str | None:
+    """Rewrite ``documentation_url`` onto the current live host.
+
+    Returns the input unchanged when no rewrite applies. Currently rewrites:
+
+    * ``appsportal.npt.gov.uk`` → ``appsportal2.npt.gov.uk`` (Oracle ORDS)
+    * ``wwwapplications.barnsley.gov.uk/PlanningExplorerMVC/...`` →
+      ``planningexplorer.barnsley.gov.uk/...`` (Planning Explorer MVC)
+
+    The scrapers also rewrite at fetch time, so this helper is primarily
+    useful for one-off URL backfills (e.g. URL-recovery passes that store the
+    canonical form once). Idempotent on already-normalised inputs.
+    """
+    if not url:
+        return url
+
+    from urllib.parse import urlsplit, urlunsplit
+
+    parts = urlsplit(url)
+    host = (parts.hostname or "").lower()
+    if not host:
+        return url
+
+    new_host = _HOST_REWRITES.get(host)
+    if new_host is None:
+        return url
+
+    # Rebuild netloc preserving any user-info / port that was on the original.
+    userinfo = ""
+    if parts.username:
+        userinfo = parts.username
+        if parts.password:
+            userinfo += f":{parts.password}"
+        userinfo += "@"
+    port_suffix = f":{parts.port}" if parts.port else ""
+    netloc = f"{userinfo}{new_host}{port_suffix}"
+
+    new_path = parts.path
+    if host == "wwwapplications.barnsley.gov.uk" and new_path.startswith("/PlanningExplorerMVC"):
+        new_path = new_path[len("/PlanningExplorerMVC") :] or "/"
+
+    scheme = "https" if parts.scheme in ("", "http") else parts.scheme
+    return urlunsplit((scheme, netloc, new_path, parts.query, parts.fragment))
 
 
 def classify_url(url: str | None) -> str | None:

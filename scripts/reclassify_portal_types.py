@@ -32,11 +32,13 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.portal_classification import (  # noqa: E402
+    _HOST_REWRITES,
     _VAGUE_VERDICTS,
     classify_authority,
     classify_portal_type,
     classify_url,
     load_authority_portal_types,
+    normalise_documentation_url,
 )
 
 DEFAULT_CSV = REPO_ROOT / "data" / "buildwithtract_authority_mapping.csv"
@@ -60,6 +62,14 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Also apply changes that demote a specific label (e.g. 'mvm') to a vague one "
             "('other'/'unknown'). Default: skip those."
+        ),
+    )
+    p.add_argument(
+        "--normalise-urls",
+        action="store_true",
+        help=(
+            "Also rewrite documentation_url onto the live host (Oracle ORDS appsportal -> "
+            "appsportal2; Barnsley wwwapplications/PlanningExplorerMVC -> planningexplorer)."
         ),
     )
     return p.parse_args()
@@ -102,6 +112,10 @@ def main() -> int:
     changed_uids: list[tuple[str, str, str]] = []  # (uid, old, new) — populated only when apply
     demotions_skipped = 0
 
+    # URL host rewrites (only used when --normalise-urls is set).
+    url_rewrites: Counter[tuple[str, str]] = Counter()  # (old_host, new_host) -> count
+    url_rewrite_uids: list[tuple[str, str]] = []  # (uid, new_url)
+
     for row in rows:
         old = row["portal_type"] or "(null)"
         new = classify_portal_type(row["authority_name"], row["documentation_url"], portal_types)
@@ -112,6 +126,16 @@ def main() -> int:
             url = classify_url(row["documentation_url"])
             if auth == args.only_changes_authority and url is not None and url != auth:
                 authority_conflict[(auth, url)] += 1
+
+        if args.normalise_urls and row["documentation_url"]:
+            normalised = normalise_documentation_url(row["documentation_url"])
+            if normalised and normalised != row["documentation_url"]:
+                from urllib.parse import urlsplit
+
+                old_host = (urlsplit(row["documentation_url"]).hostname or "").lower()
+                new_host = (urlsplit(normalised).hostname or "").lower()
+                url_rewrites[(old_host, new_host)] += 1
+                url_rewrite_uids.append((row["uid"], normalised))
 
         if old == new:
             continue
@@ -147,18 +171,37 @@ def main() -> int:
         for (auth, url), count in sorted(authority_conflict.items(), key=lambda kv: -kv[1]):
             print(f"{auth:<12} -> {url:<24}  {count:>8,}")
 
+    if args.normalise_urls:
+        print()
+        if url_rewrites:
+            print("URL host rewrites:")
+            print(f"{'old host':<40} -> {'new host':<40}  {'count':>8}")
+            print("-" * 92)
+            for (old_host, new_host), count in sorted(url_rewrites.items(), key=lambda kv: -kv[1]):
+                print(f"{old_host:<40} -> {new_host:<40}  {count:>8,}")
+            print(f"{'total':<40}                                       {sum(url_rewrites.values()):>8,}")
+        else:
+            print(f"URL host rewrites: 0 (rewrite hosts: {sorted(_HOST_REWRITES)})")
+
     # --- Apply ---
     if args.apply:
-        if not changed_uids:
+        if not changed_uids and not url_rewrite_uids:
             print("\nNo changes to apply.")
             conn.close()
             return 0
-        print(f"\nApplying {len(changed_uids):,} portal_type updates…")
         with conn:
-            conn.executemany(
-                "UPDATE applications SET portal_type = ? WHERE uid = ?",
-                [(new, uid) for uid, _old, new in changed_uids],
-            )
+            if changed_uids:
+                print(f"\nApplying {len(changed_uids):,} portal_type updates…")
+                conn.executemany(
+                    "UPDATE applications SET portal_type = ? WHERE uid = ?",
+                    [(new, uid) for uid, _old, new in changed_uids],
+                )
+            if url_rewrite_uids:
+                print(f"Applying {len(url_rewrite_uids):,} documentation_url rewrites…")
+                conn.executemany(
+                    "UPDATE applications SET documentation_url = ? WHERE uid = ?",
+                    url_rewrite_uids,
+                )
         print("Done.")
     else:
         print("\nDry-run: no rows written. Re-run with --apply to commit.")

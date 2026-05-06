@@ -136,8 +136,16 @@ def test_classify_authority_alias_match(authority_csv: Path) -> None:
             "arcus",
         ),
         (
+            "https://folkestonehythedc.my.site.com/PR3/s/register-view?c__r=Arcus_BE_Public_Register",
+            "arcus",
+        ),
+        (
             "https://southhams.planning-register.co.uk/Planning/Display/0628/26/ARC",
             "planning_register",
+        ),
+        (
+            "https://planningregister.cherwell.gov.uk/Planning/Display/21/03887/F",
+            "civica_w2",
         ),
         (
             "https://portal360.argyll-bute.gov.uk/planning/planning-documents?SDescription=21%2F02726",
@@ -145,6 +153,10 @@ def test_classify_authority_alias_match(authority_csv: Path) -> None:
         ),
         (
             "http://buildingexplorer.gov.gg/Northgate/Images/Planning%20Decisions%20PDFs/X.pdf",
+            "guernsey_direct",
+        ),
+        (
+            "http://planningexplorer.gov.gg/portal/servlets/ApplicationSearchServlet?PKID=123",
             "guernsey_direct",
         ),
         (
@@ -164,6 +176,10 @@ def test_classify_authority_alias_match(authority_csv: Path) -> None:
         ("http://unidoc.wiltshire.gov.uk/UniDoc/Document/Search/DSA,918745", "unidoc"),
         (
             "https://apps.stratford.gov.uk/eplanningviewer/Home/index/21_03888_LBC",
+            "eplanningviewer",
+        ),
+        (
+            "https://apps.stratford.gov.uk/EDMSExternal/Fred/Index/15_00153_FUL",
             "eplanningviewer",
         ),
         ("https://cbc.aifusion.io/planning/publicViewer.html?caseID=CB", "aifusion"),
