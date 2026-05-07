@@ -148,6 +148,19 @@ def test_classify_authority_alias_match(authority_csv: Path) -> None:
             "civica_w2",
         ),
         (
+            "https://www.herefordshire.gov.uk/info/200142/planning_services/planning_application_search/details?id=214393&search=P214393%2FL",
+            "herefordshire_direct",
+        ),
+        (
+            "https://emaps.elmbridge.gov.uk/ebc_planning.aspx?requesttype=parseTemplate&template=PlanningPlansAndDocsTab.tmplt&appno:PARAM=2021%2F2264",
+            "elmbridge_emaps",
+        ),
+        ("https://portal.peakdistrict.gov.uk/result/YToyOntzOjE0OiJPYmplY3RfVHlwZV9JRCI7", "peak_district"),
+        (
+            "https://www.kirklees.gov.uk/beta/planning-applications/search-for-planning-applications/detail.aspx?id=2021%2F94597",
+            "kirklees_direct",
+        ),
+        (
             "https://portal360.argyll-bute.gov.uk/planning/planning-documents?SDescription=21%2F02726",
             "planning_docs",
         ),

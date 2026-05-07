@@ -79,6 +79,19 @@ _URL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("arcus", re.compile(r"/pr\d+/s/register-view\?[^ ]*c__r=Arcus_BE", re.IGNORECASE)),
     ("planning_register", re.compile(r"planning-register\.co\.uk/", re.IGNORECASE)),
     ("civica_w2", re.compile(r"/Planning/Display/", re.IGNORECASE)),
+    (
+        "herefordshire_direct",
+        re.compile(r"herefordshire\.gov\.uk/.*/planning_application_search/details", re.IGNORECASE),
+    ),
+    (
+        "elmbridge_emaps",
+        re.compile(r"emaps\.elmbridge\.gov\.uk/ebc_planning\.aspx.*PlanningPlansAndDocsTab", re.IGNORECASE),
+    ),
+    ("peak_district", re.compile(r"portal\.peakdistrict\.gov\.uk/result/", re.IGNORECASE)),
+    (
+        "kirklees_direct",
+        re.compile(r"kirklees\.gov\.uk/.*/search-for-planning-applications/detail\.aspx", re.IGNORECASE),
+    ),
     ("planning_docs", re.compile(r"/planning/planning-documents\?", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planning/documents\?", re.IGNORECASE)),
     ("planning_docs", re.compile(r"/planningdocuments\?", re.IGNORECASE)),
