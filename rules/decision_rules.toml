@@ -19,26 +19,31 @@ pattern = "split|part.{0,5}approv.{0,5}part.{0,5}refus|part.{0,5}refus.{0,5}part
 why = "Mixed outcomes — application part-approved, part-refused. Must run before 'refused' so it doesn't get bucketed there."
 
 [[rule]]
+label = "approved"
+pattern = '\bno\s+objections?\b'
+why = "Consultation responses of 'no objection' / 'no objections' are approval-equivalent. MUST run before 'refused' — otherwise the bare 'objection' clause in the refused rule fires first and ~90 non-objections land in 'refused', inflating the refusal rate."
+
+[[rule]]
 label = "refused"
 pattern = "refus|reject|decline|denied|not.{0,5}lawful|unlawful|not.{0,5}acceptable|objection|negative"
-why = "All recognisable refusal language. 'objection' covers neighbouring-authority observation responses; 'not lawful' covers certificate-of-lawfulness rejections."
+why = "All recognisable refusal language. The 'no objection' approved-rule above runs first so consultation non-objections don't land here on the bare 'objection' token."
 
 [[rule]]
 label = "withdrawn"
-pattern = "withdrawn|abandon|finally.{0,5}disposed|closed|cancelled"
-why = "Application withdrawn by applicant or closed administratively. Excluded from refusal-rate denominators."
-
-[[rule]]
-label = "discharge"
-pattern = "discharg|comply|condition.{0,20}approv|condition.{0,20}accept|condition.{0,20}clear|condition.{0,20}decide"
-why = "Discharge of conditions — formal sign-off on details required by an existing permission. Treated as its own bucket (not approved) because it isn't a substantive decision on the proposal."
-
-[[rule]]
-label = "approved"
-pattern = "grant|approv|permit|consent|lawful|accept|agree|favourable|certif|permission|^PER$|^yes$|no.{0,3}objection|conditional|determined|decided|response.issued"
-why = "All recognisable approval language. Runs after refusal/discharge so 'permission refused' lands in 'refused', not 'approved'."
+pattern = '\bwithdraw\w*|\babandon|finally.{0,5}disposed|\bclosed|cancelled|\bwdn\b'
+why = "Application withdrawn / closed (incl. the 'Withdraw' verb and 'WDN' abbreviation). Excluded from refusal-rate denominators."
 
 [[rule]]
 label = "pending"
-pattern = "pending|not.{0,10}determined|under.{0,10}consider|invalid|returned|being.validated"
-why = "Application is in flight or has been returned for revision. Excluded from refusal-rate denominators."
+pattern = '\bpending\b|(not|cannot|to\s+be).{0,10}(determined|decided)|under.{0,10}consider|\binvalid\b|\breturned\b|being.{0,5}validated'
+why = "Application is in flight, undecided, or returned for revision. Runs before 'discharge' and 'approved' so 'Not yet determined', 'Cannot be determined', 'Not decided', and 'To be decided by committee' don't get caught by the broad token matches in those rules."
+
+[[rule]]
+label = "discharge"
+pattern = 'discharg|\bconditions?\b.{0,20}(cleared|accept|fully|decid|satisf)|\bcompl(y|ie)\b'
+why = "Discharge of conditions — formal sign-off on details required by an existing permission. Treated as its own bucket (not approved) because it isn't a substantive decision on the proposal. Note this drops the old `condition.{0,20}approv` clause: that clause was catching 'Conditional Approval' / 'Conditionally Approved' (~290 apps that are normal grants of permission, not condition discharges) and routing them into this bucket. The `\\bconditions?\\b` boundary now stops 'Conditional' from matching, so 'Conditional Approval' falls through to 'approved' as it should."
+
+[[rule]]
+label = "approved"
+pattern = "grant|approv|permit|consent|lawful|accept|agree|favourable|certif|permission|^PER$|^yes$|conditional|allow"
+why = "All recognisable approval language, including 'allow' / 'allowed on appeal' / 'non-material amendment allowed'. Runs after refusal/discharge/pending so 'permission refused', 'Discharge of Conditions Allowed', and 'Not yet determined' land elsewhere first. Bare 'determined' / 'decided' / 'response.issued' were removed from this pattern: they were too ambiguous (a council writing 'Determined' or 'Response Issued' may have approved or refused) and were poaching apps that should have been pending."

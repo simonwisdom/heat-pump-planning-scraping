@@ -40,7 +40,7 @@ PERMIT,approved,130
 Caniatáu / Permit,approved,129
 APPROVED WITH CONDITIONS,approved,127
 Grant Plan Permission w Conds,approved,126
-Conditional Approval,discharge,123
+Conditional Approval,approved,123
 Application Permit,approved,117
 Conditional Permission,approved,115
 Permission,approved,106
@@ -89,7 +89,7 @@ Approved (Statutory/one condition only),approved,46
 Approve subject to Conditions,approved,45
 Refuse Permission,refused,45
 Grant Permission to,approved,45
-Conditional Approval - Delegated,discharge,44
+Conditional Approval - Delegated,approved,44
 approved subject to conditions,approved,44
 Permitted Development,approved,44
 Minor - GRANTED,approved,43
@@ -97,9 +97,9 @@ Refused Permission,refused,43
 CONDITIONAL FULL PERMISSION,approved,41
 Application permitted,approved,40
 Grant conditional permission,approved,40
-Conditional approval,discharge,39
+Conditional approval,approved,39
 Approval of details - Approved,approved,39
-Conditionally Approved,discharge,38
+Conditionally Approved,approved,38
 Full Granted,approved,38
 Grant with conditions,approved,36
 Granted with conditions,approved,36
@@ -126,7 +126,7 @@ Granted Conditions,approved,27
 A01 Approved,approved,27
 CONSENT,approved,27
 Application Withdrawn by Applicant/Agent,withdrawn,27
-Allowed,other,26
+Allowed,approved,26
 Approve Conditionally,approved,25
 Refuse Planning Permission,refused,25
 Fully Discharged,discharge,24
@@ -138,7 +138,7 @@ Permission Refused,refused,23
 Condition Discharged/Obligation,discharge,23
 Granted With Conditions,approved,23
 REFUSE,refused,23
-No Objection,refused,23
+No Objection,approved,23
 Grant Conditional,approved,22
 Granted - Extra Conditions,approved,22
 Conditional Consent,approved,22
@@ -175,14 +175,14 @@ Closed - advice given,withdrawn,16
 CONSENT GRANTED,approved,16
 Certificate of Lawfulness Prop- GRANTED,approved,16
 Withdrawn / abandoned,withdrawn,15
-CONDITIONALLY APPROVED,discharge,15
+CONDITIONALLY APPROVED,approved,15
 Prior Approval Not Required,approved,15
 Permitted Development _App not reqd,approved,15
-Determined,approved,15
+Determined,other,15
 Condition/s Discharged,discharge,15
 PERMISSION,approved,15
 GRANTED WITH CONDITIONS,approved,15
-Response Issued,approved,14
+Response Issued,other,14
 Granted Subject to a Section 106 Legal Agreement,approved,14
 Discharge of Conditions Decided,discharge,14
 Condition Accepted,discharge,14
@@ -194,7 +194,7 @@ Discharge of Condition - Approved,discharge,12
 Refuse Planning Permission/Consent,refused,12
 CONSENT subject to conditions and notes,approved,12
 Permit Full Planning Permission,approved,12
-No Objections,refused,12
+No Objections,approved,12
 Not required,other,12
 Permission not required,approved,12
 Approve with Conditions CIL Liable,approved,12
@@ -202,9 +202,9 @@ Conditional Planning Permission,approved,12
 Full Approval,approved,12
 VARIED,other,11
 Refusal of Planning Permission,refused,11
-Raise No Objections,refused,11
+Raise No Objections,approved,11
 Approve Unconditionally,approved,11
-Determined - DIS apps,approved,11
+Determined - DIS apps,other,11
 refuse the application,refused,11
 Approved with no Conditions,approved,11
 FULCC - Full Application - Conditional Consent,approved,11
@@ -225,7 +225,7 @@ Grant Variation of Condition,approved,10
 Withdrawn Application,withdrawn,10
 Lawful,approved,10
 Conditions Discharged,discharge,10
-Raise No Objection,refused,10
+Raise No Objection,approved,10
 Council's Own - GRANTED,approved,10
 Non material amendment - agreed,approved,10
 Grant non-material amendment to planning permission,approved,10
@@ -244,7 +244,7 @@ Lawful Development Certificate - Granted,approved,8
 Listed Building Consent Approved,approved,8
 Approve Subject to Conditions,approved,8
 Approved Unconditionally,approved,8
-No objection,refused,8
+No objection,approved,8
 Complies with Condition,other,8
 Not acceptable as amendment,refused,8
 Approved (With Informatives),approved,8
@@ -314,10 +314,10 @@ Application withdrawn,withdrawn,5
 Condition(s) Fully Discharged,discharge,5
 DOC - All conditions discharged,discharge,5
 Granted subject to a legal agreement,approved,5
-Not decided,approved,5
+Not decided,pending,5
 Not Accepted,approved,5
 Permission Granted without Conditions,approved,5
-CONDITIONAL APPROVAL,discharge,5
+CONDITIONAL APPROVAL,approved,5
 Lawful Dev. Cert. Granted (proposed),approved,5
 Discharge of Conditions - Refuse,refused,5
 Raise Objections,refused,5
@@ -338,7 +338,7 @@ Grant Permission Retrospectively,approved,4
 Listed Building Granted,approved,4
 Full Plans Approved,approved,4
 REFUSED (FULL PLANNING PERMISSION REQUIRED),refused,4
-CONDITIONS APPROVED,discharge,4
+CONDITIONS APPROVED,approved,4
 Grant Permission (CIL Liable),approved,4
 Withdrawn application,withdrawn,4
 Amendments Accepted,approved,4
@@ -348,8 +348,8 @@ Favourable with conditions,approved,4
 Amendment Requires Planning Permission,approved,4
 GRANTS,approved,4
 Lawful Development Certificate - Permit,approved,4
-Withdraw,other,4
-NON MATERIAL AMENDMENT ALLOWED,other,4
+Withdraw,withdrawn,4
+NON MATERIAL AMENDMENT ALLOWED,approved,4
 Withdrawn By Applicant,withdrawn,4
 Discharge of Conditions Complete,discharge,4
 Full Application - Refused,refused,4
@@ -363,15 +363,15 @@ Refuse permission,refused,4
 Granted Planning Permission,approved,4
 Refused Not A Non Material Amendment,refused,4
 Approve Certificate of Lawfulness,approved,4
-Not yet determined,approved,4
+Not yet determined,pending,4
 R01 Refused,refused,4
 Development is Lawful,approved,4
 Prior Approval not required,approved,4
 Grant Section 191/192 Certificate,approved,4
-Have No Objection To,refused,4
+Have No Objection To,approved,4
 Proposed Use/Development is Lawful,approved,3
 Amended Plans Approved,approved,3
-Unconditional approval,discharge,3
+Unconditional approval,approved,3
 Grant Certificate - Proposed Development,approved,3
 Lawful Dev - Proposed - Granted,approved,3
 Finally Disposed Of,withdrawn,3
@@ -379,13 +379,13 @@ Approval of amended plans,approved,3
 ISSUE CERTIFICATE,approved,3
 Refuse Consent (LBC & ADV),refused,3
 Lawful Development Certificate permitted,approved,3
-Not Determined (appeal lodged),approved,3
+Not Determined (appeal lodged),pending,3
 Planning Permission - Refused,refused,3
 Existing - Approve Cert of Lawfulness,approved,3
 Non Material Amendment - Accept Amendment,approved,3
 Variation permitted with conditions,approved,3
 Minor - REFUSED,refused,3
-No objections,refused,3
+No objections,approved,3
 Grant perm/consent/certify lawfulness,approved,3
 Cert of Lawfulness (Proposed) Certified,approved,3
 Grant Conditionally with Legal Agreement,approved,3
@@ -395,7 +395,7 @@ FULL PLANNING APPROVAL,approved,3
 Withdrawn by Applicant/Agent,withdrawn,3
 Withdrawn Validated,withdrawn,3
 Planning Application not Required,other,3
-Dischg of Conditions response issued,approved,3
+Dischg of Conditions response issued,other,3
 Certificate Issued - Propose Dev't,approved,3
 Non-material amendments - refused,refused,3
 Not Agreed - for app types VLA & VNMC,approved,3
@@ -426,20 +426,20 @@ Opinion Issued,other,3
 Not Lawful Use,refused,3
 Approve Details of Condition,approved,3
 Listed Building Consent GRANTED,approved,3
-NO OBJECTION,refused,3
+NO OBJECTION,approved,3
 Finally Disposed Of (Article 40),withdrawn,3
 Approve under General Regs 3 Council Dev,approved,3
 View,other,3
 NMA APPROVED,approved,3
 Raise Objection,refused,3
 Non material amendment-not accepted,approved,3
-Condition - Approved,discharge,3
+Condition - Approved,approved,3
 Unconditional Permission,approved,3
 Discharge of Conditions - Split Decision,split,3
 Approved with Conditions; Informatives,approved,3
 Approved and Refused,refused,3
 Non-Material Variation - Acceptance,approved,3
-Unconditionally Approved,discharge,3
+Unconditionally Approved,approved,3
 Discharge Conditions Approved,discharge,3
 Z06 Permitted Development,approved,3
 Discharged Conditions in Part,discharge,3
@@ -456,11 +456,11 @@ Grant Permission with external materials,approved,2
 Prior Approval Refused,refused,2
 Withdrawn - Invalid,withdrawn,2
 Deemed Permit,approved,2
-VARY CONDITION APPROVAL,discharge,2
+VARY CONDITION APPROVAL,approved,2
 Details Approved,approved,2
 Not proceeded with,other,2
 Discharge of Planning Conditions,discharge,2
-"No Objections (NPDs,PNs and Electricity)",refused,2
+"No Objections (NPDs,PNs and Electricity)",approved,2
 Condition/s Partly Discharged,discharge,2
 Non Material Amendment Refused,refused,2
 Grant Permission No Conditions,approved,2
@@ -474,7 +474,7 @@ Non Material Minor Amendment AGREE,approved,2
 Partially Discharged,discharge,2
 EXMOOR - NO OBSERVATIONS,other,2
 Non material amendment - not agreed,approved,2
-WDN,other,2
+WDN,withdrawn,2
 Refuse application,refused,2
 Approval of Details for Conditions,approved,2
 Called in by Cairngorm National Park,other,2
@@ -494,14 +494,14 @@ Approved Non-material Amendment,approved,2
 Grant Certificate of Lawful proposed use or Development,approved,2
 Approve following legal agreement,approved,2
 WBC REG 3/4 GRANTED,approved,2
-No Objection Raised,refused,2
+No Objection Raised,approved,2
 Positive,other,2
 Consent not needed,approved,2
 ACCEPT Non-material Minor Amendment,approved,2
 Listed Building Consent - Approved,approved,2
 App/Conds,other,2
 Refusal of Listed Building Consent,refused,2
-Allow non-material amendment,other,2
+Allow non-material amendment,approved,2
 Certificate Issued,approved,2
 REFUSED PERMISSION,refused,2
 Application Not Required,other,2
@@ -519,7 +519,7 @@ Dim Angen AEA / EIA Not Required,other,2
 CERTIFICATE GRANTED,approved,2
 Pending Decision,pending,2
 Grants Consent,approved,2
-Condition Part Approved,discharge,2
+Condition Part Approved,approved,2
 Under Consideration,pending,2
 Grant Certificate of Lawful Use,approved,2
 Split part Discharge/part Refuse,split,2
@@ -539,24 +539,24 @@ Permit - detail Reserved by Condition,approved,2
 Condition Accepted in Part,discharge,2
 Is Lawful (proposed),approved,2
 Refusal of Variation,refused,2
-Condition Request determined,approved,2
+Condition Request determined,other,2
 LDC Granted,approved,2
 Non-material Amendment Agreed,approved,2
 Approved Subject to S106 Agreement,approved,2
 Positive Certificate,approved,2
 DC10 Listed Building Conditional Consent,approved,2
 Listed Building Refusal,refused,2
-Condition(s) Partially Approved,discharge,2
+Condition(s) Partially Approved,approved,2
 Refuse Householder Permission,refused,2
 Minor Non-Material Amendment Accepted,approved,2
-To be determined by another Authority,approved,2
+To be determined by another Authority,pending,2
 Certified,approved,2
 APPROVED NO CONDITIONS,approved,2
 Section 191 / 192 Permission not Required (Certificate Issued),approved,2
 Application Permitted/Approved,approved,2
 PERMITTED DEVELOPMENT,approved,2
 Surrey County Council Regulation 3 Approval Subject to Conditions,approved,2
-No Objection (Observations Applications),refused,2
+No Objection (Observations Applications),approved,2
 PROPOSED USE/DEVELOPMENT IS LAWFUL,approved,2
 Non-Material Amendment Refused,refused,2
 X Withdrawn Decision,withdrawn,2
@@ -569,11 +569,11 @@ NMA REFUSED,refused,2
 Condition partially discharged,discharge,2
 Issue lawful certificate (Proposed),approved,2
 Discharge Conditions in Part,discharge,2
-Condition Approved,discharge,2
+Condition Approved,approved,2
 Approved Uncondtionally,approved,2
 Discharge - Doesnt satisfy requirements,discharge,2
 Partial Discharge of Condition(s),discharge,2
-No Objection Lodged,refused,2
+No Objection Lodged,approved,2
 Permission be granted,approved,2
 Planning permission is not required,approved,2
 EIA not required,other,2
@@ -598,20 +598,20 @@ Certificate Not Granted on 31-Jan-2022,approved,1
 Application GRANTED with S106,approved,1
 Listed Building Consent not required,approved,1
 CONSENT subject to notes,approved,1
-Not determined,approved,1
+Not determined,pending,1
 Approval Non Material Amendment,approved,1
 Listed Building Consent - REFUSED,refused,1
 Approved with Conditions on 07-Oct-2021,approved,1
 Grant with S106 Obligations,approved,1
-DCC Application - No objections,refused,1
-No objection Recommend Approval,refused,1
+DCC Application - No objections,approved,1
+No objection Recommend Approval,approved,1
 Deemed consent CCC,approved,1
 Conditions Complied With,other,1
 Application REFUSED,refused,1
 DISPOSAL NOTICE,other,1
 Pre-application Consultation approved.,approved,1
 Cancelled,withdrawn,1
-SSDC no objection to County Matter,refused,1
+SSDC no objection to County Matter,approved,1
 "Granted , Appeal Decision : Withdrawn",withdrawn,1
 Permission Not Req (Non Det),approved,1
 Cert of Lawful (PROPOSED) Not Permitted,approved,1
@@ -619,7 +619,7 @@ Cert Lawful Use Exist/prop Approved,approved,1
 DOC satisfactory,other,1
 Withdrawn - Applicant,withdrawn,1
 DC-GNMA,other,1
-County Council - No Objection,refused,1
+County Council - No Objection,approved,1
 No observations,other,1
 Agree Minor Amendment,approved,1
 Refuse the application,refused,1
@@ -640,14 +640,14 @@ Application Part Granted/Part Refused,refused,1
 LIS approval with conditions,approved,1
 Certificate of Lawfulness - Lawful (Approved),approved,1
 Withdrawn Decision (Decision code: WDT),withdrawn,1
-Adjoining local authority consultation - no objection,refused,1
-To be decided by committee,approved,1
+Adjoining local authority consultation - no objection,approved,1
+To be decided by committee,pending,1
 Discharge of Planning Condition Granted,discharge,1
 S52/S106 and discharge of condition apps,discharge,1
 Non-material amendment approved,approved,1
 Application Disposed Of,other,1
 Amendments Rejected,refused,1
-Cannot be determined,approved,1
+Cannot be determined,pending,1
 NON MATERIAL AMENDMENT REFUSED,refused,1
 Does not comply with condition,discharge,1
 Lawful Use Certificate Granted,approved,1
@@ -674,15 +674,15 @@ Certificate Refused,refused,1
 ES Not Required,other,1
 Deemed Consent,approved,1
 Partly approved / Partly NOT approved,approved,1
-No objections made,refused,1
+No objections made,approved,1
 Prior Approval Is Given,approved,1
 Granted No Conditions,approved,1
 C of L of Proposed Use - Refusal,refused,1
 Certificate Not Issued,approved,1
 Refuse to Discharge Condition,refused,1
 dis,other,1
-No Objections Raised,refused,1
-No Objection to Proposal (OBS only),refused,1
+No Objections Raised,approved,1
+No Objection to Proposal (OBS only),approved,1
 Certificate Approved,approved,1
 Approve Subject to Legal Agreement,approved,1
 Approved with Conditions on 16-Feb-2022,approved,1
@@ -701,7 +701,7 @@ Grant Permission Householder No Conditions,approved,1
 PERMISSION NOT REQUIRED,approved,1
 DISCHARGE OF CONDITION(S) REFUSED,refused,1
 Partial Discharge,discharge,1
-Raise No objection,refused,1
+Raise No objection,approved,1
 Approved with Conditions on 04-Dec-2023,approved,1
 Discharge Condition in Part,discharge,1
 Non Material Amendment Approve,approved,1
@@ -765,9 +765,9 @@ Part Approved/Part Refused,split,1
 Permit Non Material Amendments,approved,1
 CANCELLED,withdrawn,1
 Grant Discharge of Condition,discharge,1
-No Objection (District Consultation),refused,1
+No Objection (District Consultation),approved,1
 Approved by Letter,approved,1
-Allowed on Appeal,other,1
+Allowed on Appeal,approved,1
 26-05-2025,other,1
 NO FURTHER ACTION,other,1
 Declined - Section 39,refused,1
@@ -780,9 +780,9 @@ Householder - REFUSED,refused,1
 Condition Discharge Agreed,discharge,1
 Part confirmation of discharge of conds,discharge,1
 Proposed Use/Development is Not Lawful,refused,1
-No Objections to OBS,refused,1
-No objection Raised - OA,refused,1
-NO OBJECTION IS RAISED,refused,1
+No Objections to OBS,approved,1
+No objection Raised - OA,approved,1
+NO OBJECTION IS RAISED,approved,1
 Withdrawn by the applicant,withdrawn,1
 Approval of Details - REFUSED,refused,1
 Consultation Replies Awaited,other,1
@@ -832,7 +832,7 @@ REF,other,1
 AGREED CONDITIONALLY,approved,1
 Neighbouring Authority Consultation - Objections,refused,1
 Refuse non-material amendment to planning permission,refused,1
-No objection to Consultation,refused,1
+No objection to Consultation,approved,1
 Full Discharge of Condition,discharge,1
 Refusal of non material amendment,refused,1
 Details Granted,approved,1
@@ -844,7 +844,7 @@ Details Refused,refused,1
 APPROVE NON-MATERIAL AMENDMENT,approved,1
 The Use is Lawful,approved,1
 Retrospective Application Permitted,approved,1
-Dischg Of Conditions Response Issued,approved,1
+Dischg Of Conditions Response Issued,other,1
 Appeal - Non Determination,other,1
 No further action,other,1
 Listed Blg Consent Granted,approved,1
@@ -897,7 +897,7 @@ Environmental Impact Assessment Not Required,other,1
 Observations made,other,1
 Not required - Prior Notification,other,1
 PLANNING PERMISSION NOT REQUIRED,approved,1
-No Objection adjacent LA consultation,refused,1
+No Objection adjacent LA consultation,approved,1
 Withdrawn (after registration),withdrawn,1
 Tree Works in Conservation Area - Deemed Consent,approved,1
 Z11 Certificate of Conformity - Agreed,approved,1
@@ -909,7 +909,7 @@ CLUD Issued,other,1
 Refused - Delegated,refused,1
 Approved with Conditions on 29-Jun-2023,approved,1
 Conditions not discharged,discharge,1
-Wdn - Permitted Dev./Appn. not required,approved,1
+Wdn - Permitted Dev./Appn. not required,withdrawn,1
 Reject Non-Material Amendment(s),refused,1
 Approve Non-material AMD,approved,1
 Approval of Variation of Condition,approved,1
@@ -921,7 +921,7 @@ Part Approved / Part Refused,split,1
 Condition Part Discharged/Part Not Discharged,discharge,1
 Delegated to Ealing,other,1
 Condition Discharge/details acceptable,discharge,1
-That no objection be raised,refused,1
+That no objection be raised,approved,1
 Prior Approval Approval,approved,1
 Refused - Certificate of Lawfulness,refused,1
 Conditionally Permitted,approved,1

@@ -1080,6 +1080,61 @@ def _render_edge_case_rules_table(fired: dict[str, int]) -> str:
     )
 
 
+def _render_outcome_mix_section(summary: dict) -> str:
+    """Stacked bar + table showing decision-bucket mix as % of all applications.
+
+    The KPI tiles and most breakdown tables denominate by `decided` (approved +
+    refused), which deliberately excludes withdrawn so withdrawals don't
+    dilute the refusal rate. This panel restores the % of total framing for
+    readers comparing against legacy summaries that quoted shares of all
+    applications (approved/refused/withdrawn/undecided/other).
+    """
+    breakdown = summary.get("decision_breakdown", {}) or {}
+    total = sum(int(v) for v in breakdown.values()) or 1
+    groups = [
+        ("approved", "Approved", int(breakdown.get("approved", 0))),
+        ("refused", "Refused", int(breakdown.get("refused", 0))),
+        ("withdrawn", "Withdrawn", int(breakdown.get("withdrawn", 0))),
+        (
+            "undecided",
+            "Undecided (no decision recorded or pending)",
+            int(breakdown.get("no_decision", 0)) + int(breakdown.get("pending", 0)),
+        ),
+        (
+            "other",
+            "Other (condition discharge, split, unclassified)",
+            int(breakdown.get("discharge", 0)) + int(breakdown.get("split", 0)) + int(breakdown.get("other", 0)),
+        ),
+    ]
+    segs = []
+    rows = []
+    for cls, label, n in groups:
+        share = n / total * 100
+        segs.append(
+            f'<span class="seg seg-{cls}" style="width: {share:.2f}%" '
+            f'title="{html.escape(label)} {fmt_int(n)} ({share:.1f}%)"></span>'
+        )
+        rows.append(
+            f"<tr>"
+            f'<td><span class="legend-dot dot-{cls}"></span>{html.escape(label)}</td>'
+            f"<td>{fmt_int(n)}</td>"
+            f"<td>{share:.1f}%</td>"
+            f"</tr>"
+        )
+    return (
+        '<section class="outcome-mix" aria-label="Outcome mix as share of all applications">'
+        "<h3>Outcome mix (% of all applications)</h3>"
+        '<p class="note">The refusal rate elsewhere in this report is calculated over '
+        "decided (approved + refused) applications only &mdash; withdrawn and undecided are "
+        "excluded so they don&rsquo;t dilute the rate. This panel puts every bucket on the "
+        "same denominator.</p>"
+        f'<div class="stacked-bar" role="img" aria-label="Outcome mix">{"".join(segs)}</div>'
+        f'<table class="mix-table"><thead><tr><th>Outcome</th><th>Apps</th><th>Share</th>'
+        f"</tr></thead><tbody>{''.join(rows)}</tbody></table>"
+        "</section>"
+    )
+
+
 def render_html(
     output_dir: Path,
     summary: dict,
@@ -1294,11 +1349,23 @@ def render_html(
         aria_label="Refusal rate by region",
     )
 
+    # Pick out the two most-recent years actually shown in the trend table so
+    # the caveat names the right years even when the report is regenerated in
+    # a future calendar year. The current calendar year is already filtered
+    # out upstream in main().
+    recent_years = [str(r["start_year"]) for r in by_start_year if str(r["start_year"]).isdigit()]
+    if len(recent_years) >= 2:
+        provisional_label = f"{recent_years[-2]} and {recent_years[-1]}"
+    elif recent_years:
+        provisional_label = recent_years[-1]
+    else:
+        provisional_label = "the most recent"
     trend_caveat = (
         "Refusal rates have risen noticeably for applications submitted from 2022 onwards. "
         "But a growing share of recent applications haven&rsquo;t had a decision recorded yet &mdash; this is "
         "almost certainly councils still working through them, not a real shift in policy &mdash; so the "
-        "2024 and 2025 figures are provisional."
+        f"{provisional_label} figures are provisional. (The current calendar year is excluded from this "
+        "panel because most of those applications haven&rsquo;t been decided yet.)"
     )
 
     coverage_rows: list[dict] = []
@@ -1548,10 +1615,48 @@ def render_html(
     dt {{ font-weight: 600; margin-top: 8px; }}
     dt:first-child {{ margin-top: 0; }}
     dd {{ margin: 2px 0 0 0; color: var(--muted); }}
+    .outcome-mix {{ margin: 18px 0 28px; }}
+    .outcome-mix h3 {{ margin-top: 4px; }}
+    .stacked-bar {{ display: flex; height: 28px; border-radius: 4px; overflow: hidden; margin: 12px 0 14px; border: 1px solid var(--line); background: var(--panel); }}
+    .stacked-bar .seg {{ display: block; height: 100%; }}
+    .stacked-bar .seg-approved {{ background: var(--accent); }}
+    .stacked-bar .seg-refused {{ background: var(--accent-2); }}
+    .stacked-bar .seg-withdrawn {{ background: #b88a4a; }}
+    .stacked-bar .seg-undecided {{ background: #6e7e76; }}
+    .stacked-bar .seg-other {{ background: #c5cdc8; }}
+    .mix-table {{ max-width: 520px; }}
+    .mix-table td:first-child, .mix-table th:first-child {{ padding-left: 0; }}
+    .legend-dot {{ display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle; border: 1px solid rgba(0,0,0,0.06); }}
+    .legend-dot.dot-approved {{ background: var(--accent); }}
+    .legend-dot.dot-refused {{ background: var(--accent-2); }}
+    .legend-dot.dot-withdrawn {{ background: #b88a4a; }}
+    .legend-dot.dot-undecided {{ background: #6e7e76; }}
+    .legend-dot.dot-other {{ background: #c5cdc8; }}
     @media (max-width: 820px) {{
       main {{ padding: 24px 16px 42px; }}
       .kpis, .grid {{ grid-template-columns: 1fr; }}
       h1 {{ font-size: 28px; }}
+    }}
+    @media print {{
+      @page {{ margin: 16mm 12mm; }}
+      body {{ font-size: 10.5pt; }}
+      main {{ max-width: none; padding: 0; }}
+      h1 {{ font-size: 26px; }}
+      h2 {{ font-size: 19px; margin-top: 22px; }}
+      .kpis {{ grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 8px; margin: 14px 0 18px; }}
+      .kpi {{ padding: 10px 12px; }}
+      .kpi .value {{ font-size: 19px; }}
+      .grid {{ grid-template-columns: minmax(0, 1fr) !important; gap: 12px; }}
+      .grid > .chart-wrap {{ max-width: 600px; }}
+      h1, h2, h3, h4 {{ page-break-after: avoid; break-after: avoid; }}
+      h2 + p, h3 + p, h4 + p {{ page-break-before: avoid; break-before: avoid; }}
+      .chart-wrap, .sparkline-row {{ page-break-inside: avoid; break-inside: avoid; }}
+      table {{ page-break-inside: auto; }}
+      thead {{ display: table-header-group; }}
+      tr, tr > * {{ page-break-inside: avoid; break-inside: avoid; }}
+      p, li {{ orphans: 3; widows: 3; }}
+      details > summary {{ display: none; }}
+      a {{ color: inherit; }}
     }}
   </style>
 </head>
@@ -1566,6 +1671,8 @@ def render_html(
     <div class="kpi"><span class="value">{fmt_int(summary["approved_apps"])}</span><span class="label">Approved <span class="kpi-pct">({fmt_pct(summary["approval_rate"])} of decisions)</span></span></div>
     <div class="kpi"><span class="value">{fmt_int(summary["refused_apps"])}</span><span class="label">Refused <span class="kpi-pct">({fmt_pct(summary["refusal_rate"])} of decisions)</span></span></div>
   </section>
+
+  {_render_outcome_mix_section(summary)}
 
   <h2>When do heat-pump installs need planning permission?</h2>
   <p>Most heat pumps don&rsquo;t need planning permission &mdash; they&rsquo;re allowed automatically as long as they meet certain rules on size, noise, and distance from neighbours (the planning system calls this &ldquo;permitted development&rdquo;). The rest do need a planning application, and that&rsquo;s what this dataset captures.</p>
@@ -1669,9 +1776,15 @@ def main() -> None:
     for app in apps:
         raw_mapping_counts[app.raw_decision or "(empty)"][app.decision] += 1
 
+    # Drop the current calendar year from the trend: most rows in the current
+    # year haven't been decided yet, so the refusal-rate figure is unstable and
+    # the chart misleads. The coverage chart already excludes the current year
+    # for the same reason.
+    current_year_str = str(datetime.now(timezone.utc).year)
     by_start_year = grouped_table(apps, "start_year", lambda app: app.start_year)
     by_start_year = sorted(
-        (r for r in by_start_year if r["start_year"] != "Unknown"), key=lambda r: str(r["start_year"])
+        (r for r in by_start_year if r["start_year"] not in ("Unknown", current_year_str)),
+        key=lambda r: str(r["start_year"]),
     )
     by_region = grouped_table(apps, "region", lambda app: app.region)
     by_region = sorted(by_region, key=lambda r: (r["refusal_rate"] is None, -(r["refusal_rate"] or 0)))

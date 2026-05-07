@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-05-07 17:26 UTC",
+  "generated_at": "2026-05-07 17:44 UTC",
   "db_path": "/tmp/ashp.db",
   "db_modified": "2026-05-07 16:44 UTC",
   "db_row_count": 30446,
-  "git_commit": "85c62f4",
+  "git_commit": "66e2274",
   "git_dirty": true,
   "source_scrape": "all",
   "report_title": "Heat Pump Decision Patterns",
   "corpus_label": "ASHP and broader heat-pump",
   "total_apps": 30446,
-  "decided_apps": 23823,
-  "approved_apps": 22124,
-  "refused_apps": 1699,
-  "approval_rate": 92.8682365780968,
-  "refusal_rate": 7.131763421903203,
+  "decided_apps": 24077,
+  "approved_apps": 22476,
+  "refused_apps": 1601,
+  "approval_rate": 93.35050047763426,
+  "refusal_rate": 6.649499522365742,
   "no_decision_apps": 3311,
   "decision_breakdown": {
-    "approved": 22124,
-    "refused": 1699,
+    "approved": 22476,
+    "refused": 1601,
     "split": 57,
-    "withdrawn": 1940,
-    "discharge": 873,
-    "other": 333,
+    "withdrawn": 1947,
+    "discharge": 588,
+    "other": 340,
     "no_decision": 3311,
-    "pending": 109
+    "pending": 126
   },
   "council_min_decided": 50,
-  "n_councils_in_panel": 149,
+  "n_councils_in_panel": 150,
   "rules_fired": {
     "decision": {
-      "approved": 22124,
-      "refused": 1699,
+      "approved": 22476,
+      "refused": 1601,
       "split": 57,
-      "withdrawn": 1940,
-      "discharge": 873,
-      "__other__": 333,
+      "withdrawn": 1947,
+      "discharge": 588,
+      "__other__": 340,
       "__no_decision__": 3311,
-      "pending": 109
+      "pending": 126
     },
     "app_type": {
       "Amendment": 34,
@@ -51,10 +51,10 @@
       "regex_fallback": 458
     },
     "edge_case": {
-      "is_listed": 3274,
+      "is_listed": 3305,
       "is_flat": 1592,
       "mentions_noise": 1295,
-      "is_wind_turbine": 22
+      "is_wind_turbine": 21
     }
   }
 }

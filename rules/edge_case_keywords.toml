@@ -11,13 +11,19 @@
 # these — they're all inferred. Treat as hints rather than verdicts.
 
 [is_listed]
-why = "Listed buildings and conservation-area context. Superset of the Heritage app-type bucket — also catches 'Full' apps mentioning a listed-building setting."
+why = "Listed buildings, heritage, and conservation-area context. Superset of the Heritage app-type bucket — also catches 'Full' apps mentioning a listed-building setting, a grade I/II listing, or a conservation area. The earlier `listed\\s*(building|...)?` pattern made the trailing word optional, so any stray use of the word 'listed' (e.g. 'listed for sale', 'as listed below') fired the flag; the trailing word is now required. Conservation-area and grade matches were added to make the rule actually do what the report's prose claims it does."
 [[is_listed.match]]
 field = "app_type_lower"
 pattern = "heritage"
 [[is_listed.match]]
 field = "description"
-pattern = 'listed\s*(building|property|dwelling|structure)?'
+pattern = '\blisted\s+(building|property|dwelling|structure|consent|status|home|house)s?\b'
+[[is_listed.match]]
+field = "description"
+pattern = '\bgrade\s+(i{1,3}|iv|1|2|3)\b'
+[[is_listed.match]]
+field = "description"
+pattern = '\bconservation\s+area\b'
 
 
 [is_flat]
@@ -35,9 +41,6 @@ why = "Wind-turbine mentions in heat-pump applications — usually a side-by-sid
 [[is_wind_turbine.match]]
 field = "description"
 pattern = '\bwind\s+turbine[s]?\b'
-[[is_wind_turbine.match]]
-field = "description"
-pattern = '\bturbine[s]?\b'
 
 
 [mentions_noise]
