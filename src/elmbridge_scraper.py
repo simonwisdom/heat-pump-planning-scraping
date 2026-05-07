@@ -1,20 +1,35 @@
-"""OcellaWeb planning portal document metadata scraper.
+"""Elmbridge planning document scraper.
 
-Fetches and parses document listings from OcellaWeb council planning portals.
-Tested on: Hillingdon, South Holland, Breckland.
+Elmbridge runs an IDeA/GIS-based emaps portal where the document tab is a
+server-rendered HTML template with direct ``IAMLink.aspx?docid=…`` anchors.
 
-OcellaWeb pages have an anchor-driven structure: every document is a
-``<a href="viewDocument?file=...&module=pl">`` link. Surrounding chrome
-varies — most councils use ``<strong>`` section headers + ``<table>`` rows;
-some use definition-list layouts (``<h5><strong><p><hr>``). The parser keys
-off the anchor and walks the nearest table row (or any other container) for
-metadata, which makes it robust to layout variation.
+Document listings live at::
+
+    https://emaps.elmbridge.gov.uk/ebc_planning.aspx
+        ?requesttype=parseTemplate
+        &template=PlanningPlansAndDocsTab.tmplt
+        &Filter=^APPLICATION_NUMBER^='<ref>'
+        &appno:PARAM=<ref>...
+
+Doc anchors look like::
+
+    <a title="View or download 'Application Form-3934312.pdf'"
+       href="//edocs.elmbridge.gov.uk/IAM/IAMLink.aspx?docid=3934312"
+       target="_blank">
+
+Each anchor sits inside a ``<tr>`` whose other cells carry the document type
+and date.
+
+The IAMLink endpoint returns the file body even when the response code is 404
+(IIS misconfiguration); the scraper accepts any 2xx/4xx response that has a
+non-empty body matching a known file magic header.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -23,12 +38,16 @@ import httpx
 from bs4 import BeautifulSoup, FeatureNotFound
 
 from .config import IDOX_MAX_CONCURRENT_DOMAINS, IDOX_RATE_LIMIT_PER_DOMAIN, IDOX_USER_AGENT
+from .generic_route_recovery import build_elmbridge_documents_url
 
 logger = logging.getLogger(__name__)
 
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 MAX_RETRIES = 3
-RETRY_DELAY = 5.0
+
+_DOC_HOST = "edocs.elmbridge.gov.uk"
+_PORTAL_HOST = "emaps.elmbridge.gov.uk"
+_TITLE_RE = re.compile(r"['\"]([^'\"]+?)-(\d+)\.([A-Za-z0-9]{2,5})['\"]")
 
 _MAGIC_EXTS: list[tuple[bytes, str]] = [
     (b"%PDF", ".pdf"),
@@ -62,21 +81,13 @@ def _parse_html(html: str) -> BeautifulSoup:
         return BeautifulSoup(html, "html.parser")
 
 
-def _detect_extension(content: bytes, content_type: str, url_path: str = "") -> str:
-    suffix = Path(urlparse(url_path).path).suffix.lower()
-    if suffix in {".pdf", ".doc", ".docx", ".gif", ".jpg", ".png", ".tif", ".tiff", ".xls", ".xlsx"}:
-        return ".tif" if suffix == ".tiff" else suffix
-
+def _detect_extension(content: bytes, content_type: str, hint_ext: str = "") -> str:
+    if hint_ext and hint_ext.lower() in {".pdf", ".doc", ".docx", ".jpg", ".png", ".tif", ".gif", ".xls", ".xlsx"}:
+        return hint_ext.lower()
     head = content[:8]
     for sig, ext in _MAGIC_EXTS:
         if head.startswith(sig):
-            if ext == ".zip":
-                ct = (content_type or "").split(";", 1)[0].strip().lower()
-                office = _CTYPE_EXTS.get(ct)
-                if office:
-                    return office
             return ext
-
     ct = (content_type or "").split(";", 1)[0].strip().lower()
     return _CTYPE_EXTS.get(ct, ".pdf")
 
@@ -93,78 +104,62 @@ def _http_status_failure_code(status_code: int) -> str:
     return f"http_{status_code}"
 
 
-def _section_for(anchor) -> str:
-    """Walk previous siblings/parents looking for a section header."""
-    node = anchor
-    for _ in range(8):
-        # previous header sibling on the same parent chain
-        prev = node.find_previous(["strong", "h1", "h2", "h3", "h4", "h5", "h6"])
-        if prev is None:
-            return ""
-        text = prev.get_text(" ", strip=True)
-        if text and text.upper() != "DOCUMENTS":
-            return text
-        node = prev
-    return ""
-
-
-def parse_ocella_documents(html: str, page_url: str) -> list[dict]:
-    """Parse document metadata from an OcellaWeb showDocuments page.
-
-    Anchor-driven: every doc is an ``<a href="viewDocument?file=...">``.
-    Reads metadata from the nearest table row (most layouts) or, when none is
-    present, from the surrounding container (definition-list layouts).
-    """
+def parse_elmbridge_documents(html: str, page_url: str) -> list[dict]:
+    """Parse IAMLink doc anchors out of an Elmbridge documents tab page."""
     soup = _parse_html(html)
-
     documents: list[dict] = []
-    seen_urls: set[str] = set()
+    seen: set[str] = set()
 
     for link in soup.find_all("a", href=True):
         href = link["href"].strip()
-        if "viewDocument" not in href or "file=" not in href:
+        if "IAMLink.aspx" not in href or "docid=" not in href:
             continue
 
+        # Resolve protocol-relative // URLs against the page.
         document_url = urljoin(page_url, href)
-        if document_url in seen_urls:
+        if document_url in seen:
             continue
-        seen_urls.add(document_url)
+        seen.add(document_url)
 
-        doc_type = link.get_text(" ", strip=True)
+        title = (link.get("title") or "").strip()
+        title_match = _TITLE_RE.search(title)
+        if title_match:
+            description = title_match.group(1).strip()
+            hint_ext = "." + title_match.group(3).lower()
+        else:
+            description = title.removeprefix("View or download").strip(" '\"")
+            hint_ext = ""
+
+        doc_type = ""
         date_published = ""
-        description = ""
-
         row = link.find_parent("tr")
         if row is not None:
             cells = row.find_all("td")
-            if len(cells) > 2:
-                date_published = cells[2].get_text(" ", strip=True)
-            if len(cells) > 4:
-                description = cells[4].get_text(" ", strip=True)
-        else:
-            # Definition-list / paragraph layout: pull date/description out of
-            # neighbouring tags. Heuristic: first <p> or <dd> after the anchor.
-            for sibling in link.next_siblings:
-                name = getattr(sibling, "name", None)
-                if name in ("p", "dd", "span"):
-                    description = sibling.get_text(" ", strip=True)
-                    break
+            if len(cells) >= 1:
+                doc_type = cells[0].get_text(" ", strip=True)
+            if len(cells) >= 2:
+                date_published = cells[1].get_text(" ", strip=True)
 
         documents.append(
             {
-                "document_type": doc_type,
+                "document_type": doc_type or description,
                 "description": description,
                 "date_published": date_published,
                 "document_url": document_url,
-                "section": _section_for(link),
+                "drawing_number": "",
+                "_hint_ext": hint_ext,
             }
         )
 
     return documents
 
 
-class OcellaDocumentScraper:
-    """Async scraper for OcellaWeb planning portal document listings."""
+def documents_url_for_reference(reference: str) -> str:
+    return build_elmbridge_documents_url(reference)
+
+
+class ElmbridgeDocumentScraper:
+    """Async scraper for Elmbridge emaps document listings."""
 
     def __init__(
         self,
@@ -178,7 +173,7 @@ class OcellaDocumentScraper:
         self._client: httpx.AsyncClient | None = None
         self.stats = {"success": 0, "failed": 0, "no_docs": 0}
 
-    async def __aenter__(self) -> "OcellaDocumentScraper":
+    async def __aenter__(self) -> "ElmbridgeDocumentScraper":
         self._client = httpx.AsyncClient(
             timeout=60.0,
             headers={
@@ -196,7 +191,7 @@ class OcellaDocumentScraper:
     @property
     def client(self) -> httpx.AsyncClient:
         if self._client is None:
-            raise RuntimeError("Use 'async with OcellaDocumentScraper() as scraper:'")
+            raise RuntimeError("Use 'async with ElmbridgeDocumentScraper() as scraper:'")
         return self._client
 
     async def _rate_limit(self, domain: str) -> None:
@@ -222,11 +217,7 @@ class OcellaDocumentScraper:
                 self._release(domain)
 
     async def scrape_documents(self, docs_url: str) -> tuple[list[dict], str | None]:
-        """Scrape one OcellaWeb document listing.
-
-        Returns ``(documents, failure_code)``. ``failure_code`` is ``None``
-        on success (including legitimate empty listings).
-        """
+        """Scrape one Elmbridge document listing."""
         try:
             resp = await self._get(docs_url)
         except httpx.TimeoutException:
@@ -246,16 +237,8 @@ class OcellaDocumentScraper:
             self.stats["failed"] += 1
             return [], _http_status_failure_code(resp.status_code)
 
-        # Some councils (e.g. Rother) return an HTML migration notice from the
-        # legacy host. Detect by absence of any viewDocument anchor + presence
-        # of a redirect script/text.
-        documents = parse_ocella_documents(resp.text, str(resp.url))
-
+        documents = parse_elmbridge_documents(resp.text, str(resp.url))
         if not documents:
-            text = resp.text.lower()
-            if "migrated" in text or "no longer in use" in text:
-                self.stats["failed"] += 1
-                return [], "portal_migrated"
             self.stats["no_docs"] += 1
             return [], None
         self.stats["success"] += 1
@@ -268,8 +251,14 @@ class OcellaDocumentScraper:
         referer: str = "",
         max_retries: int = MAX_RETRIES,
     ) -> tuple[int, str]:
-        """Download one document, returning ``(bytes_written, final_path)``."""
+        """Download one Elmbridge document via IAMLink.
+
+        Note: the IAMLink endpoint sometimes returns HTTP 404 alongside a
+        valid file body (IIS misconfiguration). We accept the body if its
+        magic bytes match a known file type.
+        """
         domain = urlparse(doc_url).netloc
+        hint_ext = ""
         for attempt in range(max_retries):
             acquired = False
             try:
@@ -277,22 +266,34 @@ class OcellaDocumentScraper:
                 acquired = True
                 headers = {"Referer": referer} if referer else {}
                 resp = await self.client.get(doc_url, headers=headers)
-                if resp.status_code == 200:
-                    if not resp.content:
-                        return 0, str(target_path)
-                    ext = _detect_extension(
-                        resp.content,
-                        resp.headers.get("Content-Type", ""),
-                        doc_url,
-                    )
+                content = resp.content or b""
+                ct = resp.headers.get("Content-Type", "").lower()
+
+                looks_like_file = bool(content) and (
+                    any(content[:8].startswith(sig) for sig, _ in _MAGIC_EXTS)
+                    or ct.startswith(("application/", "image/"))
+                )
+
+                if resp.status_code == 200 and looks_like_file:
+                    ext = _detect_extension(content, ct, hint_ext)
                     final_path = target_path.with_suffix(ext)
                     final_path.parent.mkdir(parents=True, exist_ok=True)
-                    final_path.write_bytes(resp.content)
-                    return len(resp.content), str(final_path)
+                    final_path.write_bytes(content)
+                    return len(content), str(final_path)
+
+                # IIS 404 with a real body — accept if magic bytes match.
+                if resp.status_code == 404 and looks_like_file:
+                    ext = _detect_extension(content, ct, hint_ext)
+                    final_path = target_path.with_suffix(ext)
+                    final_path.parent.mkdir(parents=True, exist_ok=True)
+                    final_path.write_bytes(content)
+                    return len(content), str(final_path)
+
                 if resp.status_code in RETRYABLE_STATUS_CODES and attempt < max_retries - 1:
                     await asyncio.sleep(2**attempt)
                     continue
-                logger.warning("HTTP %s for %s", resp.status_code, doc_url)
+
+                logger.warning("HTTP %s for %s (looks_like_file=%s)", resp.status_code, doc_url, looks_like_file)
                 return 0, str(target_path)
             except (httpx.TimeoutException, httpx.NetworkError) as exc:
                 if attempt < max_retries - 1:

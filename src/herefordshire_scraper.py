@@ -1,14 +1,19 @@
-"""OcellaWeb planning portal document metadata scraper.
+"""Herefordshire planning document scraper.
 
-Fetches and parses document listings from OcellaWeb council planning portals.
-Tested on: Hillingdon, South Holland, Breckland.
+The Herefordshire pipeline is a three-step lookup keyed on the application
+reference (e.g. ``P214393/L``):
 
-OcellaWeb pages have an anchor-driven structure: every document is a
-``<a href="viewDocument?file=...&module=pl">`` link. Surrounding chrome
-varies — most councils use ``<strong>`` section headers + ``<table>`` rows;
-some use definition-list layouts (``<h5><strong><p><hr>``). The parser keys
-off the anchor and walks the nearest table row (or any other container) for
-metadata, which makes it robust to layout variation.
+1. Search API at ``restservices.herefordshire.gov.uk/search/planning`` returns
+   an application ``id``.
+2. Detail page at ``herefordshire.gov.uk/.../details?id=<id>&search=<ref>``
+   carries a static ``<div id="planning-application-documents">`` with
+   ``<li>`` rows.
+3. Each ``<li>`` has an anchor pointing at
+   ``myaccount.herefordshire.gov.uk/documents?id=<uuid>`` which streams the
+   file directly.
+
+Steps 1–2 are already implemented in ``generic_route_recovery``; this scraper
+reuses that and adds doc extraction + download.
 """
 
 from __future__ import annotations
@@ -17,18 +22,26 @@ import asyncio
 import logging
 import time
 from pathlib import Path
+from typing import Any, Mapping
 from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup, FeatureNotFound
 
 from .config import IDOX_MAX_CONCURRENT_DOMAINS, IDOX_RATE_LIMIT_PER_DOMAIN, IDOX_USER_AGENT
+from .generic_route_recovery import (
+    _pick_herefordshire_application_id,
+    build_herefordshire_detail_url,
+    build_herefordshire_search_api_url,
+)
 
 logger = logging.getLogger(__name__)
 
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 MAX_RETRIES = 3
-RETRY_DELAY = 5.0
+
+DOCS_HOST = "myaccount.herefordshire.gov.uk"
+DOCS_PATH_PREFIX = "/documents"
 
 _MAGIC_EXTS: list[tuple[bytes, str]] = [
     (b"%PDF", ".pdf"),
@@ -62,21 +75,11 @@ def _parse_html(html: str) -> BeautifulSoup:
         return BeautifulSoup(html, "html.parser")
 
 
-def _detect_extension(content: bytes, content_type: str, url_path: str = "") -> str:
-    suffix = Path(urlparse(url_path).path).suffix.lower()
-    if suffix in {".pdf", ".doc", ".docx", ".gif", ".jpg", ".png", ".tif", ".tiff", ".xls", ".xlsx"}:
-        return ".tif" if suffix == ".tiff" else suffix
-
+def _detect_extension(content: bytes, content_type: str) -> str:
     head = content[:8]
     for sig, ext in _MAGIC_EXTS:
         if head.startswith(sig):
-            if ext == ".zip":
-                ct = (content_type or "").split(";", 1)[0].strip().lower()
-                office = _CTYPE_EXTS.get(ct)
-                if office:
-                    return office
             return ext
-
     ct = (content_type or "").split(";", 1)[0].strip().lower()
     return _CTYPE_EXTS.get(ct, ".pdf")
 
@@ -93,78 +96,57 @@ def _http_status_failure_code(status_code: int) -> str:
     return f"http_{status_code}"
 
 
-def _section_for(anchor) -> str:
-    """Walk previous siblings/parents looking for a section header."""
-    node = anchor
-    for _ in range(8):
-        # previous header sibling on the same parent chain
-        prev = node.find_previous(["strong", "h1", "h2", "h3", "h4", "h5", "h6"])
-        if prev is None:
-            return ""
-        text = prev.get_text(" ", strip=True)
-        if text and text.upper() != "DOCUMENTS":
-            return text
-        node = prev
-    return ""
-
-
-def parse_ocella_documents(html: str, page_url: str) -> list[dict]:
-    """Parse document metadata from an OcellaWeb showDocuments page.
-
-    Anchor-driven: every doc is an ``<a href="viewDocument?file=...">``.
-    Reads metadata from the nearest table row (most layouts) or, when none is
-    present, from the surrounding container (definition-list layouts).
-    """
+def parse_herefordshire_documents(html: str, page_url: str) -> list[dict]:
+    """Pull doc metadata out of the application detail page."""
     soup = _parse_html(html)
+    section = soup.find(id="planning-application-documents")
+    if section is None:
+        return []
 
     documents: list[dict] = []
-    seen_urls: set[str] = set()
+    seen: set[str] = set()
 
-    for link in soup.find_all("a", href=True):
+    for link in section.find_all("a", href=True):
         href = link["href"].strip()
-        if "viewDocument" not in href or "file=" not in href:
+        if DOCS_HOST not in href or "id=" not in href:
             continue
 
         document_url = urljoin(page_url, href)
-        if document_url in seen_urls:
+        if document_url in seen:
             continue
-        seen_urls.add(document_url)
+        seen.add(document_url)
 
-        doc_type = link.get_text(" ", strip=True)
-        date_published = ""
-        description = ""
+        description = link.get_text(" ", strip=True)
+        title = (link.get("title") or "").strip()
+        if title.lower().startswith("view "):
+            title = title[5:].strip()
 
-        row = link.find_parent("tr")
-        if row is not None:
-            cells = row.find_all("td")
-            if len(cells) > 2:
-                date_published = cells[2].get_text(" ", strip=True)
-            if len(cells) > 4:
-                description = cells[4].get_text(" ", strip=True)
-        else:
-            # Definition-list / paragraph layout: pull date/description out of
-            # neighbouring tags. Heuristic: first <p> or <dd> after the anchor.
-            for sibling in link.next_siblings:
-                name = getattr(sibling, "name", None)
-                if name in ("p", "dd", "span"):
-                    description = sibling.get_text(" ", strip=True)
-                    break
+        # File size sibling (e.g. <span class="fileSize">178KB</span>)
+        size_text = ""
+        size_span = link.find_next_sibling("span", class_="fileSize") or link.find_next("span", class_="fileSize")
+        if size_span is not None:
+            size_text = size_span.get_text(" ", strip=True)
 
         documents.append(
             {
-                "document_type": doc_type,
+                "document_type": title or description,
                 "description": description,
-                "date_published": date_published,
+                "date_published": "",
+                "drawing_number": "",
                 "document_url": document_url,
-                "section": _section_for(link),
+                "file_size_text": size_text,
             }
         )
 
     return documents
 
 
-class OcellaDocumentScraper:
-    """Async scraper for OcellaWeb planning portal document listings."""
+def application_reference_from_row(row: Mapping[str, Any]) -> str:
+    return (row.get("reference") or row.get("uid") or "").strip()
+
+
+class HerefordshireDocumentScraper:
+    """Async scraper for Herefordshire planning applications."""
 
     def __init__(
         self,
@@ -178,12 +160,12 @@ class OcellaDocumentScraper:
         self._client: httpx.AsyncClient | None = None
         self.stats = {"success": 0, "failed": 0, "no_docs": 0}
 
-    async def __aenter__(self) -> "OcellaDocumentScraper":
+    async def __aenter__(self) -> "HerefordshireDocumentScraper":
         self._client = httpx.AsyncClient(
             timeout=60.0,
             headers={
                 "User-Agent": IDOX_USER_AGENT,
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
             },
             follow_redirects=True,
         )
@@ -196,7 +178,7 @@ class OcellaDocumentScraper:
     @property
     def client(self) -> httpx.AsyncClient:
         if self._client is None:
-            raise RuntimeError("Use 'async with OcellaDocumentScraper() as scraper:'")
+            raise RuntimeError("Use 'async with HerefordshireDocumentScraper() as scraper:'")
         return self._client
 
     async def _rate_limit(self, domain: str) -> None:
@@ -221,14 +203,56 @@ class OcellaDocumentScraper:
             if acquired:
                 self._release(domain)
 
-    async def scrape_documents(self, docs_url: str) -> tuple[list[dict], str | None]:
-        """Scrape one OcellaWeb document listing.
-
-        Returns ``(documents, failure_code)``. ``failure_code`` is ``None``
-        on success (including legitimate empty listings).
-        """
+    async def _resolve_application_id(self, reference: str) -> tuple[str | None, str | None]:
+        """Search API → application id. Returns (app_id, failure_code)."""
         try:
-            resp = await self._get(docs_url)
+            resp = await self._get(build_herefordshire_search_api_url(reference))
+        except httpx.TimeoutException:
+            return None, "timeout"
+        except httpx.ConnectError as exc:
+            message = str(exc).lower()
+            if "nodename nor servname" in message or "name or service not known" in message:
+                return None, "dns_error"
+            return None, "connect_error"
+        except httpx.HTTPError:
+            return None, "network_error"
+
+        if resp.status_code != 200:
+            return None, _http_status_failure_code(resp.status_code)
+
+        try:
+            data = resp.json()
+        except ValueError:
+            return None, "search_invalid_json"
+
+        app_id = _pick_herefordshire_application_id(data)
+        if not app_id:
+            return None, "search_no_match"
+        return app_id, None
+
+    async def scrape_documents(
+        self,
+        docs_url: str,
+        application_reference: str = "",
+    ) -> tuple[list[dict], str | None]:
+        """Resolve the detail page for ``application_reference`` and parse docs.
+
+        ``docs_url`` is ignored (kept for the runner interface) — the detail
+        URL is derived from the reference via the search API.
+        """
+        reference = (application_reference or "").strip()
+        if not reference:
+            self.stats["failed"] += 1
+            return [], "no_application_reference"
+
+        app_id, code = await self._resolve_application_id(reference)
+        if code:
+            self.stats["failed"] += 1
+            return [], code
+
+        detail_url = build_herefordshire_detail_url(app_id, reference)
+        try:
+            resp = await self._get(detail_url)
         except httpx.TimeoutException:
             self.stats["failed"] += 1
             return [], "timeout"
@@ -246,18 +270,13 @@ class OcellaDocumentScraper:
             self.stats["failed"] += 1
             return [], _http_status_failure_code(resp.status_code)
 
-        # Some councils (e.g. Rother) return an HTML migration notice from the
-        # legacy host. Detect by absence of any viewDocument anchor + presence
-        # of a redirect script/text.
-        documents = parse_ocella_documents(resp.text, str(resp.url))
-
+        documents = parse_herefordshire_documents(resp.text, detail_url)
         if not documents:
-            text = resp.text.lower()
-            if "migrated" in text or "no longer in use" in text:
-                self.stats["failed"] += 1
-                return [], "portal_migrated"
             self.stats["no_docs"] += 1
             return [], None
+        # Annotate each doc with the detail URL so downloaders can use it as referer.
+        for doc in documents:
+            doc.setdefault("listing_url", detail_url)
         self.stats["success"] += 1
         return documents, None
 
@@ -268,7 +287,7 @@ class OcellaDocumentScraper:
         referer: str = "",
         max_retries: int = MAX_RETRIES,
     ) -> tuple[int, str]:
-        """Download one document, returning ``(bytes_written, final_path)``."""
+        """Download one document from myaccount.herefordshire.gov.uk."""
         domain = urlparse(doc_url).netloc
         for attempt in range(max_retries):
             acquired = False
@@ -277,14 +296,8 @@ class OcellaDocumentScraper:
                 acquired = True
                 headers = {"Referer": referer} if referer else {}
                 resp = await self.client.get(doc_url, headers=headers)
-                if resp.status_code == 200:
-                    if not resp.content:
-                        return 0, str(target_path)
-                    ext = _detect_extension(
-                        resp.content,
-                        resp.headers.get("Content-Type", ""),
-                        doc_url,
-                    )
+                if resp.status_code == 200 and resp.content:
+                    ext = _detect_extension(resp.content, resp.headers.get("Content-Type", ""))
                     final_path = target_path.with_suffix(ext)
                     final_path.parent.mkdir(parents=True, exist_ok=True)
                     final_path.write_bytes(resp.content)
