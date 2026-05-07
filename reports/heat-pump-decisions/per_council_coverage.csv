@@ -1,0 +1,376 @@
+authority,matched_lpas,mcs_installs,planning_apps,decided_apps,coverage_pct,year_range
+Cornwall,cornwall,10468,263,224,2.5,2015–2025
+Highland,highland,7280,303,274,4.2,2015–2025
+Ryedale,north yorkshire,7228,64,62,0.9,2015–2025
+Harrogate,north yorkshire,7228,188,135,2.6,2015–2025
+Craven,north yorkshire,7228,36,27,0.5,2015–2025
+Richmondshire,north yorkshire,7228,33,29,0.5,2015–2025
+Hambleton,north yorkshire,7228,61,54,0.8,2015–2025
+Scarborough,north yorkshire,7228,14,11,0.2,2015–2025
+Selby,north yorkshire,7228,29,23,0.4,2015–2025
+North Yorkshire,north yorkshire,7228,7,7,0.1,2015–2025
+South Somerset,somerset,5050,69,59,1.4,2015–2025
+Taunton Deane,somerset,5050,28,0,0.6,2015–2025
+Mendip,somerset,5050,56,45,1.1,2015–2025
+West Somerset,somerset,5050,23,22,0.5,2015–2025
+Sedgemoor,somerset,5050,26,22,0.5,2015–2025
+Somerset,somerset,5050,1,0,0.0,2015–2025
+Wiltshire,wiltshire,4464,334,276,7.5,2015–2025
+Powys,powys,4091,112,84,2.7,2015–2025
+Shropshire,shropshire,4021,188,165,4.7,2015–2025
+Argyll,argyll and bute,3886,317,288,8.2,2015–2025
+South Lanarkshire,south lanarkshire,3470,64,59,1.8,2015–2025
+Dumfries,dumfries and galloway,3394,492,397,14.5,2015–2025
+South Norfolk Broadland,south norfolk; broadland,3343,215,204,6.4,2015–2025
+Aberdeenshire,aberdeenshire,3048,299,257,9.8,2015–2025
+Dorset,dorset,3047,337,302,11.1,2015–2025
+Ceredigion,ceredigion,3026,53,44,1.8,2015–2025
+Carmarthenshire,carmarthenshire,2991,97,84,3.2,2015–2025
+Gwynedd,gwynedd,2890,131,108,4.5,2015–2025
+Babergh Mid Suffolk,babergh; mid suffolk,2829,232,204,8.2,2015–2025
+Northumberland (County),northumberland,2823,157,85,5.6,2015–2025
+Pembrokeshire,pembrokeshire,2775,46,0,1.7,2015–2025
+East Riding,east riding of yorkshire,2772,113,105,4.1,2015–2025
+Chiltern South Bucks,buckinghamshire,2712,132,98,4.9,2015–2025
+Wycombe,buckinghamshire,2712,73,66,2.7,2015–2025
+Aylesbury Vale,buckinghamshire,2712,147,125,5.4,2015–2025
+Buckinghamshire,buckinghamshire,2712,25,5,0.9,2015–2025
+Western Isles,na h-eileanan siar,2514,432,415,17.2,2015–2025
+Durham,county durham,2425,117,89,4.8,2015–2025
+East Lindsey,east lindsey,2400,56,41,2.3,2015–2025
+Manchester,manchester,2378,136,127,5.7,2015–2025
+Leeds,leeds,2362,246,225,10.4,2015–2025
+Westmorland and Furness,westmorland and furness,2342,84,68,3.6,2015–2025
+Barrow,westmorland and furness,2342,3,0,0.1,2015–2025
+Perth,perth and kinross,2340,187,156,8.0,2015–2025
+West Northamptonshire,west northamptonshire,2328,195,169,8.4,2015–2025
+Anglesey,isle of anglesey,2259,146,132,6.5,2015–2025
+South West Devon,south hams; west devon,2244,133,8,5.9,2015–2025
+Scottish Borders,scottish borders,2227,115,96,5.2,2015–2025
+Herefordshire,"herefordshire, county of",2218,130,126,5.9,2015–2025
+East Suffolk,east suffolk,2212,142,108,6.4,2015–2025
+Breckland,breckland,2175,56,34,2.6,2015–2025
+South Cambridgeshire,south cambridgeshire,2169,295,251,13.6,2015–2025
+Kings Lynn,king's lynn and west norfolk,2029,86,74,4.2,2015–2025
+Denbighshire,denbighshire,1942,41,30,2.1,2015–2025
+Cheshire East,cheshire east,1936,133,97,6.9,2015–2025
+North Norfolk,north norfolk,1892,156,111,8.2,2015–2025
+Flintshire,flintshire,1803,41,36,2.3,2015–2025
+West Berkshire,west berkshire,1724,162,116,9.4,2015–2025
+Bristol,"bristol, city of",1710,258,180,15.1,2015–2025
+North Kesteven,north kesteven,1646,65,56,3.9,2015–2025
+Calderdale,calderdale,1638,47,45,2.9,2015–2025
+Sheffield,sheffield,1634,73,58,4.5,2015–2025
+West Suffolk,west suffolk,1616,111,91,6.9,2015–2025
+Forest of Dean,forest of dean,1602,47,38,2.9,2015–2025
+Mid Kent,maidstone; tunbridge wells; swale,1551,101,86,6.5,2015–2025
+Stratford on Avon,stratford-on-avon,1493,152,118,10.2,2015–2025
+Allerdale,cumberland,1472,22,13,1.5,2015–2025
+Carlisle,cumberland,1472,18,17,1.2,2015–2025
+Copeland,cumberland,1472,6,5,0.4,2015–2025
+Moray,moray,1462,40,27,2.7,2015–2025
+Conwy,conwy,1443,49,39,3.4,2015–2025
+South Oxfordshire,south oxfordshire,1441,218,179,15.1,2015–2025
+East Devon,east devon,1419,101,95,7.1,2015–2025
+Glasgow,glasgow city,1404,59,56,4.2,2015–2025
+Chester,cheshire west and chester,1353,95,87,7.0,2015–2025
+Wealden,wealden,1328,134,116,10.1,2015–2025
+Fife,fife,1320,219,208,16.6,2015–2025
+Kettering,north northamptonshire,1307,25,21,1.9,2015–2025
+East Northamptonshire,north northamptonshire,1307,60,40,4.6,2015–2025
+Corby,north northamptonshire,1307,5,3,0.4,2015–2025
+Wellingborough,north northamptonshire,1307,21,14,1.6,2015–2025
+North Northamptonshire,north northamptonshire,1307,5,2,0.4,2015–2025
+Fenland,fenland,1306,22,19,1.7,2015–2025
+South Gloucestershire,south gloucestershire,1269,131,104,10.3,2015–2025
+South Holland,south holland,1252,14,0,1.1,2015–2025
+South Kesteven,south kesteven,1230,91,76,7.4,2015–2025
+West Lindsey,west lindsey,1214,48,45,4.0,2015–2025
+Central Bedfordshire,central bedfordshire,1198,111,89,9.3,2015–2025
+Vale of White Horse,vale of white horse,1193,141,108,11.8,2015–2025
+Kirklees,kirklees,1169,70,59,6.0,2015–2025
+North West Leicestershire,north west leicestershire,1166,29,25,2.5,2015–2025
+Winchester,winchester,1157,78,68,6.7,2015–2025
+Basingstoke,basingstoke and deane,1136,91,78,8.0,2015–2025
+Cotswold,cotswold,1131,135,121,11.9,2015–2025
+North Devon,north devon,1125,52,44,4.6,2015–2025
+Chichester,chichester,1123,66,60,5.9,2015–2025
+Mid Devon,mid devon,1115,68,52,6.1,2015–2025
+West Oxfordshire,west oxfordshire,1110,134,114,12.1,2015–2025
+Huntingdonshire,huntingdonshire,1083,88,62,8.1,2015–2025
+Test Valley,test valley,1079,133,103,12.3,2015–2025
+Newark and Sherwood,newark and sherwood,1068,57,43,5.3,2015–2025
+Bassetlaw,bassetlaw,1049,29,26,2.8,2015–2025
+East Cambridgeshire,east cambridgeshire,1038,68,51,6.6,2015–2025
+North Lincs,north lincolnshire,1018,19,17,1.9,2015–2025
+Orkney,orkney islands,1013,1213,1014,119.7,2015–2025
+Blackburn,blackburn with darwen,997,23,21,2.3,2015–2025
+Doncaster,doncaster,997,37,36,3.7,2015–2025
+North Lanarkshire,north lanarkshire,994,20,17,2.0,2015–2025
+Edinburgh,city of edinburgh,992,209,143,21.1,2015–2025
+North Somerset,north somerset,974,60,55,6.2,2015–2025
+Stroud,stroud,974,78,67,8.0,2015–2025
+Angus,angus,952,51,46,5.4,2015–2025
+Teignbridge,teignbridge,948,41,34,4.3,2015–2025
+Bradford,bradford,937,76,72,8.1,2015–2025
+New Forest (District),new forest,925,41,35,4.4,2015–2025
+Wychavon,wychavon,925,67,60,7.2,2015–2025
+Monmouthshire,monmouthshire,916,70,59,7.6,2015–2025
+Guildford,guildford,909,145,123,16.0,2015–2025
+Torridge,torridge,896,31,28,3.5,2015–2025
+Barnsley,barnsley,889,41,36,4.6,2015–2025
+Shetlands,shetland islands,876,346,334,39.5,2015–2025
+Stirling,stirling,876,62,58,7.1,2015–2025
+Sunderland,sunderland,866,28,18,3.2,2015–2025
+BCP,"bournemouth, christchurch and poole",865,74,65,8.6,2015–2025
+East Hampshire,east hampshire,863,32,19,3.7,2015–2025
+Derbyshire Dales,derbyshire dales,852,54,38,6.3,2015–2025
+Enfield,enfield,844,52,49,6.2,2015–2025
+Horsham,horsham,838,93,84,11.1,2015–2025
+York,york,832,83,73,10.0,2015–2025
+Pendle,pendle,822,17,16,2.1,2015–2025
+Bath,bath and north east somerset,819,146,112,17.8,2015–2025
+Cherwell,cherwell,818,111,104,13.6,2015–2025
+Birmingham,birmingham,814,100,73,12.3,2015–2025
+Rotherham,rotherham,807,30,25,3.7,2015–2025
+Maldon,maldon,800,41,31,5.1,2015–2025
+Harborough,harborough,792,39,34,4.9,2015–2025
+Malvern Hills,malvern hills,789,36,29,4.6,2015–2025
+Uttlesford,uttlesford,783,104,72,13.3,2015–2025
+Waverley,waverley,780,126,111,16.2,2015–2025
+Tendring,tendring,779,28,26,3.6,2015–2025
+Lewes,lewes,778,21,20,2.7,2015–2025
+Wakefield,wakefield,770,52,42,6.8,2015–2025
+Boston,boston,763,7,6,0.9,2015–2025
+Newcastle upon Tyne,newcastle upon tyne,759,84,68,11.1,2015–2025
+Swansea,swansea,749,125,109,16.7,2015–2025
+Wrexham,wrexham,745,35,31,4.7,2015–2025
+Ashford,ashford,745,67,58,9.0,2015–2025
+Stafford,stafford,745,28,1,3.8,2015–2025
+East Staffordshire,east staffordshire,736,56,7,7.6,2015–2025
+South Ayrshire,south ayrshire,734,26,22,3.5,2015–2025
+East Hertfordshire,east hertfordshire,726,276,212,38.0,2015–2025
+Chelmsford,chelmsford,714,67,0,9.4,2015–2025
+Wigan,wigan,710,27,24,3.8,2015–2025
+Sevenoaks,sevenoaks,709,117,80,16.5,2015–2025
+Colchester,colchester,706,39,28,5.5,2015–2025
+Bedford,bedford,694,65,35,9.4,2015–2025
+Mid Sussex,mid sussex,685,68,54,9.9,2015–2025
+Salford,salford,670,36,32,5.4,2015–2025
+North Ayrshire,north ayrshire,668,16,16,2.4,2015–2025
+Milton Keynes,milton keynes,666,86,78,12.9,2015–2025
+Great Yarmouth,great yarmouth,663,22,0,3.3,2015–2025
+East Lothian,east lothian,653,111,95,17.0,2015–2025
+West Lothian,west lothian,628,28,26,4.5,2015–2025
+Braintree,braintree,616,48,35,7.8,2015–2025
+Isle of Wight,isle of wight,605,36,28,6.0,2015–2025
+Rushcliffe,rushcliffe,593,75,64,12.6,2015–2025
+Rother,rother,593,43,17,7.3,2015–2025
+Brighton,brighton and hove,590,80,75,13.6,2015–2025
+Wirral,wirral,586,40,13,6.8,2015–2025
+South Derbyshire,south derbyshire,578,52,46,9.0,2015–2025
+Tunbridge Wells,tunbridge wells,573,91,79,15.9,2015–2025
+Falkirk,falkirk,562,22,19,3.9,2015–2025
+Stockport,stockport,561,54,39,9.6,2015–2025
+Amber Valley,amber valley,555,36,29,6.5,2015–2025
+Staffordshire Moorlands,staffordshire moorlands,542,24,19,4.4,2015–2025
+Bolton,bolton,541,33,31,6.1,2015–2025
+Wokingham,wokingham,537,86,78,16.0,2015–2025
+North Hertfordshire,north hertfordshire,534,94,84,17.6,2015–2025
+Liverpool,liverpool,532,74,60,13.9,2015–2025
+Tonbridge,tonbridge and malling,532,46,37,8.6,2015–2025
+Nottingham,nottingham,532,52,45,9.8,2015–2025
+Neath,neath port talbot,530,30,23,5.7,2015–2025
+Cambridge,cambridge,526,237,184,45.1,2015–2025
+Dacorum,dacorum,524,98,85,18.7,2015–2025
+North East Lincs,north east lincolnshire,519,12,9,2.3,2015–2025
+Warwick,warwick,509,86,77,16.9,2015–2025
+Rossendale,rossendale,501,23,20,4.6,2015–2025
+Derby,derby,499,38,20,7.6,2015–2025
+Warrington,warrington,499,25,14,5.0,2015–2025
+Windsor,windsor and maidenhead,493,130,92,26.4,2015–2025
+Gedling,gedling,481,19,17,4.0,2015–2025
+Canterbury,canterbury,474,52,47,11.0,2015–2025
+Epping Forest,epping forest,463,30,28,6.5,2015–2025
+Peterborough,peterborough,462,57,46,12.3,2015–2025
+Oxford,oxford,459,310,250,67.5,2015–2025
+Telford,telford and wrekin,456,44,22,9.6,2015–2025
+Ealing,ealing,455,163,144,35.8,2015–2025
+Tewkesbury,tewkesbury,453,22,18,4.9,2015–2025
+Redcar and Cleveland,redcar and cleveland,450,11,9,2.4,2015–2025
+Reading,reading,448,78,59,17.4,2015–2025
+East Ayrshire,east ayrshire,445,32,28,7.2,2015–2025
+Mole Valley,mole valley,440,60,53,13.6,2015–2025
+Charnwood,charnwood,435,51,34,11.7,2015–2025
+St Albans,st albans,434,138,78,31.8,2015–2025
+Lancaster,lancaster,434,100,76,23.0,2015–2025
+Shepway,folkestone and hythe,429,35,26,8.2,2015–2025
+Hinckley and Bosworth,hinckley and bosworth,426,23,20,5.4,2015–2025
+North East Derbyshire,north east derbyshire,421,20,2,4.8,2015–2025
+North Tyneside,north tyneside,416,36,33,8.7,2015–2025
+Dover,dover,413,37,30,9.0,2015–2025
+Leicester,leicester,403,50,6,12.4,2015–2025
+Bury,bury,402,14,9,3.5,2015–2025
+Croydon,croydon,398,76,66,19.1,2015–2025
+Bromsgrove Redditch,bromsgrove; redditch,398,20,18,5.0,2015–2025
+Bromley,bromley,396,103,90,26.0,2015–2025
+Rhondda,rhondda cynon taf,394,36,31,9.1,2015–2025
+Erewash,erewash,392,10,10,2.6,2015–2025
+West Lancashire,west lancashire,386,27,24,7.0,2015–2025
+Glamorgan,vale of glamorgan,386,77,71,19.9,2015–2025
+Thurrock,thurrock,384,8,8,2.1,2015–2025
+Tandridge,tandridge,383,60,54,15.7,2015–2025
+Ribble Valley,ribble valley,383,49,47,12.8,2015–2025
+Arun,arun,382,47,0,12.3,2015–2025
+Hartlepool,hartlepool,382,11,9,2.9,2015–2025
+Worcester,worcester,381,11,9,2.9,2015–2025
+Chorley,chorley,381,21,19,5.5,2015–2025
+Stockton-on-Tees,stockton-on-tees,379,25,20,6.6,2015–2025
+Southampton,southampton,379,29,27,7.7,2015–2025
+Trafford,trafford,375,61,47,16.3,2015–2025
+Melton,melton,375,21,18,5.6,2015–2025
+Rugby,rugby,372,53,47,14.2,2015–2025
+Ashfield,ashfield,370,12,11,3.2,2015–2025
+Swindon,swindon,361,26,22,7.2,2015–2025
+Woking,woking,355,48,43,13.5,2015–2025
+Sefton,sefton,355,30,22,8.5,2015–2025
+Adur and Worthing,adur; worthing,351,51,48,14.5,2015–2025
+Gosport,gosport,345,10,7,2.9,2015–2025
+Lichfield,lichfield,343,33,32,9.6,2015–2025
+Cardiff,cardiff,337,124,93,36.8,2015–2025
+Reigate,reigate and banstead,332,100,89,30.1,2015–2025
+South Staffordshire,south staffordshire,329,27,27,8.2,2015–2025
+Preston,preston,328,10,9,3.0,2015–2025
+Hull,"kingston upon hull, city of",327,12,10,3.7,2015–2025
+Mansfield,mansfield,327,10,8,3.1,2015–2025
+Bolsover,bolsover,324,10,10,3.1,2015–2025
+High Peak,high peak,324,20,4,6.2,2015–2025
+Blaby,blaby,319,9,8,2.8,2015–2025
+Southwark,southwark,318,331,248,104.1,2015–2025
+Hart,hart,318,54,33,17.0,2015–2025
+Newcastle under Lyme,newcastle-under-lyme,318,16,16,5.0,2015–2025
+Richmond,richmond upon thames,314,243,145,77.4,2015–2025
+Barnet,barnet,313,177,145,56.5,2015–2025
+Wyre,wyre,307,19,15,6.2,2015–2025
+Haringey,haringey,302,144,131,47.7,2015–2025
+Bridgend,bridgend,300,23,18,7.7,2015–2025
+Caerphilly,caerphilly,300,26,21,8.7,2015–2025
+Lewisham,lewisham,298,136,122,45.6,2015–2025
+Aberdeen,aberdeen city,297,39,36,13.1,2015–2025
+Luton,luton,297,5,4,1.7,2015–2025
+Midlothian,midlothian,294,40,28,13.6,2015–2025
+Coventry,coventry,293,44,34,15.0,2015–2025
+Elmbridge,elmbridge,293,121,113,41.3,2015–2025
+Hillingdon,hillingdon,291,59,0,20.3,2015–2025
+Rutland,rutland,289,56,52,19.4,2015–2025
+Ipswich,ipswich,289,15,0,5.2,2015–2025
+Walsall,walsall,288,12,11,4.2,2015–2025
+Fareham,fareham,287,25,25,8.7,2015–2025
+Thanet,thanet,284,33,23,11.6,2015–2025
+Stoke on Trent,stoke-on-trent,283,11,11,3.9,2015–2025
+Chesterfield,chesterfield,280,19,17,6.8,2015–2025
+Broxtowe,broxtowe,276,27,26,9.8,2015–2025
+Medway,medway,275,72,49,26.2,2015–2025
+Middlesbrough,middlesbrough,274,4,3,1.5,2015–2025
+Cheltenham,cheltenham,273,68,41,24.9,2015–2025
+Brent,brent,269,116,108,43.1,2015–2025
+Bracknell,bracknell forest,267,29,24,10.9,2015–2025
+Darlington,darlington,267,26,24,9.7,2015–2025
+Exeter,exeter,265,45,40,17.0,2015–2025
+Merton,merton,263,123,78,46.8,2015–2025
+Eastleigh,eastleigh,263,23,19,8.7,2015–2025
+East Dunbartonshire,east dunbartonshire,262,11,8,4.2,2015–2025
+Solihull,solihull,259,31,25,12.0,2015–2025
+Norwich,norwich,258,58,45,22.5,2015–2025
+Dudley,dudley,256,17,16,6.6,2015–2025
+Renfrewshire,renfrewshire,251,26,22,10.4,2015–2025
+Havant,havant,250,15,6,6.0,2015–2025
+Rochdale,rochdale,248,29,28,11.7,2015–2025
+South Ribble,south ribble,243,26,23,10.7,2015–2025
+Welwyn Hatfield,welwyn hatfield,243,74,67,30.5,2015–2025
+South Tyneside,south tyneside,243,15,12,6.2,2015–2025
+Torbay,torbay,243,28,27,11.5,2015–2025
+Wandsworth,wandsworth,239,273,229,114.2,2015–2025
+Lambeth,lambeth,236,231,207,97.9,2015–2025
+Basildon,basildon,236,29,19,12.3,2015–2025
+Gravesham,gravesham,234,17,16,7.3,2015–2025
+Plymouth,plymouth,231,52,41,22.5,2015–2025
+Harrow,harrow,229,53,41,23.1,2015–2025
+Sandwell,sandwell,225,23,20,10.2,2015–2025
+Waltham Forest,waltham forest,223,95,79,42.6,2015–2025
+Hackney,hackney,221,150,127,67.9,2015–2025
+Gateshead,gateshead,221,19,16,8.6,2015–2025
+Kingston,kingston upon thames,220,66,46,30.0,2015–2025
+Runnymede,runnymede,219,59,55,26.9,2015–2025
+Greenwich,greenwich,218,141,127,64.7,2015–2025
+Wyre Forest,wyre forest,218,12,11,5.5,2015–2025
+Oldham,oldham,217,16,13,7.4,2015–2025
+Lincoln,lincoln,215,11,11,5.1,2015–2025
+Havering,havering,214,31,0,14.5,2015–2025
+Dundee,dundee city,211,29,25,13.7,2015–2025
+St Helens,st. helens,205,6,3,2.9,2015–2025
+North Warwickshire,north warwickshire,203,5,5,2.5,2015–2025
+Hounslow,hounslow,202,134,108,66.3,2015–2025
+Newport,newport,202,60,54,29.7,2015–2025
+Blackpool,blackpool,199,14,14,7.0,2015–2025
+Knowsley,knowsley,197,17,15,8.6,2015–2025
+Portsmouth,portsmouth,193,27,23,14.0,2015–2025
+Three Rivers,three rivers,192,84,70,43.8,2015–2025
+Tameside,tameside,183,27,27,14.8,2015–2025
+Sutton,sutton,182,75,53,41.2,2015–2025
+Fylde,fylde,178,20,20,11.2,2015–2025
+East Renfrewshire,east renfrewshire,178,12,11,6.7,2015–2025
+Hertsmere,hertsmere,177,33,26,18.6,2015–2025
+Brentwood,brentwood,175,34,29,19.4,2015–2025
+Camden,camden,175,266,204,152.0,2015–2025
+Halton,halton,175,8,3,4.6,2015–2025
+Clackmannanshire,clackmannanshire,173,10,9,5.8,2015–2025
+Wolverhampton,wolverhampton,169,12,10,7.1,2015–2025
+Gloucester,gloucester,165,13,9,7.9,2015–2025
+Surrey Heath,surrey heath,162,25,22,15.4,2015–2025
+Bexley,bexley,157,33,23,21.0,2015–2025
+Hyndburn,hyndburn,151,8,7,5.3,2015–2025
+Burnley,burnley,147,5,3,3.4,2015–2025
+Islington,islington,142,280,242,197.2,2015–2025
+Redbridge,redbridge,142,40,36,28.2,2015–2025
+Kensington,kensington and chelsea,140,447,224,319.3,2015–2025
+Southend,southend-on-sea,139,17,14,12.2,2015–2025
+Dartford,dartford,134,27,21,20.1,2015–2025
+Rushmoor,rushmoor,127,20,19,15.7,2015–2025
+Spelthorne,spelthorne,120,27,26,22.5,2015–2025
+Rochford,rochford,120,7,6,5.8,2015–2025
+Slough,slough,117,9,8,7.7,2015–2025
+Hammersmith and Fulham,hammersmith and fulham,116,227,170,195.7,2015–2025
+Blaenau Gwent,blaenau gwent,115,13,6,11.3,2015–2025
+Stevenage,stevenage,114,17,12,14.9,2015–2025
+Epsom and Ewell,epsom and ewell,112,22,20,19.6,2015–2025
+Cannock Chase,cannock chase,112,5,5,4.5,2015–2025
+Broxbourne,broxbourne,112,9,0,8.0,2015–2025
+Newry Mourne Down,"newry, mourne and down",109,7,6,6.4,2015–2025
+Hastings,hastings,106,22,21,20.8,2015–2025
+Castle Point,castle point,106,6,4,5.7,2015–2025
+Inverclyde,inverclyde,101,11,11,10.9,2015–2025
+Tower Hamlets,tower hamlets,97,92,85,94.8,2015–2025
+Newham,newham,94,42,36,44.7,2015–2025
+Crawley,crawley,86,10,5,11.6,2015–2025
+Eastbourne,eastbourne,86,20,12,23.3,2015–2025
+Torfaen,torfaen,83,24,17,28.9,2015–2025
+Tamworth,tamworth,80,1,1,1.2,2015–2025
+Oadby and Wigston,oadby and wigston,79,5,4,6.3,2015–2025
+West Dunbartonshire,west dunbartonshire,76,7,0,9.2,2015–2025
+Merthyr Tydfil,merthyr tydfil,76,16,14,21.1,2015–2025
+Watford,watford,74,25,21,33.8,2015–2025
+Westminster,westminster,72,545,325,756.9,2015–2025
+Mid Ulster,mid ulster,71,3,3,4.2,2015–2025
+Harlow,harlow,66,6,6,9.1,2015–2025
+Barking and Dagenham,barking and dagenham,66,15,15,22.7,2015–2025
+Armagh Banbridge Craigavon,"armagh city, banbridge and craigavon",63,8,7,12.7,2015–2025
+Ards and North Down,ards and north down,62,13,13,21.0,2015–2025
+Fermanagh and Omagh,fermanagh and omagh,52,10,10,19.2,2015–2025
+Causeway and Glens,causeway coast and glens,43,14,10,32.6,2015–2025
+Antrim and Newtownabbey,antrim and newtownabbey,42,3,3,7.1,2015–2025
+Derry and Strabane,derry city and strabane,38,4,4,10.5,2015–2025
+Lisburn and Castlereagh,lisburn and castlereagh,29,3,3,10.3,2015–2025
+Scilly Isles,isles of scilly,24,7,7,29.2,2015–2025
+Mid East Antrim,mid and east antrim,19,6,6,31.6,2015–2025
+Belfast,belfast,16,11,11,68.8,2015–2025

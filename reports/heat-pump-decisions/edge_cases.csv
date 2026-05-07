@@ -1,0 +1,7 @@
+subset,total,approved,refused,withdrawn,discharge,split,pending,other,no_decision,decided,approval_rate,refusal_rate,no_decision_share
+Listed / heritage flag,3274,2314,112,267,88,4,10,33,446,2426,95.4,4.6,13.6
+No listed / heritage flag,27172,19810,1587,1673,785,53,99,300,2865,21397,92.6,7.4,10.5
+Flat / apartment,1592,1071,122,97,47,2,2,17,234,1193,89.8,10.2,14.7
+Not flat / apartment,28854,21053,1577,1843,826,55,107,316,3077,22630,93.0,7.0,10.7
+Wind turbine mentioned,22,10,2,3,0,0,0,0,7,12,83.3,16.7,31.8
+Noise / sound mentioned,1295,889,59,76,73,8,3,12,175,948,93.8,6.2,13.5

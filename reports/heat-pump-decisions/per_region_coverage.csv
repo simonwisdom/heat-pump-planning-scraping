@@ -1,0 +1,12 @@
+region,n_authorities,mcs_installs,planning_apps,coverage_pct
+London,24,6155,4353,70.7
+Northern Ireland,11,544,82,15.1
+Scotland,32,43581,4848,11.1
+South East,70,47361,5133,10.8
+East of England,46,36515,3297,9.0
+West Midlands,28,14150,1159,8.2
+Wales,22,30571,1522,5.0
+North West,40,28807,1417,4.9
+East Midlands,36,29958,1404,4.7
+South West,31,67385,2753,4.1
+North East / Yorkshire,35,82673,1932,2.3

@@ -20,9 +20,8 @@ test-results/
 *.parquet
 *.xlsx
 
-# Local data, docs, and output (not in repo)
+# Local data and docs (not in repo)
 _local/
-reports/
 
 # Environment
 .env

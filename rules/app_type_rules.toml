@@ -1,0 +1,53 @@
+# Application-type bucketing for `planning_application_type` (and description as
+# a fallback haystack).
+#
+# Why this exists: PlanIt's `planning_application_type` is structured-ish but
+# noisy — councils use their own labels ("Householder Application", "S73
+# Variation", "Deemed Regs 3", "Status", etc.). The script first checks whether
+# the raw value is already one of the seven canonical bucket names below; if
+# so, it's used as-is. Otherwise the rules in this file are run, in order, over
+# (raw_application_type + " " + description) and the first match wins.
+#
+# Default: "Full" — the dominant bucket for heat-pump applications and a safer
+# default than "Unknown".
+#
+# How to read this file: each [[rule]] is a regex tested in order. The "why"
+# notes explain edge cases the priority order is guarding against.
+#
+# To argue with a rule: edit the pattern and re-run; the "How rules fire"
+# section in the report shows how many rows each rule caught.
+
+[[rule]]
+label = "Heritage"
+pattern = '''\b(listed\s*building|lb\s*(consent|alter|extension)|lb\s+|heritage|conservation\s*area\s*consent)\b'''
+why = "Listed Building Consent and similar heritage routes. Runs first because 'conservation area consent' would otherwise match nothing."
+
+[[rule]]
+label = "Trees"
+pattern = '''\b(tree[s]?\s*(work|preservation|tpo)|works?\s*to\s*tree)\b'''
+why = "Tree Preservation Order works and s.211 conservation-area tree notices."
+
+[[rule]]
+label = "Conditions"
+pattern = '''\b(discharge\s*of\s*condition|approval\s*of\s*details|details\s*pursuant|details\s*of\s*condition|reserved\s*matters)\b'''
+why = "Discharging conditions or settling reserved matters from an outline consent. Distinct from 'discharge' decision bucket (this is the application kind)."
+
+[[rule]]
+label = "Amendment"
+pattern = '''\b(non[-\s]?mat\w*|minor\s*amend\w*|variation\s*of\s*condition|section\s*(?:73|42)|s\.?\s*(?:73|42)\b|revised\s*application|further\s*application|amendment)\b'''
+why = "Non-material amendments (s.96A) and condition variations (s.73). Captured separately because they're refused at much higher rates."
+
+[[rule]]
+label = "Outline"
+pattern = '''\boutline\b'''
+why = "Outline applications — principle-of-development decisions."
+
+[[rule]]
+label = "Other"
+pattern = '''\b(observation|adjoining\s*borough|neighbouring\s*authorit|spheres?\s*of\s*mutual|certificate\s*of\s*lawful|estate\s*management|pre[-\s]?app|withdrawn|status|exemption|self\s*assess|deemed)\b'''
+why = "Catch-all for non-standard routes (CoL, prior-approval observations, neighbour notifications, etc.). Runs before 'Full' so generic 'application' text doesn't swallow these."
+
+[[rule]]
+label = "Full"
+pattern = '''\b(minor|major|all\s*other\s*development|dwelling|householder|full|change\s*of\s*use|extension|installation|erection|construct|new\s*build|renewal\s*of\s*permission|prior\s*approval)\b'''
+why = "Standard 'full' planning applications — the dominant bucket for heat-pump installations. Default if nothing else matches."

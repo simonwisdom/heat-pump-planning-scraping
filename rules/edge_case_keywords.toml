@@ -1,0 +1,56 @@
+# Edge-case flags applied per application. Each flag is an OR over one or more
+# [[match]] clauses; flags are not mutually exclusive (an app can be both flat
+# AND listed). Drives the "Edge cases flagged in the proposal" table.
+#
+# Each [[match]] specifies a single field to scan and a regex to apply to it.
+# Fields:
+#   - "app_type_lower" — the canonical app-type bucket, lowercased (e.g. "heritage")
+#   - "description"    — the application's free-text description
+#
+# These are pure keyword heuristics. There is no source column for any of
+# these — they're all inferred. Treat as hints rather than verdicts.
+
+[is_listed]
+why = "Listed buildings and conservation-area context. Superset of the Heritage app-type bucket — also catches 'Full' apps mentioning a listed-building setting."
+[[is_listed.match]]
+field = "app_type_lower"
+pattern = "heritage"
+[[is_listed.match]]
+field = "description"
+pattern = 'listed\s*(building|property|dwelling|structure)?'
+
+
+[is_flat]
+why = "Flats / apartments. Used to test whether refusal rate differs for shared-building installs."
+[[is_flat.match]]
+field = "description"
+pattern = '\bflat[s]?\b'
+[[is_flat.match]]
+field = "description"
+pattern = '\bapartment[s]?\b'
+
+
+[is_wind_turbine]
+why = "Wind-turbine mentions in heat-pump applications — usually a side-by-side renewables proposal. Sample size is tiny so refusal rate here is illustrative only."
+[[is_wind_turbine.match]]
+field = "description"
+pattern = '\bwind\s+turbine[s]?\b'
+[[is_wind_turbine.match]]
+field = "description"
+pattern = '\bturbine[s]?\b'
+
+
+[mentions_noise]
+why = "Any noise/sound mention — feeds the sound-assessment workstream. MCS 020 is the noise-assessment standard for ASHPs."
+[[mentions_noise.match]]
+field = "description"
+pattern = '\bnoise\b'
+[[mentions_noise.match]]
+field = "description"
+pattern = '\bsound\b'
+[[mentions_noise.match]]
+field = "description"
+pattern = '\bacoustic\b'
+[[mentions_noise.match]]
+field = "description"
+pattern = '\bMCS\s*0?20\b'

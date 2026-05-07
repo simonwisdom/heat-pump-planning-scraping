@@ -1,0 +1,44 @@
+# Outcome bucketing for the council's free-text decision string.
+#
+# Why this exists: PlanIt aggregates each council's `planning_decision` text as
+# they wrote it (e.g. "Approved with conditions", "Application Refused", "PER",
+# "Finally disposed of"). There is no normalised national outcome column.
+#
+# How to read this file: each [[rule]] is a regex tested against the raw
+# decision string. The first rule whose pattern matches wins, so order is
+# load-bearing — see the "why" notes.
+#
+# To argue with a rule: change the pattern, re-run the script, and check
+# `reports/heat-pump-decisions/decision_mapping.csv` (raw decision string ->
+# bucket, sorted by frequency). The "How rules fire" section at the bottom of
+# the report shows how many rows each rule caught last run.
+
+[[rule]]
+label = "split"
+pattern = "split|part.{0,5}approv.{0,5}part.{0,5}refus|part.{0,5}refus.{0,5}part.{0,5}approv"
+why = "Mixed outcomes — application part-approved, part-refused. Must run before 'refused' so it doesn't get bucketed there."
+
+[[rule]]
+label = "refused"
+pattern = "refus|reject|decline|denied|not.{0,5}lawful|unlawful|not.{0,5}acceptable|objection|negative"
+why = "All recognisable refusal language. 'objection' covers neighbouring-authority observation responses; 'not lawful' covers certificate-of-lawfulness rejections."
+
+[[rule]]
+label = "withdrawn"
+pattern = "withdrawn|abandon|finally.{0,5}disposed|closed|cancelled"
+why = "Application withdrawn by applicant or closed administratively. Excluded from refusal-rate denominators."
+
+[[rule]]
+label = "discharge"
+pattern = "discharg|comply|condition.{0,20}approv|condition.{0,20}accept|condition.{0,20}clear|condition.{0,20}decide"
+why = "Discharge of conditions — formal sign-off on details required by an existing permission. Treated as its own bucket (not approved) because it isn't a substantive decision on the proposal."
+
+[[rule]]
+label = "approved"
+pattern = "grant|approv|permit|consent|lawful|accept|agree|favourable|certif|permission|^PER$|^yes$|no.{0,3}objection|conditional|determined|decided|response.issued"
+why = "All recognisable approval language. Runs after refusal/discharge so 'permission refused' lands in 'refused', not 'approved'."
+
+[[rule]]
+label = "pending"
+pattern = "pending|not.{0,10}determined|under.{0,10}consider|invalid|returned|being.validated"
+why = "Application is in flight or has been returned for revision. Excluded from refusal-rate denominators."

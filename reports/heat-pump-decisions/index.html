@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Heat Pump Decision Patterns</title>
+  <style>
+    :root {
+      --ink: #17211b;
+      --muted: #52635a;
+      --line: #d9e1dd;
+      --panel: #f7f9f8;
+      --accent: #1f7a5a;
+      --accent-2: #a33b2f;
+      --bg: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 1080px; margin: 0 auto; padding: 34px 24px 56px; }
+    h1 { font-size: 34px; line-height: 1.1; margin: 0 0 10px; letter-spacing: 0; }
+    h2 { font-size: 22px; margin: 34px 0 12px; letter-spacing: 0; }
+    h3 { font-size: 16px; margin: 24px 0 8px; letter-spacing: 0; }
+    p { max-width: 760px; color: var(--muted); }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 24px 0 24px; }
+    .kpi { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; background: var(--panel); }
+    .kpi .value { display: block; font-size: 26px; line-height: 1.2; font-weight: 700; color: var(--ink); }
+    .kpi .label { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr); gap: 22px; align-items: start; }
+    .chart-wrap { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fff; overflow: hidden; }
+    .chart { width: 100%; height: auto; display: block; }
+    .line-chart polyline { fill: none; stroke: var(--accent-2); stroke-width: 3; }
+    .line-chart circle { fill: var(--accent-2); }
+    .chart text { fill: var(--muted); font-size: 12px; }
+    .chart text.chart-title { fill: var(--ink); font-size: 13px; font-weight: 600; }
+    .chart text.axis-title { fill: var(--ink); font-size: 12px; font-weight: 500; }
+    .axis .grid { stroke: var(--line); stroke-width: 1; }
+    .bar-chart rect { fill: var(--accent); }
+    .histogram rect { fill: var(--accent-2); }
+    .histogram .ref { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 3; }
+    .histogram .ref-label { fill: var(--ink); font-size: 11px; }
+    .hbar-chart rect { fill: var(--accent-2); }
+    .hbar-chart .ref { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 3; }
+    .hbar-chart .ref-label { fill: var(--ink); font-size: 11px; }
+    .hbar-chart .row-label { fill: var(--ink); font-size: 12px; }
+    .hbar-chart .value-label { fill: var(--ink); font-size: 12px; }
+    details { margin: 6px 0 18px; }
+    details > summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 0; }
+    details[open] > summary { margin-bottom: 6px; }
+    .dual-line polyline { fill: none; stroke-width: 2.5; }
+    .dual-line polyline.series-1 { stroke: var(--accent-2); }
+    .dual-line polyline.series-2 { stroke: var(--accent); }
+    .dual-line .series-1-pts circle { fill: var(--accent-2); }
+    .dual-line .series-2-pts circle { fill: var(--accent); }
+    .dual-line .legend line.series-1 { stroke: var(--accent-2); stroke-width: 2.5; }
+    .dual-line .legend line.series-2 { stroke: var(--accent); stroke-width: 2.5; }
+    .dual-line .legend text { fill: var(--ink); font-size: 12px; }
+    .sparkline-row { display: grid; grid-template-columns: minmax(160px, 0.4fr) minmax(0, 1fr); gap: 12px; align-items: center; margin: 8px 0; }
+    .sparkline-label strong { display: block; }
+    .chart-wrap.sparkline { padding: 4px; }
+    h4 { font-size: 14px; margin: 14px 0 6px; color: var(--ink); }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0 18px; font-size: 14px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 8px 9px; text-align: right; vertical-align: top; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--muted); font-weight: 600; background: var(--panel); }
+    table.rule-fire th, table.rule-fire td { text-align: left; }
+    table.rule-fire th:last-child, table.rule-fire td:last-child { text-align: right; white-space: nowrap; }
+    table.rule-fire td:nth-child(2) { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; word-break: break-all; }
+    .note { font-size: 13px; color: var(--muted); }
+    code { background: var(--panel); padding: 2px 5px; border-radius: 4px; }
+    dl { margin: 8px 0 4px; font-size: 14px; }
+    dt { font-weight: 600; margin-top: 8px; }
+    dt:first-child { margin-top: 0; }
+    dd { margin: 2px 0 0 0; color: var(--muted); }
+    @media (max-width: 820px) {
+      main { padding: 24px 16px 42px; }
+      .kpis, .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Heat Pump Decision Patterns</h1>
+  <p>ASHP and broader heat-pump planning applications. Generated 2026-05-07 17:26 UTC.</p>
+
+  <section class="kpis" aria-label="Headline metrics">
+    <div class="kpi"><span class="value">30,446</span><span class="label">Applications</span></div>
+    <div class="kpi"><span class="value">23,823</span><span class="label">Approved or refused</span></div>
+    <div class="kpi"><span class="value">22,124</span><span class="label">Approved <span class="kpi-pct">(92.9% of decisions)</span></span></div>
+    <div class="kpi"><span class="value">1,699</span><span class="label">Refused <span class="kpi-pct">(7.1% of decisions)</span></span></div>
+  </section>
+
+  <h2>When do heat-pump installs need planning permission?</h2>
+  <p>Most heat pumps don&rsquo;t need planning permission &mdash; they&rsquo;re allowed automatically as long as they meet certain rules on size, noise, and distance from neighbours (the planning system calls this &ldquo;permitted development&rdquo;). The rest do need a planning application, and that&rsquo;s what this dataset captures.</p>
+  <p class="note">Sources for the permitted-development rules: Planning Portal &mdash; <a href="https://www.planningportal.co.uk/permission/common-projects/heat-pumps/planning-permission-air-source-heat-pump/" target="_blank" rel="noopener">air source</a> and <a href="https://www.planningportal.co.uk/permission/common-projects/heat-pumps" target="_blank" rel="noopener">ground/water source</a> heat pumps (England); <a href="https://www.gov.wales/planning-permission-heat-pumps" target="_blank" rel="noopener">gov.wales</a> (Wales). The underlying legislation is the <a href="https://www.legislation.gov.uk/uksi/2015/596/schedule/2" target="_blank" rel="noopener">Town and Country Planning (General Permitted Development) (England) Order 2015, Sch. 2</a> (Part 14, Classes G&ndash;H). England&rsquo;s rules were eased on 29 May 2025 (1 m boundary rule removed; size limit raised to 1.5 m&sup3;), as part of the <a href="https://www.gov.uk/government/publications/warm-homes-plan/warm-homes-plan-html" target="_blank" rel="noopener">Warm Homes Plan</a> (DESNZ, last updated 18 March 2026).</p>
+
+  <h3>Over time</h3><p>To gauge the share of installs that need planning permission, we compare planning applications against MCS &mdash; the certification scheme that records every heat pump fitted by an accredited installer in the UK, whether or not planning was needed. The chart below puts the two side by side: certified installs in red, planning applications in green.<br><br>In 2025 there were <strong>5,675 planning applications</strong> for heat pumps versus <strong>61,228 certified installations</strong>. So only about <strong>9.3%</strong> of installs needed planning permission. The average across 2015&ndash;2025 is roughly 10%.</p><div class="grid"><div class="chart-wrap">
+    <svg class="chart dual-line" viewBox="0 0 760 300" role="img" aria-label="MCS-certified installs (all heat-pump types) vs Planning apps in this dataset by year">
+      <g class="axis"><line x1="60" x2="740" y1="258.0" y2="258.0" class="grid" /><text x="52" y="262.0" text-anchor="end">0</text><line x1="60" x2="740" y1="207.5" y2="207.5" class="grid" /><text x="52" y="211.5" text-anchor="end">20k</text><line x1="60" x2="740" y1="157.0" y2="157.0" class="grid" /><text x="52" y="161.0" text-anchor="end">40k</text><line x1="60" x2="740" y1="106.5" y2="106.5" class="grid" /><text x="52" y="110.5" text-anchor="end">60k</text><line x1="60" x2="740" y1="56.0" y2="56.0" class="grid" /><text x="52" y="60.0" text-anchor="end">80k</text></g>
+      <polyline class="series-1" points="60.0,229.7 128.0,234.6 196.0,233.2 264.0,229.4 332.0,223.2 400.0,219.4 468.0,183.5 536.0,174.8 604.0,155.9 672.0,111.4 740.0,103.4" />
+      <polyline class="series-2" points="60.0,255.7 128.0,256.0 196.0,256.1 264.0,255.9 332.0,254.7 400.0,253.5 468.0,250.3 536.0,249.5 604.0,246.5 672.0,241.2 740.0,243.7" />
+      <g class="series-1-pts"><circle cx="60.0" cy="229.7" r="3" /><circle cx="128.0" cy="234.6" r="3" /><circle cx="196.0" cy="233.2" r="3" /><circle cx="264.0" cy="229.4" r="3" /><circle cx="332.0" cy="223.2" r="3" /><circle cx="400.0" cy="219.4" r="3" /><circle cx="468.0" cy="183.5" r="3" /><circle cx="536.0" cy="174.8" r="3" /><circle cx="604.0" cy="155.9" r="3" /><circle cx="672.0" cy="111.4" r="3" /><circle cx="740.0" cy="103.4" r="3" /></g>
+      <g class="series-2-pts"><circle cx="60.0" cy="255.7" r="3" /><circle cx="128.0" cy="256.0" r="3" /><circle cx="196.0" cy="256.1" r="3" /><circle cx="264.0" cy="255.9" r="3" /><circle cx="332.0" cy="254.7" r="3" /><circle cx="400.0" cy="253.5" r="3" /><circle cx="468.0" cy="250.3" r="3" /><circle cx="536.0" cy="249.5" r="3" /><circle cx="604.0" cy="246.5" r="3" /><circle cx="672.0" cy="241.2" r="3" /><circle cx="740.0" cy="243.7" r="3" /></g>
+      <g class="x-labels"><text x="60.0" y="278" text-anchor="middle">2015</text><text x="128.0" y="278" text-anchor="middle">2016</text><text x="196.0" y="278" text-anchor="middle">2017</text><text x="264.0" y="278" text-anchor="middle">2018</text><text x="332.0" y="278" text-anchor="middle">2019</text><text x="400.0" y="278" text-anchor="middle">2020</text><text x="468.0" y="278" text-anchor="middle">2021</text><text x="536.0" y="278" text-anchor="middle">2022</text><text x="604.0" y="278" text-anchor="middle">2023</text><text x="672.0" y="278" text-anchor="middle">2024</text><text x="740.0" y="278" text-anchor="middle">2025</text></g>
+      <g class="legend" transform="translate(60,6)"><line x1="0" x2="22" y1="6" y2="6" class="series-1" /><text x="28" y="10">MCS-certified installs (all heat-pump types)</text><line x1="0" x2="22" y1="24" y2="24" class="series-2" /><text x="28" y="28">Planning apps in this dataset</text></g>
+    </svg>
+    </div><div><table><thead><tr><th>Year</th><th>Certified installs</th><th>Planning apps</th><th>Share via planning</th></tr></thead><tbody><tr><td>2015</td><td>11,189</td><td>923</td><td>8.2%</td></tr><tr><td>2016</td><td>9,270</td><td>795</td><td>8.6%</td></tr><tr><td>2017</td><td>9,839</td><td>762</td><td>7.7%</td></tr><tr><td>2018</td><td>11,334</td><td>837</td><td>7.4%</td></tr><tr><td>2019</td><td>13,787</td><td>1,294</td><td>9.4%</td></tr><tr><td>2020</td><td>15,273</td><td>1,800</td><td>11.8%</td></tr><tr><td>2021</td><td>29,508</td><td>3,053</td><td>10.3%</td></tr><tr><td>2022</td><td>32,931</td><td>3,386</td><td>10.3%</td></tr><tr><td>2023</td><td>40,429</td><td>4,549</td><td>11.3%</td></tr><tr><td>2024</td><td>58,078</td><td>6,642</td><td>11.4%</td></tr><tr><td>2025</td><td>61,228</td><td>5,675</td><td>9.3%</td></tr></tbody></table></div></div><p class="note">MCS data: MCS-certified installs (all heat-pump types) (yearly totals from the <a href="https://datadashboard.mcscertified.com/InstallationInsights" target="_blank" rel="noopener">MCS Data Dashboard</a>). Planning apps come from the <a href="https://www.planit.org.uk/" target="_blank" rel="noopener">PlanIt API</a>, searched with: <code>&quot;air source heat pump&quot;</code>, <code>ASHP</code>, <code>&quot;heat pump&quot; OR &quot;heat pumps&quot;</code>, <code>&quot;ground source heat pump&quot; OR &quot;ground source heat pumps&quot; OR GSHP</code>, <code>&quot;water source heat pump&quot; OR &quot;water source heat pumps&quot; OR WSHP</code>. The current calendar year is excluded as partial.</p><p class="note">Air-to-air coverage was spot-checked separately: 118 apps (~0.4% of the corpus) already mention "air to air" / "air-to-air" — 86% caught via the broad "heat pump" query — and the "A2A" abbreviation never appears in UK planning descriptions, so a dedicated A2A scrape would add little.</p>
+
+  <h3>Share needing planning, by region</h3><p>The share that needs planning permission varies a lot by region: <strong>70.7%</strong> in London versus only <strong>2.3%</strong> in North East / Yorkshire. This reflects how often local conditions (flats, conservation areas, listed buildings, planning policies) push an install out of permitted development and into the planning system.</p><details><summary>Full per-region table</summary><table><thead><tr><th>Region</th><th>Councils</th><th>Certified installs</th><th>Planning apps</th><th>Share needing planning</th></tr></thead><tbody><tr><td>London</td><td>24</td><td>6,155</td><td>4,353</td><td>70.7%</td></tr><tr><td>Northern Ireland</td><td>11</td><td>544</td><td>82</td><td>15.1%</td></tr><tr><td>Scotland</td><td>32</td><td>43,581</td><td>4,848</td><td>11.1%</td></tr><tr><td>South East</td><td>70</td><td>47,361</td><td>5,133</td><td>10.8%</td></tr><tr><td>East of England</td><td>46</td><td>36,515</td><td>3,297</td><td>9.0%</td></tr><tr><td>West Midlands</td><td>28</td><td>14,150</td><td>1,159</td><td>8.2%</td></tr><tr><td>Wales</td><td>22</td><td>30,571</td><td>1,522</td><td>5.0%</td></tr><tr><td>North West</td><td>40</td><td>28,807</td><td>1,417</td><td>4.9%</td></tr><tr><td>East Midlands</td><td>36</td><td>29,958</td><td>1,404</td><td>4.7%</td></tr><tr><td>South West</td><td>31</td><td>67,385</td><td>2,753</td><td>4.1%</td></tr><tr><td>North East / Yorkshire</td><td>35</td><td>82,673</td><td>1,932</td><td>2.3%</td></tr></tbody></table><p class="note">London&rsquo;s figure is inflated: inner London has few MCS-certified installs and heat pumps there are usually bundled into larger applications (extensions, basement digs, listed-building consents) that would have needed planning anyway. Full numbers in <code>per_region_coverage.csv</code>.</p></details>
+
+  <h2>How do outcomes vary?</h2>
+  <p>Of the applications that do go through planning, around 93% are approved and 7% are refused. Most go through, so the interesting variation is in the small share that doesn&rsquo;t &mdash; the breakdowns below show refusal rates by region, by council, by type of application, by property type, and by year submitted.</p>
+
+  <h3>By region</h3>
+  <p>Refusal rates by region, compared to the 7.1% national average. London and the East of England refuse most often. Scotland is the most lenient by some margin.</p>
+  <div class="chart-wrap">
+    <svg class="chart hbar-chart" viewBox="0 0 760 362" role="img" aria-label="Refusal rate by region">
+      <g class="axis"><line x1="170.0" x2="170.0" y1="22" y2="334" class="grid" /><text x="170.0" y="350" text-anchor="middle">0%</text><line x1="276.0" x2="276.0" y1="22" y2="334" class="grid" /><text x="276.0" y="350" text-anchor="middle">2%</text><line x1="382.0" x2="382.0" y1="22" y2="334" class="grid" /><text x="382.0" y="350" text-anchor="middle">4%</text><line x1="488.0" x2="488.0" y1="22" y2="334" class="grid" /><text x="488.0" y="350" text-anchor="middle">6%</text><line x1="594.0" x2="594.0" y1="22" y2="334" class="grid" /><text x="594.0" y="350" text-anchor="middle">8%</text><line x1="700.0" x2="700.0" y1="22" y2="334" class="grid" /><text x="700.0" y="350" text-anchor="middle">10%</text></g>
+      <line x1="548.0" x2="548.0" y1="22" y2="334" class="ref" /><text class="ref-label" x="552.0" y="16">national mean 7.1%</text>
+      <text class="row-label" x="160" y="39" text-anchor="end">London</text><rect x="170" y="27" width="518.2" height="16" rx="2" /><text class="value-label" x="694.2" y="39">9.8%</text><text class="row-label" x="160" y="65" text-anchor="end">South East</text><rect x="170" y="53" width="491.6" height="16" rx="2" /><text class="value-label" x="667.6" y="65">9.3%</text><text class="row-label" x="160" y="91" text-anchor="end">East of England</text><rect x="170" y="79" width="489.9" height="16" rx="2" /><text class="value-label" x="665.9" y="91">9.2%</text><text class="row-label" x="160" y="117" text-anchor="end">West Midlands</text><rect x="170" y="105" width="475.5" height="16" rx="2" /><text class="value-label" x="651.5" y="117">9.0%</text><text class="row-label" x="160" y="143" text-anchor="end">Wales</text><rect x="170" y="131" width="393.5" height="16" rx="2" /><text class="value-label" x="569.5" y="143">7.4%</text><text class="row-label" x="160" y="169" text-anchor="end">North East / Yorkshire</text><rect x="170" y="157" width="353.5" height="16" rx="2" /><text class="value-label" x="529.5" y="169">6.7%</text><text class="row-label" x="160" y="195" text-anchor="end">North West</text><rect x="170" y="183" width="310.0" height="16" rx="2" /><text class="value-label" x="486.0" y="195">5.8%</text><text class="row-label" x="160" y="221" text-anchor="end">South West</text><rect x="170" y="209" width="308.2" height="16" rx="2" /><text class="value-label" x="484.2" y="221">5.8%</text><text class="row-label" x="160" y="247" text-anchor="end">Northern Ireland</text><rect x="170" y="235" width="278.9" height="16" rx="2" /><text class="value-label" x="454.9" y="247">5.3%</text><text class="row-label" x="160" y="273" text-anchor="end">East Midlands</text><rect x="170" y="261" width="266.0" height="16" rx="2" /><text class="value-label" x="442.0" y="273">5.0%</text><text class="row-label" x="160" y="299" text-anchor="end">Crown Dependencies</text><rect x="170" y="287" width="257.3" height="16" rx="2" /><text class="value-label" x="433.3" y="299">4.9%</text><text class="row-label" x="160" y="325" text-anchor="end">Scotland</text><rect x="170" y="313" width="169.2" height="16" rx="2" /><text class="value-label" x="345.2" y="325">3.2%</text>
+    </svg>
+    </div>
+  <table><thead><tr><th>Region</th><th>Apps</th><th>Decisions</th><th>Refusal rate</th></tr></thead><tbody><tr><td>London</td><td>4,504</td><td>3,324</td><td>9.8%</td></tr><tr><td>South East</td><td>5,574</td><td>4,334</td><td>9.3%</td></tr><tr><td>East of England</td><td>3,582</td><td>2,672</td><td>9.2%</td></tr><tr><td>West Midlands</td><td>1,162</td><td>914</td><td>9.0%</td></tr><tr><td>Wales</td><td>1,681</td><td>1,347</td><td>7.4%</td></tr><tr><td>North East / Yorkshire</td><td>2,201</td><td>1,754</td><td>6.7%</td></tr><tr><td>North West</td><td>1,813</td><td>1,453</td><td>5.8%</td></tr><tr><td>South West</td><td>3,066</td><td>2,373</td><td>5.8%</td></tr><tr><td>Northern Ireland</td><td>84</td><td>76</td><td>5.3%</td></tr><tr><td>East Midlands</td><td>1,370</td><td>1,056</td><td>5.0%</td></tr><tr><td>Crown Dependencies</td><td>188</td><td>103</td><td>4.9%</td></tr><tr><td>Scotland</td><td>5,221</td><td>4,417</td><td>3.2%</td></tr></tbody></table>
+  <p class="note">Data: <code>by_region.csv</code></p>
+
+  <h3>By council</h3>
+  <p>Refusal rates vary widely across the 149 councils with at least 50 decisions &mdash; median 5.9%, middle half 3.0&ndash;10.2%, max 36.6%.</p>
+  <div class="chart-wrap">
+    <svg class="chart histogram" viewBox="0 0 760 240" role="img" aria-label="Distribution of council refusal rates">
+      <g class="axis"><line x1="52" x2="740" y1="198.0" y2="198.0" class="grid" /><text x="44" y="202.0" text-anchor="end">0</text><line x1="52" x2="740" y1="154.0" y2="154.0" class="grid" /><text x="44" y="158.0" text-anchor="end">7</text><line x1="52" x2="740" y1="110.0" y2="110.0" class="grid" /><text x="44" y="114.0" text-anchor="end">14</text><line x1="52" x2="740" y1="66.0" y2="66.0" class="grid" /><text x="44" y="70.0" text-anchor="end">21</text><line x1="52" x2="740" y1="22.0" y2="22.0" class="grid" /><text x="44" y="26.0" text-anchor="end">28</text></g>
+      <rect x="52.0" y="66.0" width="35.2" height="132.0" /><rect x="88.2" y="22.0" width="35.2" height="176.0" /><rect x="124.4" y="34.6" width="35.2" height="163.4" /><rect x="160.6" y="53.4" width="35.2" height="144.6" /><rect x="196.8" y="135.1" width="35.2" height="62.9" /><rect x="233.1" y="110.0" width="35.2" height="88.0" /><rect x="269.3" y="141.4" width="35.2" height="56.6" /><rect x="305.5" y="172.9" width="35.2" height="25.1" /><rect x="341.7" y="172.9" width="35.2" height="25.1" /><rect x="377.9" y="185.4" width="35.2" height="12.6" /><rect x="414.1" y="191.7" width="35.2" height="6.3" /><rect x="450.3" y="191.7" width="35.2" height="6.3" /><rect x="486.5" y="179.1" width="35.2" height="18.9" /><rect x="522.7" y="191.7" width="35.2" height="6.3" /><rect x="558.9" y="191.7" width="35.2" height="6.3" /><rect x="595.2" y="198.0" width="35.2" height="0.0" /><rect x="631.4" y="198.0" width="35.2" height="0.0" /><rect x="667.6" y="198.0" width="35.2" height="0.0" /><rect x="703.8" y="191.7" width="35.2" height="6.3" />
+      <line x1="181.1" x2="181.1" y1="22" y2="198" class="ref" /><text x="185.1" y="34" class="ref-label">national mean 7.1%</text>
+      <g class="x-labels"><text x="52.0" y="218" text-anchor="middle">0</text><text x="233.1" y="218" text-anchor="middle">10</text><text x="414.1" y="218" text-anchor="middle">20</text><text x="595.2" y="218" text-anchor="middle">30</text><text x="396.0" y="234" text-anchor="middle">Council refusal rate (%)</text></g>
+    </svg>
+    </div>
+  <p class='note'>Excludes councils with fewer than 50 decisions.</p>
+  <p class="note">Data: <code>by_council.csv</code></p>
+
+  <h3>By application type</h3><p>The mix of application types matters: some are refused much more often than the 7.1% national average. Outline applications and amendments stand out: Outline (20.3%), Other (15.3%), Amendment (14.4%). (Trees ranks higher but on only 11 decisions, so the rate is unreliable.)</p><div class="chart-wrap">
+    <svg class="chart hbar-chart" viewBox="0 0 760 232" role="img" aria-label="Refusal rate by application type">
+      <g class="axis"><line x1="170.0" x2="170.0" y1="22" y2="204" class="grid" /><text x="170.0" y="220" text-anchor="middle">0%</text><line x1="258.3" x2="258.3" y1="22" y2="204" class="grid" /><text x="258.3" y="220" text-anchor="middle">5%</text><line x1="346.7" x2="346.7" y1="22" y2="204" class="grid" /><text x="346.7" y="220" text-anchor="middle">10%</text><line x1="435.0" x2="435.0" y1="22" y2="204" class="grid" /><text x="435.0" y="220" text-anchor="middle">15%</text><line x1="523.3" x2="523.3" y1="22" y2="204" class="grid" /><text x="523.3" y="220" text-anchor="middle">20%</text><line x1="611.7" x2="611.7" y1="22" y2="204" class="grid" /><text x="611.7" y="220" text-anchor="middle">25%</text><line x1="700.0" x2="700.0" y1="22" y2="204" class="grid" /><text x="700.0" y="220" text-anchor="middle">30%</text></g>
+      <line x1="296.0" x2="296.0" y1="22" y2="204" class="ref" /><text class="ref-label" x="300.0" y="16">national mean 7.1%</text>
+      <text class="row-label" x="160" y="39" text-anchor="end">Trees</text><rect x="170" y="27" width="481.8" height="16" rx="2" /><text class="value-label" x="657.8" y="39">27.3%</text><text class="row-label" x="160" y="65" text-anchor="end">Outline</text><rect x="170" y="53" width="358.9" height="16" rx="2" /><text class="value-label" x="534.9" y="65">20.3%</text><text class="row-label" x="160" y="91" text-anchor="end">Other</text><rect x="170" y="79" width="270.7" height="16" rx="2" /><text class="value-label" x="446.7" y="91">15.3%</text><text class="row-label" x="160" y="117" text-anchor="end">Amendment</text><rect x="170" y="105" width="253.7" height="16" rx="2" /><text class="value-label" x="429.7" y="117">14.4%</text><text class="row-label" x="160" y="143" text-anchor="end">Conditions</text><rect x="170" y="131" width="116.4" height="16" rx="2" /><text class="value-label" x="292.4" y="143">6.6%</text><text class="row-label" x="160" y="169" text-anchor="end">Full</text><rect x="170" y="157" width="106.7" height="16" rx="2" /><text class="value-label" x="282.7" y="169">6.0%</text><text class="row-label" x="160" y="195" text-anchor="end">Heritage</text><rect x="170" y="183" width="80.8" height="16" rx="2" /><text class="value-label" x="256.8" y="195">4.6%</text>
+    </svg>
+    </div><table><thead><tr><th>Application type</th><th>Apps</th><th>Decisions</th><th>Refusal rate</th></tr></thead><tbody><tr><td>Trees</td><td>14</td><td>11</td><td>27.3%</td></tr><tr><td>Outline</td><td>1,188</td><td>891</td><td>20.3%</td></tr><tr><td>Other</td><td>354</td><td>248</td><td>15.3%</td></tr><tr><td>Amendment</td><td>1,946</td><td>1,560</td><td>14.4%</td></tr><tr><td>Conditions</td><td>3,180</td><td>1,942</td><td>6.6%</td></tr><tr><td>Full</td><td>20,795</td><td>16,920</td><td>6.0%</td></tr><tr><td>Heritage</td><td>2,967</td><td>2,251</td><td>4.6%</td></tr></tbody></table><p class="note">Data: <code>by_application_type.csv</code></p><details><summary>What each application type means</summary><dl><dt>Trees</dt><dd>Works to trees protected by a Tree Preservation Order, or s.211 notice for trees in a conservation area.</dd><dt>Outline</dt><dd>Establishes whether the principle of a development is acceptable; specific “reserved matters” are settled in a later application.</dd><dt>Other</dt><dd>Non-standard routes (certificates of lawfulness, prior-approval observations, neighbouring-authority notifications, etc.).</dd><dt>Amendment</dt><dd>Changes to a granted permission — non-material amendments (s.96A) or variations of conditions (s.73, Town and Country Planning Act 1990).</dd><dt>Conditions</dt><dd>Formal approval (discharge) of details required by conditions on a granted permission, including reserved matters after an outline consent.</dd><dt>Full</dt><dd>Detailed proposals for development not covered by permitted-development rights; includes householder works (extensions, conservatories, etc.).</dd><dt>Heritage</dt><dd>Listed Building Consent for works affecting a building of special architectural or historical interest (Planning (Listed Buildings and Conservation Areas) Act 1990).</dd></dl><p class="note">Definitions taken from the <a href="https://www.planningportal.co.uk/planning/planning-applications/consent-types/" target="_blank" rel="noopener">Planning Portal consent-type pages</a> and the <a href="https://www.legislation.gov.uk/ukpga/1990/8/contents" target="_blank" rel="noopener">Town and Country Planning Act 1990</a> (s.96A non-material amendments, s.73 variation of conditions, s.211 trees in conservation areas) and the <a href="https://www.legislation.gov.uk/ukpga/1990/9/contents" target="_blank" rel="noopener">Planning (Listed Buildings and Conservation Areas) Act 1990</a>.</p></details>
+
+  <h3>Edge cases flagged in the proposal</h3><p>The project proposal called out four groups of applications to look at specifically &mdash; listed buildings, flats, wind turbines, and (for the sound-assessment workstream) noise mentions. These groups are picked out by searching application descriptions and addresses for keywords, and each is compared to the 7.1% national average. Listed buildings and conservation areas are actually refused <em>less</em> often than average &mdash; these applications tend to come in well prepared, often with extra acoustic or visual mitigation. Applications on flats and the few mentioning wind turbines are refused more often. Wind turbine numbers are small, so treat that figure as a hint rather than a hard finding.</p><table><thead><tr><th>Group</th><th>Apps</th><th>Decisions</th><th>Refusal rate</th></tr></thead><tbody><tr><td>Listed / heritage flag</td><td>3,274</td><td>2,426</td><td>4.6%</td></tr><tr><td>No listed / heritage flag</td><td>27,172</td><td>21,397</td><td>7.4%</td></tr><tr><td>Flat / apartment</td><td>1,592</td><td>1,193</td><td>10.2%</td></tr><tr><td>Not flat / apartment</td><td>28,854</td><td>22,630</td><td>7.0%</td></tr><tr><td>Wind turbine mentioned</td><td>22</td><td>12</td><td>16.7%</td></tr><tr><td>Noise / sound mentioned</td><td>1,295</td><td>948</td><td>6.2%</td></tr></tbody></table><p class="note">Data: <code>edge_cases.csv</code></p><p class="note">Groups are identified by keywords on the application&rsquo;s description and address &mdash; &ldquo;listed&rdquo;, &ldquo;grade I/II&rdquo;, or &ldquo;conservation area&rdquo; for heritage; &ldquo;flat&rdquo;, &ldquo;apartment&rdquo;, or &ldquo;block&rdquo; for flats; explicit mention for the rest. An application can fall into more than one group. The listed / heritage flag is a superset of the Heritage consent type above &mdash; it also catches Full applications that mention a conservation area or listed-building context, which is why the two refusal rates land close together.</p>
+
+  <h3>By year submitted</h3>
+  <p>Refusal rates have risen noticeably for applications submitted from 2022 onwards. But a growing share of recent applications haven&rsquo;t had a decision recorded yet &mdash; this is almost certainly councils still working through them, not a real shift in policy &mdash; so the 2024 and 2025 figures are provisional.</p>
+  <div class="grid">
+    <div class="chart-wrap">
+    <svg class="chart line-chart" viewBox="0 0 760 300" role="img" aria-label="Refusal rate by year submitted">
+      <text x="70" y="18" class="chart-title">Refusal rate by year submitted</text>
+      <text x="16" y="144.0" text-anchor="middle" transform="rotate(-90 16 144.0)" class="axis-title">Refusal rate</text>
+      <g class="axis"><line x1="70" x2="740" y1="258.0" y2="258.0" class="grid" /><text x="62" y="262.0" text-anchor="end">0%</text><line x1="70" x2="740" y1="201.0" y2="201.0" class="grid" /><text x="62" y="205.0" text-anchor="end">2%</text><line x1="70" x2="740" y1="144.0" y2="144.0" class="grid" /><text x="62" y="148.0" text-anchor="end">5%</text><line x1="70" x2="740" y1="87.0" y2="87.0" class="grid" /><text x="62" y="91.0" text-anchor="end">8%</text><line x1="70" x2="740" y1="30.0" y2="30.0" class="grid" /><text x="62" y="34.0" text-anchor="end">10%</text></g>
+      <polyline points="70.0,151.0 130.9,172.2 191.8,154.7 252.7,158.9 313.6,163.3 374.5,156.0 435.5,142.2 496.4,113.2 557.3,82.7 618.2,38.7 679.1,47.8 740.0,46.5" />
+      <circle cx="70.0" cy="151.0" r="3.5" />
+<circle cx="130.9" cy="172.2" r="3.5" />
+<circle cx="191.8" cy="154.7" r="3.5" />
+<circle cx="252.7" cy="158.9" r="3.5" />
+<circle cx="313.6" cy="163.3" r="3.5" />
+<circle cx="374.5" cy="156.0" r="3.5" />
+<circle cx="435.5" cy="142.2" r="3.5" />
+<circle cx="496.4" cy="113.2" r="3.5" />
+<circle cx="557.3" cy="82.7" r="3.5" />
+<circle cx="618.2" cy="38.7" r="3.5" />
+<circle cx="679.1" cy="47.8" r="3.5" />
+<circle cx="740.0" cy="46.5" r="3.5" />
+      <g class="x-labels"><text x="70.0" y="288" text-anchor="middle">2015</text>
+<text x="130.9" y="288" text-anchor="middle">2016</text>
+<text x="191.8" y="288" text-anchor="middle">2017</text>
+<text x="252.7" y="288" text-anchor="middle">2018</text>
+<text x="313.6" y="288" text-anchor="middle">2019</text>
+<text x="374.5" y="288" text-anchor="middle">2020</text>
+<text x="435.5" y="288" text-anchor="middle">2021</text>
+<text x="496.4" y="288" text-anchor="middle">2022</text>
+<text x="557.3" y="288" text-anchor="middle">2023</text>
+<text x="618.2" y="288" text-anchor="middle">2024</text>
+<text x="679.1" y="288" text-anchor="middle">2025</text>
+<text x="740.0" y="288" text-anchor="middle">2026</text></g>
+    </svg>
+    </div>
+    <div><table><thead><tr><th>Year submitted</th><th>Apps</th><th>Refusal rate</th><th>No decision yet</th></tr></thead><tbody><tr><td>2015</td><td>923</td><td>4.7%</td><td>2.8%</td></tr><tr><td>2016</td><td>795</td><td>3.8%</td><td>2.8%</td></tr><tr><td>2017</td><td>762</td><td>4.5%</td><td>4.3%</td></tr><tr><td>2018</td><td>837</td><td>4.3%</td><td>2.5%</td></tr><tr><td>2019</td><td>1,294</td><td>4.2%</td><td>2.2%</td></tr><tr><td>2020</td><td>1,800</td><td>4.5%</td><td>4.8%</td></tr><tr><td>2021</td><td>3,053</td><td>5.1%</td><td>4.0%</td></tr><tr><td>2022</td><td>3,386</td><td>6.4%</td><td>4.2%</td></tr><tr><td>2023</td><td>4,549</td><td>7.7%</td><td>7.0%</td></tr><tr><td>2024</td><td>6,642</td><td>9.6%</td><td>10.4%</td></tr><tr><td>2025</td><td>5,675</td><td>9.2%</td><td>21.9%</td></tr><tr><td>2026</td><td>730</td><td>9.3%</td><td>79.2%</td></tr></tbody></table></div>
+  </div>
+  <p class="note">Data: <code>by_start_year.csv</code></p>
+
+  <h2>Appendix</h2>
+  <h3>Councils with the highest refusal rates (top 10, n &ge; 50)</h3><p class="note">Raw refusal rates &mdash; not adjusted for case mix or region. Treat individual councils as candidates for follow-up rather than verdicts: a high rate may reflect a tougher mix of applications (e.g. more conservation-area or flat-related cases) rather than a stricter authority.</p><table><thead><tr><th>Council</th><th>Region</th><th>Decisions</th><th>Refusal rate</th></tr></thead><tbody><tr><td>Windsor</td><td>South East</td><td>93</td><td>36.6%</td></tr><tr><td>St Albans</td><td>East of England</td><td>78</td><td>29.5%</td></tr><tr><td>Elmbridge</td><td>South East</td><td>114</td><td>26.3%</td></tr><tr><td>East Hertfordshire</td><td>East of England</td><td>212</td><td>25.9%</td></tr><tr><td>Powys</td><td>Wales</td><td>86</td><td>25.6%</td></tr><tr><td>Waltham Forest</td><td>London</td><td>79</td><td>24.1%</td></tr><tr><td>Carmarthenshire</td><td>Wales</td><td>84</td><td>22.6%</td></tr><tr><td>Birmingham</td><td>West Midlands</td><td>73</td><td>21.9%</td></tr><tr><td>Bromley</td><td>West Midlands</td><td>90</td><td>18.9%</td></tr><tr><td>Sevenoaks</td><td>South East</td><td>80</td><td>18.8%</td></tr></tbody></table>
+  <h3>Share needing planning, by council</h3><p>Across the 375 councils we can match to MCS install records (2015–2025), a typical council saw <strong>7.7%</strong> of installs go through planning (the middle half between 4.4% and 14.5%). At the low end, planning records are a poor proxy for install activity. The 10 councils with the largest install-to-application gap are below.</p><table><thead><tr><th>Council</th><th>Certified installs</th><th>Planning apps</th><th>Share via planning</th></tr></thead><tbody><tr><td>Cornwall</td><td>10,468</td><td>263</td><td>2.5%</td></tr><tr><td>North Yorkshire</td><td>7,228</td><td>7</td><td>0.1%</td></tr><tr><td>Scarborough</td><td>7,228</td><td>14</td><td>0.2%</td></tr><tr><td>Selby</td><td>7,228</td><td>29</td><td>0.4%</td></tr><tr><td>Richmondshire</td><td>7,228</td><td>33</td><td>0.5%</td></tr><tr><td>Craven</td><td>7,228</td><td>36</td><td>0.5%</td></tr><tr><td>Hambleton</td><td>7,228</td><td>61</td><td>0.8%</td></tr><tr><td>Ryedale</td><td>7,228</td><td>64</td><td>0.9%</td></tr><tr><td>Harrogate</td><td>7,228</td><td>188</td><td>2.6%</td></tr><tr><td>Highland</td><td>7,280</td><td>303</td><td>4.2%</td></tr></tbody></table><p class="note">Full numbers in <code>per_council_coverage.csv</code>.</p>
+
+  <h2>Method</h2>
+  <p>Each application&rsquo;s outcome is taken from the council&rsquo;s own decision text and grouped into approved, refused, withdrawn, or other categories using a list of keyword rules. Refusal rates are calculated only over applications that have an approval or refusal recorded &mdash; withdrawn, pending, and unrecorded outcomes are left out so they don&rsquo;t distort the rate. Regions are worked out from the application&rsquo;s postcode; for the small share of records with no postcode, the region is filled in from the council&rsquo;s other applications (or, for a handful of councils whose records carry no postcode at all, from a manual council&rarr;region map).</p>
+
+  <h3>How rules fire</h3>
+  <p>Every classification decision in this report is driven by a small set of regex rules kept in <code>rules/</code>. The tables below show how many applications hit each rule on this run, so reviewers can see the consequences of every rule before arguing with its pattern.</p>
+
+  <h4>Outcome buckets (<code>rules/decision_rules.toml</code>)</h4>
+  <p class="note">Rules run in order against each council&rsquo;s free-text <code>planning_decision</code> string; the first match wins. <code>__no_decision__</code> = blank field; <code>__other__</code> = no rule matched.</p>
+  <table class="rule-fire"><thead><tr><th>Bucket</th><th>Pattern</th><th>Apps</th></tr></thead><tbody><tr><td><code>split</code></td><td><code>split|part.{0,5}approv.{0,5}part.{0,5}refus|part.{0,5}refus.{0,5}part.{0,5}approv</code></td><td>57</td></tr><tr><td><code>refused</code></td><td><code>refus|reject|decline|denied|not.{0,5}lawful|unlawful|not.{0,5}acceptable|objection|negative</code></td><td>1,699</td></tr><tr><td><code>withdrawn</code></td><td><code>withdrawn|abandon|finally.{0,5}disposed|closed|cancelled</code></td><td>1,940</td></tr><tr><td><code>discharge</code></td><td><code>discharg|comply|condition.{0,20}approv|condition.{0,20}accept|condition.{0,20}clear|condition.{0,20}decide</code></td><td>873</td></tr><tr><td><code>approved</code></td><td><code>grant|approv|permit|consent|lawful|accept|agree|favourable|certif|permission|^PER$|^yes$|no.{0,3}objection|conditional|determined|decided|response.issued</code></td><td>22,124</td></tr><tr><td><code>pending</code></td><td><code>pending|not.{0,10}determined|under.{0,10}consider|invalid|returned|being.validated</code></td><td>109</td></tr><tr><td><code>blank</code></td><td>&mdash;</td><td>3,311</td></tr><tr><td><code>no match</code></td><td>&mdash;</td><td>333</td></tr></tbody></table>
+
+  <h4>Application type (<code>rules/app_type_rules.toml</code>)</h4>
+  <p class="note">Most apps come from PlanIt&rsquo;s already-canonical <code>planning_application_type</code> field. The regex rules below only fire for the minority of rows where that field is blank.</p>
+  <table><thead><tr><th>Source</th><th>Apps</th><th>Share</th></tr></thead><tbody><tr><td>PlanIt structured field</td><td>29,988</td><td>98.5%</td></tr><tr><td>Regex fallback</td><td>458</td><td>1.5%</td></tr></tbody></table>
+  <table class="rule-fire"><thead><tr><th>Bucket</th><th>Pattern</th><th>Apps (fallback only)</th></tr></thead><tbody><tr><td><code>Heritage</code></td><td><code>\b(listed\s*building|lb\s*(consent|alter|extension)|lb\s+|heritage|conservation\s*area\s*consent)\b</code></td><td>38</td></tr><tr><td><code>Trees</code></td><td><code>\b(tree[s]?\s*(work|preservation|tpo)|works?\s*to\s*tree)\b</code></td><td>0</td></tr><tr><td><code>Conditions</code></td><td><code>\b(discharge\s*of\s*condition|approval\s*of\s*details|details\s*pursuant|details\s*of\s*condition|reserved\s*matters)\b</code></td><td>3</td></tr><tr><td><code>Amendment</code></td><td><code>\b(non[-\s]?mat\w*|minor\s*amend\w*|variation\s*of\s*condition|section\s*(?:73|42)|s\.?\s*(?:73|42)\b|revised\s*application|further\s*application|amendment)\b</code></td><td>34</td></tr><tr><td><code>Outline</code></td><td><code>\boutline\b</code></td><td>0</td></tr><tr><td><code>Other</code></td><td><code>\b(observation|adjoining\s*borough|neighbouring\s*authorit|spheres?\s*of\s*mutual|certificate\s*of\s*lawful|estate\s*management|pre[-\s]?app|withdrawn|status|exemption|self\s*assess|deemed)\b</code></td><td>61</td></tr><tr><td><code>Full</code></td><td><code>\b(minor|major|all\s*other\s*development|dwelling|householder|full|change\s*of\s*use|extension|installation|erection|construct|new\s*build|renewal\s*of\s*permission|prior\s*approval)\b</code></td><td>276</td></tr><tr><td><code>default Full</code></td><td>&mdash;</td><td>46</td></tr></tbody></table>
+
+  <h4>Edge-case keyword flags (<code>rules/edge_case_keywords.toml</code>)</h4>
+  <p class="note">Each flag is independent; an application can fire several.</p>
+  <table class="rule-fire"><thead><tr><th>Flag</th><th>Match clauses</th><th>Apps fired</th></tr></thead><tbody><tr><td><code>is_listed</code></td><td><code>app_type_lower</code> ~ <code>heritage</code><br><code>description</code> ~ <code>listed\s*(building|property|dwelling|structure)?</code></td><td>3,274</td></tr><tr><td><code>is_flat</code></td><td><code>description</code> ~ <code>\bflat[s]?\b</code><br><code>description</code> ~ <code>\bapartment[s]?\b</code></td><td>1,592</td></tr><tr><td><code>is_wind_turbine</code></td><td><code>description</code> ~ <code>\bwind\s+turbine[s]?\b</code><br><code>description</code> ~ <code>\bturbine[s]?\b</code></td><td>22</td></tr><tr><td><code>mentions_noise</code></td><td><code>description</code> ~ <code>\bnoise\b</code><br><code>description</code> ~ <code>\bsound\b</code><br><code>description</code> ~ <code>\bacoustic\b</code><br><code>description</code> ~ <code>\bMCS\s*0?20\b</code></td><td>1,295</td></tr></tbody></table>
+</main>
+</body>
+</html>
