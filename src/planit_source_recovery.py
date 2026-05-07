@@ -17,6 +17,7 @@ _GENERIC_SOURCE_PATH_FRAGMENTS = (
     "/search/generalsearch.aspx",
     "/searches/default.aspx",
     "/advsearch.aspx",
+    "/search.do",
 )
 
 # Whole-path equality matches for generic landing pages whose path would

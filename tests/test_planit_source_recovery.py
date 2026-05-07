@@ -97,6 +97,14 @@ def test_pick_usable_hint_returns_specific_source_url() -> None:
         # New: bare St Albans search landing page
         ("https://planningapplications.stalbans.gov.uk/planning/search-applications", True),
         ("https://planningapplications.stalbans.gov.uk/planning/search-applications/", True),
+        # New: Idox search.do landing page (no per-app context)
+        ("https://idoxpa.north-norfolk.gov.uk/online-applications/search.do?action=advanced", True),
+        ("http://wam.highland.gov.uk/wam/search.do?action=advanced", True),
+        # Idox per-app keyVal page must NOT match
+        (
+            "https://idoxpa.north-norfolk.gov.uk/online-applications/applicationDetails.do?keyVal=ABC123",
+            False,
+        ),
     ],
 )
 def test_is_generic_source_url(url: str | None, expected: bool) -> None:
