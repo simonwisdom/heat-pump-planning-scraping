@@ -86,7 +86,10 @@ MakeScraperFn = Callable[[], AbstractAsyncContextManager]
 # ---------------------------------------------------------------------------
 
 
-def make_url_process_app(default_ext: str = ".pdf") -> ProcessAppFn:
+def make_url_process_app(
+    default_ext: str = ".pdf",
+    pass_reference: bool = False,
+) -> ProcessAppFn:
     """Build a ``process_app`` for scrapers exposing the common interface:
 
     * ``scrape_documents(docs_url) -> (list[dict], failure_code | None)``
@@ -95,6 +98,10 @@ def make_url_process_app(default_ext: str = ".pdf") -> ProcessAppFn:
     Each ``doc`` dict is expected to carry ``document_url`` plus the optional
     metadata keys ``document_type``, ``description``, ``date_published``,
     ``drawing_number`` (used by ``persist_documents``).
+
+    Set ``pass_reference=True`` for scrapers (e.g. SmartAdmin) whose
+    ``scrape_documents`` needs the application reference because the stored
+    ``documentation_url`` is a generic search page.
     """
 
     async def process_app(scraper, row: sqlite3.Row, output_dir: Path) -> ProcessResult:
@@ -102,7 +109,10 @@ def make_url_process_app(default_ext: str = ".pdf") -> ProcessAppFn:
         authority = row["authority_name"] or "unknown"
         reference = row["reference"] or row["uid"]
 
-        documents, failure_code = await scraper.scrape_documents(docs_url)
+        if pass_reference:
+            documents, failure_code = await scraper.scrape_documents(docs_url, application_reference=reference)
+        else:
+            documents, failure_code = await scraper.scrape_documents(docs_url)
         if failure_code:
             return ProcessResult(documents=[], file_map={}, reason=failure_code)
         if not documents:

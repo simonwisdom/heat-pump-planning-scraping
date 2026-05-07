@@ -19,6 +19,6 @@ if __name__ == "__main__":
             portal="smartadmin",
             description=__doc__ or "",
             make_scraper=SmartAdminDocumentScraper,
-            process_app=make_url_process_app(),
+            process_app=make_url_process_app(pass_reference=True),
         )
     )
