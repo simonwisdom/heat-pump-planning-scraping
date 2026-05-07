@@ -56,7 +56,8 @@ def _disclaimer_accept_url(disclaimer_url: str) -> str:
 
 
 def _is_disclaimer_page(url: str) -> bool:
-    return "/Disclaimer" in url and "returnUrl=" in url
+    lower = url.lower()
+    return "/disclaimer" in lower and "returnurl=" in lower
 
 
 def _http_status_failure_code(status_code: int) -> str:
@@ -268,17 +269,49 @@ class PlanningRegisterDocumentScraper:
     async def _accept_disclaimer_if_needed(self, docs_url: str) -> tuple[httpx.Response | None, str | None]:
         """GET docs_url, accepting the disclaimer if redirected to it.
 
+        Handles two planning-register.co.uk disclaimer variants:
+        * Legacy (e.g. WNC): form action ``/Disclaimer/Accept?returnUrl=...``,
+          no CSRF token. POST with empty body.
+        * Newer (e.g. South Oxon, VoWH): form action ``/Disclaimer/AcceptDisclaimer``,
+          ``__RequestVerificationToken`` CSRF input, hidden ``returnURL`` field.
+          POST the parsed form fields.
+
         Returns (response, failure_code). failure_code is None on success.
         """
         resp = await self._get(docs_url)
         final_url = str(resp.url)
 
         if _is_disclaimer_page(final_url):
-            # Build the POST URL by replacing /Disclaimer? with /Disclaimer/Accept?
+            try:
+                from bs4 import BeautifulSoup
+            except ImportError:
+                logger.error("beautifulsoup4 is required for planning_register_scraper")
+                return None, "parse_error"
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            form = soup.find(
+                "form",
+                action=lambda v: bool(v) and "/disclaimer" in v.lower() and "accept" in v.lower(),
+            )
             parsed = urlparse(final_url)
-            accept_url = f"{parsed.scheme}://{parsed.netloc}/Disclaimer/Accept?{parsed.query}"
-            logger.debug("Accepting disclaimer at %s", accept_url)
-            resp = await self._post(accept_url)
+            base = f"{parsed.scheme}://{parsed.netloc}"
+
+            if form:
+                action = form.get("action", "")
+                accept_url = action if action.startswith("http") else f"{base}{action}"
+                fields: dict[str, str] = {}
+                for inp in form.find_all("input"):
+                    name = inp.get("name")
+                    if not name:
+                        continue
+                    fields[name] = inp.get("value", "") or ""
+            else:
+                # Fallback to legacy heuristic if form parsing fails
+                accept_url = f"{base}/Disclaimer/Accept?{parsed.query}"
+                fields = {}
+
+            logger.debug("Accepting disclaimer at %s with %d fields", accept_url, len(fields))
+            resp = await self._post(accept_url, data=fields, headers={"Referer": final_url})
             final_url = str(resp.url)
             if _is_disclaimer_page(final_url):
                 logger.error("Still on disclaimer page after POST: %s", final_url)
