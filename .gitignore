@@ -22,6 +22,7 @@ test-results/
 
 # Local data, docs, and output (not in repo)
 _local/
+reports/
 
 # Environment
 .env
