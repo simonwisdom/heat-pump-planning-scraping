@@ -1,60 +1,60 @@
 {
-  "generated_at": "2026-05-07 17:44 UTC",
-  "db_path": "/tmp/ashp.db",
-  "db_modified": "2026-05-07 16:44 UTC",
-  "db_row_count": 30446,
-  "git_commit": "66e2274",
+  "generated_at": "2026-05-13 09:31 UTC",
+  "db_path": "/Users/wisdom/Documents/2025/nesta/Application Scraping/_local/workstreams/01_heat_pump_applications/data/raw/ashp.db",
+  "db_modified": "2026-05-06 14:04 UTC",
+  "db_row_count": 25261,
+  "git_commit": "afcf8f8",
   "git_dirty": true,
   "source_scrape": "all",
   "report_title": "Heat Pump Decision Patterns",
   "corpus_label": "ASHP and broader heat-pump",
-  "total_apps": 30446,
-  "decided_apps": 24077,
-  "approved_apps": 22476,
-  "refused_apps": 1601,
-  "approval_rate": 93.35050047763426,
-  "refusal_rate": 6.649499522365742,
-  "no_decision_apps": 3311,
+  "total_apps": 25261,
+  "decided_apps": 20023,
+  "approved_apps": 18730,
+  "refused_apps": 1293,
+  "approval_rate": 93.54242620985866,
+  "refusal_rate": 6.457573790141337,
+  "no_decision_apps": 2810,
   "decision_breakdown": {
-    "approved": 22476,
-    "refused": 1601,
-    "split": 57,
-    "withdrawn": 1947,
-    "discharge": 588,
-    "other": 340,
-    "no_decision": 3311,
-    "pending": 126
+    "approved": 18730,
+    "refused": 1293,
+    "split": 44,
+    "withdrawn": 1574,
+    "discharge": 440,
+    "other": 264,
+    "no_decision": 2810,
+    "pending": 106
   },
   "council_min_decided": 50,
-  "n_councils_in_panel": 150,
+  "n_councils_in_panel": 127,
   "rules_fired": {
     "decision": {
-      "approved": 22476,
-      "refused": 1601,
-      "split": 57,
-      "withdrawn": 1947,
-      "discharge": 588,
-      "__other__": 340,
-      "__no_decision__": 3311,
-      "pending": 126
+      "approved": 18730,
+      "refused": 1293,
+      "split": 44,
+      "withdrawn": 1574,
+      "discharge": 440,
+      "__other__": 264,
+      "__no_decision__": 2810,
+      "pending": 106
     },
     "app_type": {
-      "Amendment": 34,
-      "Other": 61,
-      "__default_full__": 46,
-      "Full": 276,
-      "Heritage": 38,
-      "Conditions": 3
+      "Amendment": 27,
+      "Other": 44,
+      "__default_full__": 32,
+      "Full": 232,
+      "Heritage": 30,
+      "Conditions": 1
     },
     "app_type_source": {
-      "structured_field": 29988,
-      "regex_fallback": 458
+      "structured_field": 24895,
+      "regex_fallback": 366
     },
     "edge_case": {
-      "is_listed": 3305,
-      "is_flat": 1592,
-      "mentions_noise": 1295,
-      "is_wind_turbine": 21
+      "is_listed": 2684,
+      "is_flat": 1321,
+      "mentions_noise": 1104,
+      "is_wind_turbine": 13
     }
   }
 }

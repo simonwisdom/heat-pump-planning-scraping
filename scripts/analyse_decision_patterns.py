@@ -1672,8 +1672,6 @@ def render_html(
     <div class="kpi"><span class="value">{fmt_int(summary["refused_apps"])}</span><span class="label">Refused <span class="kpi-pct">({fmt_pct(summary["refusal_rate"])} of decisions)</span></span></div>
   </section>
 
-  {_render_outcome_mix_section(summary)}
-
   <h2>When do heat-pump installs need planning permission?</h2>
   <p>Most heat pumps don&rsquo;t need planning permission &mdash; they&rsquo;re allowed automatically as long as they meet certain rules on size, noise, and distance from neighbours (the planning system calls this &ldquo;permitted development&rdquo;). The rest do need a planning application, and that&rsquo;s what this dataset captures.</p>
   <p class="note">Sources for the permitted-development rules: Planning Portal &mdash; <a href="https://www.planningportal.co.uk/permission/common-projects/heat-pumps/planning-permission-air-source-heat-pump/" target="_blank" rel="noopener">air source</a> and <a href="https://www.planningportal.co.uk/permission/common-projects/heat-pumps" target="_blank" rel="noopener">ground/water source</a> heat pumps (England); <a href="https://www.gov.wales/planning-permission-heat-pumps" target="_blank" rel="noopener">gov.wales</a> (Wales). The underlying legislation is the <a href="https://www.legislation.gov.uk/uksi/2015/596/schedule/2" target="_blank" rel="noopener">Town and Country Planning (General Permitted Development) (England) Order 2015, Sch. 2</a> (Part 14, Classes G&ndash;H). England&rsquo;s rules were eased on 29 May 2025 (1 m boundary rule removed; size limit raised to 1.5 m&sup3;), as part of the <a href="https://www.gov.uk/government/publications/warm-homes-plan/warm-homes-plan-html" target="_blank" rel="noopener">Warm Homes Plan</a> (DESNZ, last updated 18 March 2026).</p>
@@ -1681,6 +1679,8 @@ def render_html(
   {coverage_section}
 
   {region_coverage_section}
+
+  {_render_outcome_mix_section(summary)}
 
   <h2>How do outcomes vary?</h2>
   <p>Of the applications that do go through planning, around 93% are approved and 7% are refused. Most go through, so the interesting variation is in the small share that doesn&rsquo;t &mdash; the breakdowns below show refusal rates by region, by council, by type of application, by property type, and by year submitted.</p>
