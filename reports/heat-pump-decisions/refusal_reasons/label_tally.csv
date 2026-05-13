@@ -1,0 +1,15 @@
+label,n_apps,pct_of_text_apps
+design_scale_siting,949,60.6
+policy_general,901,57.6
+noise,712,45.5
+neighbour_amenity,649,41.5
+visual_amenity,633,40.4
+heritage_listed,490,31.3
+heritage_conservation_area,457,29.2
+flat_apartment,388,24.8
+permitted_development,323,20.6
+flood_drainage,260,16.6
+biodiversity,231,14.8
+highways,134,8.6
+trees_landscaping,109,7.0
+greenbelt,89,5.7

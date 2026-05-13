@@ -1,0 +1,80 @@
+# Seed vocabulary for refusal-reason clustering.
+#
+# Each [[rule]] is a regex tested against extracted decision-notice / officer-
+# report text. A document can match MULTIPLE rules (refusals usually cite 2-4
+# distinct grounds), so this is not first-match-wins like decision_rules.toml.
+#
+# Calibration plan: after the first extraction pass, sample ~50 refused-app
+# texts and verify each rule is catching real refusal language (not false
+# positives from boilerplate/policy citations). Iterate until precision is
+# acceptable.
+
+[[rule]]
+label = "visual_amenity"
+pattern = "(?i)(visual amenity|visual impact|appearance|character.{0,40}(area|street|locality)|streetscene|streetscape|prominent|obtrusive|incongruous|harm.{0,30}character|out.of.keeping|unsympathetic)"
+why = "Most common heat pump refusal ground: the unit harms visual amenity / character of the area."
+
+[[rule]]
+label = "noise"
+pattern = "(?i)(noise|acoustic|sound|hum|low.frequency|sleep disturbance|sleep.{0,10}disturb|MCS.{0,20}020|BS.4142)"
+why = "Noise impact on neighbours; often cited with MCS 020 or BS 4142 standards."
+
+[[rule]]
+label = "heritage_listed"
+pattern = "(?i)(listed building|listed.{0,10}status|grade.{0,5}(I|II|2)|heritage asset|historic.{0,10}fabric|special.{0,10}interest|architectural.{0,10}interest)"
+why = "Refusal on listed-building / heritage-asset harm."
+
+[[rule]]
+label = "heritage_conservation_area"
+pattern = "(?i)(conservation area|setting of.{0,40}(listed|heritage|conservation)|preserve.{0,30}character)"
+why = "Refusal because property is in a conservation area or harms the setting of a heritage asset."
+
+[[rule]]
+label = "design_scale_siting"
+pattern = "(?i)(design|scale|siting|location of.{0,20}(unit|pump)|massing|bulk|positioning)"
+why = "Refusal on design / scale / siting grounds — often paired with visual_amenity."
+
+[[rule]]
+label = "permitted_development"
+pattern = "(?i)(permitted development|class G|Class G|GPDO|General Permitted Development|MCS.{0,10}Planning Standards|MCS 020)"
+why = "Refusal because the proposal does not qualify under Permitted Development (PD) rules."
+
+[[rule]]
+label = "neighbour_amenity"
+pattern = "(?i)(neighbour|neighbouring|adjoining occupier|residential amenity|living conditions|overbearing|overlooking|loss of privacy)"
+why = "Refusal on impact to neighbouring residential amenity (separate from noise)."
+
+[[rule]]
+label = "policy_general"
+pattern = "(?i)(contrary to.{0,30}policy|policy.{0,40}(D|S|H|EN|HE|CP).{0,5}\\d|NPPF|National Planning Policy Framework|Local Plan)"
+why = "Generic policy non-compliance citation — usually accompanies a specific harm above."
+
+[[rule]]
+label = "trees_landscaping"
+pattern = "(?i)(TPO|tree preservation|protected tree|loss of.{0,15}(tree|hedge|landscaping))"
+why = "Refusal involving trees / landscaping loss."
+
+[[rule]]
+label = "flood_drainage"
+pattern = "(?i)(flood|flood risk|drainage|SuDS|surface water)"
+why = "Flood-zone or drainage concerns."
+
+[[rule]]
+label = "greenbelt"
+pattern = "(?i)(green belt|Green Belt|openness|inappropriate development.{0,20}green belt)"
+why = "Green Belt encroachment / openness harm."
+
+[[rule]]
+label = "highways"
+pattern = "(?i)(highway\\s+safety|highways\\s+authority|traffic\\s+generation|parking\\s+provision|vehicle\\s+access)"
+why = "Highways concerns. Tightened from bare 'access|traffic|parking' which fired on appeal-rights boilerplate ('access the online appeal form') and background descriptions ('nearby traffic')."
+
+[[rule]]
+label = "biodiversity"
+pattern = "(?i)(biodiversity\\s+net\\s+gain|protected\\s+species|\\bbats?\\b|\\bnewts?\\b|ecology|habitat|wildlife)"
+why = "Biodiversity / protected-species concerns. Tightened 'bat' → '\\bbats?\\b' so it doesn't match 'battery', 'bath', etc."
+
+[[rule]]
+label = "flat_apartment"
+pattern = "(?i)(flat|apartment|maisonette|shared.{0,15}(roof|building)|communal)"
+why = "Refusal mentioning flat/apartment context — useful to confirm flats are a distinct refusal driver."

@@ -22,6 +22,7 @@ test-results/
 
 # Large derived data (kept locally, not in repo)
 data/external_heat_pump_data/MCS_heatpump_installations_by_LA_by_month.csv
+reports/heat-pump-decisions/refused_withdrawn.tsv
 
 # Local data and docs (not in repo)
 _local/

@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DB = Path("/tmp/ashp.db")
 REPO_LOCAL_DB = ROOT / "_local/workstreams/01_heat_pump_applications/data/raw/ashp.db"
 MCS_LA_BY_YEAR_CSV = ROOT / "data/external_heat_pump_data/MCS_heatpump_installations_by_LA_by_year.csv"
+BUS_CUMULATIVE_CSV = ROOT / "data/external_heat_pump_data/BUS_redemptions_by_LA_cumulative.csv"
+BUS_BY_FY_CSV = ROOT / "data/external_heat_pump_data/BUS_redemptions_by_LA_by_FY.csv"
 LPA_LOOKUP_CSV = ROOT / "_local/geo/authority_lpa_lookup.csv"
 LPA_OVERRIDES_CSV = ROOT / "rules/mcs_lpa_overrides.csv"
 AUTHORITY_OVERRIDES_CSV = ROOT / "rules/mcs_authority_overrides.csv"
@@ -27,6 +29,15 @@ DEFAULT_OUTPUT = ROOT / "reports/heat-pump-decisions/la_year_matrix.tsv"
 # 2008 has no MCS data; 2026 is the current partial year as of writing.
 DEFAULT_YEAR_LO = 2009
 DEFAULT_YEAR_HI = 2025
+
+# Window used for the headline planning-vs-MCS comparison columns.
+# Planning scrape coverage starts in 2015, so this is the comparable subset.
+SUMMARY_RANGE_LO = 2015
+SUMMARY_RANGE_HI = 2025
+
+# BUS scheme financial years present in the by-FY input.
+BUS_FYS = ["2022/23", "2023/24", "2024/25", "2025/26"]
+BUS_FY_COL_KEYS = [fy.replace("/", "_") for fy in BUS_FYS]
 
 
 def normalise(name: str) -> str:
@@ -46,10 +57,13 @@ def load_lookup_csv(path: Path, key_col: str, value_col: str) -> dict[str, str]:
     return out
 
 
-def load_mcs(path: Path) -> tuple[dict[tuple[str, int], int], dict[str, str]]:
-    """Return ({(la_normalised, year): count}, {la_normalised: display_name})."""
+def load_mcs(
+    path: Path,
+) -> tuple[dict[tuple[str, int], int], dict[str, str], dict[str, str]]:
+    """Return ({(la_normalised, year): count}, {la_normalised: display_name}, {la_normalised: ons_code})."""
     counts: dict[tuple[str, int], int] = defaultdict(int)
     display: dict[str, str] = {}
+    ons_code: dict[str, str] = {}
     with path.open(newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             name_raw = (row.get("areaName") or "").strip()
@@ -63,7 +77,55 @@ def load_mcs(path: Path) -> tuple[dict[tuple[str, int], int], dict[str, str]]:
             key = normalise(name_raw)
             counts[(key, year)] += count
             display.setdefault(key, name_raw)
-    return counts, display
+            code = (row.get("areaONSCode") or "").strip()
+            if code:
+                ons_code.setdefault(key, code)
+    return counts, display, ons_code
+
+
+def _parse_bus_int(value: str | None) -> int | None:
+    """ONS suppression markers like [c], [c1], [c2], [x] return None; numbers parse to int."""
+    v = (value or "").strip().replace(",", "")
+    if not v or v.startswith("["):
+        return None
+    try:
+        return int(v)
+    except ValueError:
+        return None
+
+
+def load_bus_cumulative(path: Path) -> dict[str, int | None]:
+    """Return {area_ons_code: heat_pump_redemptions or None}. Skips non-LA aggregate rows."""
+    out: dict[str, int | None] = {}
+    with path.open(newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            code = (row.get("Area Codes") or "").strip()
+            if not code:
+                continue
+            out[code] = _parse_bus_int(row.get("Heat pump technologies [note 24]"))
+    return out
+
+
+def load_bus_by_fy(path: Path) -> dict[str, dict[str, int | None]]:
+    """Return {area_ons_code: {fy: heat_pump_redemptions or None}} keyed by financial year string."""
+    out: dict[str, dict[str, int | None]] = {}
+    with path.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        # Header is e.g. "2022/23:\nHeat pump technologies [note 24]". Map each FY
+        # to the actual header so we can read it back.
+        fy_to_header: dict[str, str] = {}
+        for header in reader.fieldnames or []:
+            stripped = (header or "").strip()
+            for fy in BUS_FYS:
+                if stripped.startswith(fy):
+                    fy_to_header[fy] = header
+                    break
+        for row in reader:
+            code = (row.get("Area Codes") or "").strip()
+            if not code:
+                continue
+            out[code] = {fy: _parse_bus_int(row.get(col)) for fy, col in fy_to_header.items()}
+    return out
 
 
 def load_authority_lookup(path: Path, lpa_overrides: dict[str, str]) -> dict[str, list[str]]:
@@ -133,7 +195,9 @@ def main() -> None:
         if mcs_name not in authority_lookup.get(db_name, []):
             authority_lookup.setdefault(db_name, []).append(mcs_name)
 
-    mcs_counts, mcs_display = load_mcs(MCS_LA_BY_YEAR_CSV)
+    mcs_counts, mcs_display, mcs_ons_code = load_mcs(MCS_LA_BY_YEAR_CSV)
+    bus_cumulative = load_bus_cumulative(BUS_CUMULATIVE_CSV)
+    bus_by_fy = load_bus_by_fy(BUS_BY_FY_CSV)
     planning_counts = load_planning(db_path)
 
     years = list(range(args.year_lo, args.year_hi + 1))
@@ -197,6 +261,29 @@ def main() -> None:
     mcs_la_keys = sorted(all_mcs_in_window | set(planning_by_la.keys()))
     rows = []
 
+    summary_years = [y for y in range(SUMMARY_RANGE_LO, SUMMARY_RANGE_HI + 1) if y in years]
+
+    def bus_columns_for(code: str | None) -> dict[str, object]:
+        cumulative = bus_cumulative.get(code) if code else None
+        by_fy = bus_by_fy.get(code, {}) if code else {}
+        cols: dict[str, object] = {
+            "total_bus_heatpump_redemptions": "" if cumulative is None else cumulative,
+        }
+        for fy, key in zip(BUS_FYS, BUS_FY_COL_KEYS):
+            v = by_fy.get(fy)
+            cols[f"bus_heatpump_{key}"] = "" if v is None else v
+        return cols
+
+    def summary_columns(plan_year_vals: dict[int, int], mcs_year_vals: dict[int, int]) -> dict[str, object]:
+        summary_plan = sum(plan_year_vals.get(y, 0) for y in summary_years)
+        summary_mcs = sum(mcs_year_vals.get(y, 0) for y in summary_years)
+        pct = round(100.0 * summary_plan / summary_mcs, 1) if summary_mcs > 0 else ""
+        return {
+            "total_planning_apps_2015_to_2025": summary_plan,
+            "total_mcs_installs_2015_to_2025": summary_mcs,
+            "pct_of_mcs_installs_with_planning_app": pct,
+        }
+
     for mcs_la in mcs_la_keys:
         mcs_year_vals = {y: mcs_counts.get((mcs_la, y), 0) for y in years}
         plan_year_vals = planning_by_la.get(mcs_la, {})
@@ -210,48 +297,60 @@ def main() -> None:
             source = "mcs_only"
         else:
             source = "planning_only"
+        ons_code = mcs_ons_code.get(mcs_la, "")
         rows.append(
             {
                 "la_name": mcs_display.get(mcs_la, mcs_la),
+                **summary_columns(plan_year_vals, mcs_year_vals),
                 "source": source,
                 "planit_authorities": "; ".join(contrib_list),
                 "n_planit_authorities": len(contrib_list),
                 "has_joint_planit_authority": any(a in multi_mapped for a in contrib_list),
                 **{f"planning_apps_{y}": plan_year_vals[y] for y in years},
                 **{f"mcs_installs_{y}": mcs_year_vals[y] for y in years},
-                "total_planning_apps": total_plan,
                 "total_mcs_installs": total_mcs,
+                **bus_columns_for(ons_code),
+                "_total_plan": total_plan,
             }
         )
 
     for auth_lower, year_vals in planning_only_authorities.items():
         plan_year_vals = {y: year_vals.get(y, 0) for y in years}
+        mcs_year_vals = {y: 0 for y in years}
         rows.append(
             {
                 "la_name": auth_lower,
+                **summary_columns(plan_year_vals, mcs_year_vals),
                 "source": "planning_only_no_mcs_match",
                 "planit_authorities": auth_lower,
                 "n_planit_authorities": 1,
                 "has_joint_planit_authority": False,
                 **{f"planning_apps_{y}": plan_year_vals[y] for y in years},
                 **{f"mcs_installs_{y}": 0 for y in years},
-                "total_planning_apps": sum(plan_year_vals.values()),
                 "total_mcs_installs": 0,
+                **bus_columns_for(None),
+                "_total_plan": sum(plan_year_vals.values()),
             }
         )
 
-    rows.sort(key=lambda r: (-r["total_mcs_installs"], -r["total_planning_apps"], r["la_name"]))
+    rows.sort(key=lambda r: (-r["total_mcs_installs"], -r["_total_plan"], r["la_name"]))
+    for r in rows:
+        r.pop("_total_plan", None)
 
     fieldnames = [
         "la_name",
+        "total_planning_apps_2015_to_2025",
+        "total_mcs_installs_2015_to_2025",
+        "pct_of_mcs_installs_with_planning_app",
         "source",
         "planit_authorities",
         "n_planit_authorities",
         "has_joint_planit_authority",
         *[f"planning_apps_{y}" for y in years],
         *[f"mcs_installs_{y}" for y in years],
-        "total_planning_apps",
         "total_mcs_installs",
+        "total_bus_heatpump_redemptions",
+        *[f"bus_heatpump_{key}" for key in BUS_FY_COL_KEYS],
     ]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", newline="", encoding="utf-8") as f:
