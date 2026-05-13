@@ -87,6 +87,14 @@ To enable rclone sync, install [rclone](https://rclone.org/install/) and configu
 
 Data is stored in SQLite databases under `_local/workstreams/`. These are created automatically on first run.
 
+For local exploration of the canonical VPS `ashp.db`:
+
+```bash
+uv run python scripts/open_ashp_progress_dashboard.py
+```
+
+The launcher creates a consistent SQLite snapshot on the VPS first, then copies it locally to avoid corrupt reads from the live WAL-mode database.
+
 ## Authority mapping
 
 Portal-family classification uses `data/buildwithtract_authority_mapping.csv`, derived from [buildwithtract/planning-applications](https://github.com/buildwithtract/planning-applications) (MIT licensed).

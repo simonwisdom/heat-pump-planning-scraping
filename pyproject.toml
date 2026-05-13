@@ -32,3 +32,4 @@ select = ["E", "F", "I"]
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/**" = ["E402"]
+"scripts/open_ashp_progress_dashboard.py" = ["E402", "E501"]
