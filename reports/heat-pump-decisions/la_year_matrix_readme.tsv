@@ -1,0 +1,33 @@
+About this sheet
+One row per local authority. Each row shows planning applications for heat pumps and certified MCS heat pump installations, year by year, from 2009 to 2025.
+
+Where the data comes from
+Planning applications	Our PlanIt scrape of council planning portals (30,446 apps across the UK).
+MCS installations	The MCS Installations Insights dashboard — every heat pump fitted by an accredited installer.
+
+Why two columns of local-authority names?
+The two datasets don't use the same list of councils, so they don't always line up one-to-one.
+la_name	The council name from MCS, which uses today's list (after the April 2023 unitary reorganisation, e.g. "Somerset", "North Yorkshire", "Cumberland"). This is the row label.
+planit_authorities	The council name(s) PlanIt uses. PlanIt copies whatever each portal calls itself, so it still has the old districts that no longer exist.
+
+How they get matched up
+Same name on both sides	Most councils, e.g. la_name "Cornwall" pairs with planit_authorities "cornwall".
+Old districts joined into a new unitary	MCS uses the new unitary; PlanIt still has the old districts. We sum the old districts' planning apps into the unitary's row. Example: la_name "Somerset" pulls planning apps from "mendip; sedgemoor; somerset; south somerset; taunton deane; west somerset".
+One PlanIt authority covering two MCS areas	PlanIt has a merged authority but MCS keeps them separate. We split that PlanIt authority's planning apps across the MCS rows in proportion to MCS install share. Six councils: Adur and Worthing, Babergh Mid Suffolk, Bromsgrove Redditch, Mid Kent, South Norfolk Broadland, South West Devon. Flagged with has_joint_planit_authority=TRUE.
+
+What "source" means
+matched	Council appears in both datasets with non-zero numbers.
+mcs_only	MCS has installs here but no planning apps were found (7 councils).
+planning_only	PlanIt has apps but MCS recorded no installs in the window (18 councils).
+planning_only_no_mcs_match	PlanIt has apps but the council isn't in MCS's list at all (Northern Ireland, some Scottish councils, Isles of Scilly, etc. — 21 councils). Kept so no planning apps are dropped.
+
+Things to know before reading the numbers
+Our planning scrape only goes back to 2015, so 2009-2014 always show 0 planning apps.
+Inner London looks like it has a very high share of installs going through planning. That's because MCS install numbers are tiny in inner London and heat pumps there tend to be folded into larger projects (extensions, listed-building consents).
+The proportional split for the 6 joint PlanIt authorities can shift a single app by rounding (totals: 29,715 in the sheet vs 29,716 actual planning apps in the window).
+
+Source files
+Planning database	/tmp/ashp.db (PlanIt scrape — ASHP + broader heat-pump searches merged, 30,446 apps)
+MCS data	data/external_heat_pump_data/MCS_heatpump_installations_by_LA_by_year.csv
+Matching rules	_local/geo/authority_lpa_lookup.csv, rules/mcs_lpa_overrides.csv, rules/mcs_authority_overrides.csv
+Script	scripts/build_la_year_matrix.py

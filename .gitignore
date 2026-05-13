@@ -20,6 +20,9 @@ test-results/
 *.parquet
 *.xlsx
 
+# Large derived data (kept locally, not in repo)
+data/external_heat_pump_data/MCS_heatpump_installations_by_LA_by_month.csv
+
 # Local data and docs (not in repo)
 _local/
 

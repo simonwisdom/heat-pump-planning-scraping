@@ -1,0 +1,406 @@
+la_name	source	planit_authorities	n_planit_authorities	has_joint_planit_authority	planning_apps_2009	planning_apps_2010	planning_apps_2011	planning_apps_2012	planning_apps_2013	planning_apps_2014	planning_apps_2015	planning_apps_2016	planning_apps_2017	planning_apps_2018	planning_apps_2019	planning_apps_2020	planning_apps_2021	planning_apps_2022	planning_apps_2023	planning_apps_2024	planning_apps_2025	mcs_installs_2009	mcs_installs_2010	mcs_installs_2011	mcs_installs_2012	mcs_installs_2013	mcs_installs_2014	mcs_installs_2015	mcs_installs_2016	mcs_installs_2017	mcs_installs_2018	mcs_installs_2019	mcs_installs_2020	mcs_installs_2021	mcs_installs_2022	mcs_installs_2023	mcs_installs_2024	mcs_installs_2025	total_planning_apps	total_mcs_installs
+Cornwall	matched	cornwall	1	False	0	0	0	0	0	0	12	6	7	6	15	22	31	26	33	60	45	37	160	196	370	252	355	364	406	427	585	728	536	1129	1127	1600	1802	1764	263	11838
+North Yorkshire	matched	craven; hambleton; harrogate; north yorkshire; richmondshire; ryedale; scarborough; selby	8	False	0	0	0	0	0	0	13	5	12	7	21	32	67	57	48	104	66	37	107	187	299	319	277	402	248	262	290	498	509	1101	911	818	1130	1059	432	8454
+Highland	matched	highland	1	False	0	0	0	0	0	0	36	30	19	23	24	22	45	28	22	27	27	17	149	227	281	282	190	484	432	217	411	441	442	744	856	879	1046	1328	303	8426
+Somerset	matched	mendip; sedgemoor; somerset; south somerset; taunton deane; west somerset	6	False	0	0	0	0	0	0	7	3	5	11	10	18	25	23	20	39	42	12	56	106	654	391	299	336	331	272	241	241	357	494	538	504	786	950	203	6568
+Wiltshire	matched	wiltshire	1	False	0	0	0	0	0	0	4	2	9	7	3	20	44	38	57	74	76	15	80	106	208	199	262	176	114	101	136	196	255	479	496	543	817	1151	334	5334
+Dumfries and Galloway	matched	dumfries	1	False	0	0	0	0	0	0	66	26	15	17	31	27	29	39	61	90	91	12	33	40	44	1164	101	153	48	69	76	108	99	158	290	864	890	639	492	4788
+Shropshire	matched	shropshire	1	False	0	0	0	0	0	0	5	6	2	8	25	31	36	29	31	6	9	10	44	73	103	90	218	188	123	191	272	248	238	382	433	464	776	706	188	4559
+Powys	matched	powys	1	False	0	0	0	0	0	0	0	0	1	5	8	5	10	8	17	35	23	5	28	41	111	83	122	163	97	121	101	155	142	184	342	999	967	820	112	4481
+Argyll and Bute	matched	argyll	1	False	0	0	0	0	0	0	33	35	25	25	38	28	37	26	21	29	20	13	23	46	93	90	64	105	74	112	121	169	530	646	754	475	459	441	317	4215
+South Lanarkshire	matched	south lanarkshire	1	False	0	0	0	0	0	0	12	6	5	2	2	2	8	1	9	8	9	6	16	30	28	134	279	868	281	200	199	163	104	203	260	376	492	324	64	3963
+Dorset	matched	dorset	1	False	0	0	0	0	0	0	10	8	5	2	9	20	34	44	44	94	67	9	90	124	150	163	147	116	98	128	114	145	190	300	402	347	512	695	337	3730
+Aberdeenshire	matched	aberdeenshire	1	False	0	0	0	0	0	0	25	9	23	12	28	23	26	28	37	46	42	20	87	86	153	89	109	150	121	101	107	155	159	255	273	400	761	566	299	3592
+Buckinghamshire	matched	aylesbury vale; buckinghamshire; chiltern south bucks; wycombe	4	False	0	0	0	0	0	0	10	9	2	11	17	23	36	40	70	90	69	12	65	85	143	158	122	111	92	95	111	121	147	263	258	297	497	720	377	3297
+Ceredigion	matched	ceredigion	1	False	0	0	0	0	0	0	3	4	1	0	0	4	12	8	3	9	9	9	12	28	70	39	77	63	107	86	137	84	155	163	326	666	656	583	53	3261
+Northumberland	matched	northumberland (county)	1	False	0	0	0	0	0	0	3	2	4	0	11	23	21	17	32	31	13	11	23	46	134	76	146	115	89	147	154	226	127	319	261	321	625	439	157	3259
+Carmarthenshire	matched	carmarthenshire	1	False	0	0	0	0	0	0	1	0	1	0	3	4	6	16	16	25	25	4	26	48	66	57	48	59	40	62	56	94	64	90	298	567	946	715	97	3240
+East Riding of Yorkshire	matched	east riding	1	False	0	0	0	0	0	0	2	0	3	2	7	10	16	11	21	27	14	5	27	40	97	153	114	137	130	124	135	195	252	354	377	325	363	380	113	3208
+Gwynedd	matched	gwynedd	1	False	0	0	0	0	0	0	2	1	0	1	3	4	4	7	12	52	45	3	16	34	82	39	39	52	24	31	28	58	71	132	305	680	761	748	131	3103
+Na h-Eileanan Siar	matched	western isles	1	False	0	0	0	0	0	0	48	36	46	46	54	40	39	36	39	24	24	11	66	61	179	141	94	160	122	97	154	217	226	315	323	271	337	292	432	3066
+Pembrokeshire	matched	pembrokeshire	1	False	0	0	0	0	0	0	1	3	0	1	3	3	5	5	2	13	10	5	19	29	59	39	30	61	45	57	60	60	74	96	238	606	794	684	46	2956
+East Lindsey	matched	east lindsey	1	False	0	0	0	0	0	0	3	1	2	3	9	3	0	8	14	10	3	57	115	82	103	64	45	32	34	54	73	166	151	209	214	274	648	545	56	2866
+County Durham	matched	durham	1	False	0	0	0	0	0	0	0	0	2	2	3	9	9	8	26	32	26	12	43	51	120	23	130	65	27	32	36	44	103	494	560	232	382	450	117	2804
+West Northamptonshire	matched	west northamptonshire	1	False	0	0	0	0	0	0	6	6	7	21	18	23	19	22	24	27	22	13	31	69	104	96	128	138	95	107	150	249	127	276	228	222	373	363	195	2769
+Herefordshire, County of	matched	herefordshire	1	False	0	0	0	0	0	0	0	3	1	3	12	26	26	15	13	18	13	5	50	162	113	108	82	66	41	113	74	134	140	278	291	294	382	405	130	2738
+Westmorland and Furness	matched	barrow; westmorland and furness	2	False	0	0	0	0	0	0	1	2	0	3	2	8	9	7	7	25	23	13	23	63	108	83	87	58	71	76	131	117	130	268	309	291	453	438	87	2719
+East Suffolk	matched	east suffolk	1	False	0	0	0	0	0	0	5	3	4	9	11	4	8	14	25	37	22	25	52	105	97	79	113	66	87	94	103	151	205	335	299	224	281	367	142	2683
+Perth and Kinross	matched	perth	1	False	0	0	0	0	0	0	12	7	2	4	12	17	22	24	24	25	38	11	73	44	36	63	76	87	55	72	82	159	126	253	223	444	446	393	187	2643
+South Cambridgeshire	matched	south cambridgeshire	1	False	0	0	0	0	0	0	3	6	3	12	8	9	26	38	47	69	74	8	33	78	95	142	113	56	81	96	96	124	133	252	288	241	369	433	295	2638
+King's Lynn and West Norfolk	matched	kings lynn	1	False	0	0	0	0	0	0	2	19	4	7	6	8	5	8	8	14	5	4	50	56	206	151	131	118	97	118	120	142	97	162	129	228	389	429	86	2627
+South Norfolk	matched	south norfolk broadland	1	True	0	0	0	0	0	0	8	9	4	11	11	11	12	13	13	22	26	5	27	52	83	67	88	43	50	95	62	130	146	291	272	272	456	434	140	2573
+Leeds	matched	leeds	1	False	0	0	0	0	0	0	2	1	0	1	3	4	43	33	50	61	48	2	29	37	44	34	14	26	25	39	32	38	58	229	338	590	564	423	246	2522
+Breckland	matched	breckland	1	False	0	0	0	0	0	0	3	2	2	3	5	4	6	5	3	19	4	6	15	37	71	85	67	149	70	117	93	166	155	237	228	261	333	366	56	2456
+Manchester	matched	manchester	1	False	0	0	0	0	0	0	4	0	1	0	2	16	20	10	26	30	27	0	4	3	3	8	6	81	89	22	9	10	80	442	177	517	425	526	136	2402
+Isle of Anglesey	matched	anglesey	1	False	0	0	0	0	0	0	0	0	2	1	1	3	3	3	48	54	31	5	11	28	47	22	23	29	25	26	32	26	49	109	216	660	618	469	146	2395
+Scottish Borders	matched	scottish borders	1	False	0	0	0	0	0	0	7	4	1	4	12	16	8	11	19	12	21	12	23	16	37	37	15	45	37	75	91	144	208	296	241	326	358	406	115	2367
+Cheshire East	matched	cheshire east	1	False	0	0	0	0	0	0	5	0	0	1	1	9	23	8	20	42	24	5	29	58	143	63	43	68	59	73	66	79	93	189	308	217	353	431	133	2277
+North Norfolk	matched	north norfolk	1	False	0	0	0	0	0	0	6	6	9	6	14	20	17	7	22	25	24	6	31	37	66	56	52	56	96	137	106	167	130	253	166	201	297	283	156	2140
+Denbighshire	matched	denbighshire	1	False	0	0	0	0	0	0	1	0	0	0	0	1	6	6	6	14	7	0	5	19	20	30	27	22	30	35	30	46	109	173	162	400	515	420	41	2043
+West Berkshire	matched	west berkshire	1	False	0	0	0	0	0	0	1	3	6	5	7	11	15	16	22	33	43	6	69	76	38	52	61	126	77	25	89	146	74	187	225	215	213	347	162	2026
+Flintshire	matched	flintshire	1	False	0	0	0	0	0	0	1	0	0	0	2	1	4	1	7	15	10	2	8	3	30	47	36	38	37	28	51	57	122	200	165	344	413	348	41	1929
+Mid Suffolk	matched	babergh mid suffolk	1	True	0	0	0	0	0	0	3	3	4	7	4	7	14	16	21	21	29	6	33	64	84	74	64	64	46	73	102	115	139	214	192	139	204	265	129	1878
+West Suffolk	matched	west suffolk	1	False	0	0	0	0	0	0	4	3	2	12	5	5	8	16	9	21	26	4	21	24	34	38	78	67	85	184	188	82	115	203	135	131	184	242	111	1815
+Stratford-on-Avon	matched	stratford on avon	1	False	0	0	0	0	0	0	1	3	6	2	6	18	34	20	12	21	29	4	63	69	78	45	39	56	52	60	74	92	105	199	158	114	285	298	152	1791
+Forest of Dean	matched	forest of dean	1	False	0	0	0	0	0	0	0	0	0	0	12	4	5	10	2	8	6	16	19	40	30	23	47	94	52	35	30	65	76	132	168	123	398	429	47	1777
+Cumberland	matched	allerdale; carlisle; copeland	3	False	0	0	0	0	0	0	0	1	0	1	1	6	0	6	12	9	10	9	24	37	166	21	32	24	64	29	60	40	130	108	142	226	293	356	46	1761
+North Kesteven	matched	north kesteven	1	False	0	0	0	0	0	0	1	1	3	6	4	4	2	11	7	12	14	3	8	10	23	34	30	30	41	48	75	83	97	181	121	171	398	401	65	1754
+Bristol, City of	matched	bristol	1	False	0	0	0	0	0	0	8	5	4	8	2	15	35	22	35	69	55	0	5	6	6	4	1	18	37	6	9	16	31	282	283	332	377	319	258	1732
+South Hams	matched	south west devon	1	True	0	0	0	0	0	0	1	6	1	5	5	3	14	11	11	20	10	2	21	53	62	57	49	105	81	114	70	76	77	158	169	166	208	256	87	1724
+Wealden	matched	wealden	1	False	0	0	0	0	0	0	4	2	1	1	6	11	13	15	24	36	21	15	26	56	55	147	84	48	37	50	61	46	90	128	144	144	304	276	134	1711
+Calderdale	matched	calderdale	1	False	0	0	0	0	0	0	0	1	0	2	3	0	14	2	8	9	8	1	11	14	20	16	9	10	15	35	131	142	29	84	177	489	290	236	47	1709
+Sheffield	matched	sheffield	1	False	0	0	0	0	0	0	0	0	0	3	0	3	4	6	12	26	19	1	3	13	18	19	14	20	31	45	42	57	112	170	206	152	390	409	73	1702
+South Oxfordshire	matched	south oxfordshire	1	False	0	0	0	0	0	0	4	2	6	5	10	18	27	33	37	46	30	2	30	44	42	32	39	44	40	42	36	45	67	190	220	169	258	330	218	1630
+West Oxfordshire	matched	west oxfordshire	1	False	0	0	0	0	0	0	8	3	5	1	3	9	14	8	16	34	33	8	72	100	120	47	163	51	25	23	32	61	51	117	157	133	240	220	134	1620
+Stroud	matched	stroud	1	False	0	0	0	0	0	0	0	0	0	0	1	5	2	14	18	21	17	8	30	33	36	211	319	64	26	16	19	48	41	83	168	116	184	209	78	1611
+East Devon	matched	east devon	1	False	0	0	0	0	0	0	0	5	0	3	7	8	13	19	13	17	16	6	28	23	28	37	56	52	65	43	78	81	79	236	157	147	222	259	101	1597
+Moray	matched	moray	1	False	0	0	0	0	0	0	0	2	3	1	1	1	4	2	5	9	12	3	13	31	14	43	29	34	38	74	52	69	66	144	184	278	277	246	40	1595
+Bassetlaw	matched	bassetlaw	1	False	0	0	0	0	0	0	0	0	0	0	2	3	7	1	7	7	2	3	122	84	171	101	45	37	42	63	50	47	58	86	83	137	231	215	29	1575
+Fenland	matched	fenland	1	False	0	0	0	0	0	0	0	0	2	1	3	3	2	0	1	7	3	9	17	36	71	32	61	68	40	44	77	91	61	138	113	139	260	275	22	1532
+Glasgow City	matched	glasgow	1	False	0	0	0	0	0	0	4	0	0	1	7	4	5	8	4	11	15	0	1	116	1	2	2	8	14	5	6	48	377	383	201	129	112	121	59	1526
+Tendring	matched	tendring	1	False	0	0	0	0	0	0	1	0	1	1	1	2	3	1	6	8	4	0	8	8	53	597	81	24	10	17	21	16	44	210	59	94	148	136	28	1526
+Babergh	matched	babergh mid suffolk	1	True	0	0	0	0	0	0	3	3	3	5	3	6	11	13	16	17	23	4	43	44	43	43	56	44	46	44	95	111	107	194	210	113	117	195	103	1509
+North Northamptonshire	matched	corby; east northamptonshire; kettering; north northamptonshire; wellingborough	5	False	0	0	0	0	0	0	3	3	4	4	3	5	10	15	8	33	28	8	21	36	51	39	46	57	46	55	63	45	70	173	158	123	250	267	116	1508
+Conwy	matched	conwy	1	False	0	0	0	0	0	0	2	2	3	0	3	2	1	6	5	11	14	1	6	12	16	14	15	28	12	40	23	24	47	41	148	326	359	395	49	1507
+Fife	matched	fife	1	False	0	0	0	0	0	0	4	6	2	4	8	9	22	27	52	48	37	11	31	27	18	37	47	66	23	39	38	68	66	139	135	198	295	253	219	1491
+Cheshire West and Chester	matched	chester	1	False	0	0	0	0	0	0	3	2	0	0	2	7	10	10	15	30	16	3	15	23	34	32	22	32	27	29	27	52	37	165	188	161	289	346	95	1482
+Orkney Islands	matched	orkney	1	False	0	0	0	0	0	0	156	148	132	115	109	107	116	116	92	69	53	9	40	200	103	52	51	63	53	116	83	143	96	133	112	75	69	70	1213	1468
+Central Bedfordshire	matched	central bedfordshire	1	False	0	0	0	0	0	0	0	4	13	3	6	3	6	10	15	30	21	3	27	17	44	68	102	40	44	76	163	82	60	110	104	116	162	241	111	1459
+Kirklees	matched	kirklees	1	False	0	0	0	0	0	0	0	1	0	0	6	2	6	11	5	27	12	1	174	24	48	15	25	21	32	50	18	46	79	88	150	134	289	262	70	1456
+South Holland	matched	south holland	1	False	0	0	0	0	0	0	2	0	0	0	0	1	0	3	2	5	1	0	6	27	25	37	72	34	14	36	82	130	83	124	151	152	207	239	14	1419
+South Gloucestershire	matched	south gloucestershire	1	False	0	0	0	0	0	0	0	1	0	1	3	4	17	10	32	31	32	7	10	30	29	28	25	62	78	32	30	45	65	144	155	129	229	300	131	1398
+Winchester	matched	winchester	1	False	0	0	0	0	0	0	1	2	0	0	2	6	6	7	14	27	13	10	14	31	71	66	40	37	32	40	43	42	71	142	151	129	223	247	78	1389
+South Kesteven	matched	south kesteven	1	False	0	0	0	0	0	0	4	0	4	2	4	4	12	32	13	10	6	3	13	29	23	42	41	33	21	20	67	55	60	116	170	149	255	284	91	1381
+West Lindsey	matched	west lindsey	1	False	0	0	0	0	0	0	0	0	1	1	4	6	1	3	6	11	15	1	13	13	19	27	91	62	32	45	74	72	82	135	161	122	217	212	48	1378
+Cotswold	matched	cotswold	1	False	0	0	0	0	0	0	4	2	6	3	7	10	18	13	15	23	34	10	36	55	44	39	36	53	80	109	55	61	70	117	173	103	146	164	135	1351
+Broadland	matched	south norfolk broadland	1	True	0	0	0	0	0	0	4	5	2	6	6	6	7	7	7	11	14	4	36	41	63	69	40	31	27	65	50	82	73	147	145	107	140	225	75	1345
+Vale of White Horse	matched	vale of white horse	1	False	0	0	0	0	0	0	0	1	4	2	6	8	14	17	12	37	40	7	20	26	23	30	36	40	29	26	32	37	40	108	160	133	235	353	141	1335
+Mid Devon	matched	mid devon	1	False	0	0	0	0	0	0	0	2	3	5	1	7	13	9	11	8	9	3	13	69	51	24	59	106	38	42	38	37	46	88	122	179	210	209	68	1334
+Chichester	matched	chichester	1	False	0	0	0	0	0	0	4	0	1	2	1	2	7	6	14	17	12	9	26	47	52	44	30	33	26	40	22	106	65	110	136	112	233	240	66	1331
+Basingstoke and Deane	matched	basingstoke	1	False	0	0	0	0	0	0	0	17	2	2	3	4	11	9	15	18	10	6	28	13	19	34	49	124	108	14	29	47	44	84	114	101	172	299	91	1285
+Test Valley	matched	test valley	1	False	0	0	0	0	0	0	1	4	1	4	6	5	19	13	22	27	31	5	12	36	35	48	52	23	20	27	45	64	52	108	130	106	226	278	133	1267
+Huntingdonshire	matched	huntingdonshire	1	False	0	0	0	0	0	0	2	0	2	0	3	8	9	9	8	22	25	4	6	35	55	38	45	24	34	34	54	49	70	110	109	138	218	243	88	1266
+Barnsley	matched	barnsley	1	False	0	0	0	0	0	0	1	0	1	0	0	3	10	3	9	8	6	2	3	7	36	111	218	126	108	83	39	40	43	69	43	68	106	164	41	1266
+North Devon	matched	north devon	1	False	0	0	0	0	0	0	1	2	0	3	0	4	3	7	11	9	12	1	12	19	22	58	12	37	42	45	40	66	54	97	142	147	239	216	52	1249
+North Lincolnshire	matched	north lincs	1	False	0	0	0	0	0	0	0	0	0	0	0	1	1	2	3	5	7	2	8	28	75	46	25	26	44	55	44	59	56	90	83	120	191	250	19	1202
+North West Leicestershire	matched	north west leicestershire	1	False	0	0	0	0	0	0	0	0	0	0	0	1	2	3	9	9	5	0	3	7	4	10	9	40	61	26	214	202	48	141	86	62	106	180	29	1199
+Torridge	matched	torridge	1	False	0	0	0	0	0	0	2	0	1	2	0	3	5	3	4	5	6	2	67	61	56	43	72	30	27	25	15	41	46	99	103	116	198	196	31	1197
+Newark and Sherwood	matched	newark and sherwood	1	False	0	0	0	0	0	0	0	2	0	1	7	8	8	10	7	13	1	1	6	20	42	24	15	41	25	35	59	46	61	155	111	130	241	164	57	1176
+East Cambridgeshire	matched	east cambridgeshire	1	False	0	0	0	0	0	0	1	4	3	3	2	5	9	2	10	15	14	2	12	22	21	26	31	21	21	35	51	44	58	152	202	100	162	192	68	1152
+Cherwell	matched	cherwell	1	False	0	0	0	0	0	0	4	0	5	1	3	11	7	5	16	39	20	2	47	107	63	75	31	26	27	28	22	54	47	75	100	119	136	184	111	1143
+Shetland Islands	matched	shetlands	1	False	0	0	0	0	0	0	21	25	30	35	31	23	41	41	20	42	37	11	31	38	44	33	74	46	27	61	68	77	43	106	96	71	127	154	346	1107
+Teignbridge	matched	teignbridge	1	False	0	0	0	0	0	0	1	2	3	3	2	2	5	0	10	9	4	1	10	35	35	30	43	74	81	43	31	55	46	145	118	78	111	166	41	1102
+North Somerset	matched	north somerset	1	False	0	0	0	0	0	0	2	0	0	3	2	6	2	4	10	18	13	4	6	13	40	36	18	24	20	23	25	38	54	94	106	135	221	234	60	1091
+Monmouthshire	matched	monmouthshire	1	False	0	0	0	0	0	0	0	0	0	1	6	2	7	10	11	22	11	9	15	28	47	39	31	28	25	26	22	26	49	75	115	111	160	279	70	1085
+New Forest	matched	new forest (district)	1	False	0	0	0	0	0	0	0	3	0	1	1	3	3	3	14	7	6	4	21	28	28	30	30	25	13	23	26	26	37	88	168	114	172	233	41	1066
+Guildford	matched	guildford	1	False	0	0	0	0	0	0	0	2	1	6	5	29	12	13	26	26	25	1	39	34	28	31	19	10	13	40	77	79	55	98	98	101	155	183	145	1061
+Angus	matched	angus	1	False	0	0	0	0	0	0	5	2	0	3	1	3	8	7	4	10	8	3	20	13	14	26	31	37	17	21	26	31	41	74	122	192	253	138	51	1059
+Wychavon	matched	wychavon	1	False	0	0	0	0	0	0	0	5	2	2	4	9	11	7	4	14	9	3	18	21	29	36	26	24	25	33	56	42	59	67	113	78	196	232	67	1058
+Doncaster	matched	doncaster	1	False	0	0	0	0	0	0	0	0	1	0	4	3	1	3	7	13	5	4	3	7	11	16	10	11	25	68	48	54	47	106	81	131	230	196	37	1048
+Bradford	matched	bradford	1	False	0	0	0	0	0	0	1	0	1	0	0	5	2	9	15	21	22	4	8	59	19	12	8	10	11	32	12	24	32	98	123	147	234	214	76	1047
+Stirling	matched	stirling	1	False	0	0	0	0	0	0	2	3	1	1	2	6	0	14	18	6	9	12	26	41	28	29	22	28	36	38	30	50	60	96	169	106	132	131	62	1034
+North Lanarkshire	matched	north lanarkshire	1	False	0	0	0	0	0	0	2	0	0	0	0	1	2	5	2	4	4	2	6	6	10	4	8	7	15	23	81	93	64	81	62	205	247	116	20	1030
+East Hampshire	matched	east hampshire	1	False	0	0	0	0	0	0	0	0	0	0	1	5	2	3	7	10	4	7	15	26	44	34	38	24	21	25	29	42	45	94	112	99	159	213	32	1027
+Blackburn with Darwen	matched	blackburn	1	False	0	0	0	0	0	0	0	0	0	0	2	1	5	0	0	9	6	1	1	2	17	5	1	2	3	3	0	0	11	43	213	157	268	297	23	1024
+Maldon	matched	maldon	1	False	0	0	0	0	0	0	0	2	0	0	0	3	3	6	11	8	8	1	3	5	32	93	85	35	14	51	32	37	44	88	69	49	245	136	41	1019
+City of Edinburgh	matched	edinburgh	1	False	0	0	0	0	0	0	1	0	5	7	5	8	26	28	40	47	42	0	3	8	9	1	5	8	10	13	27	13	42	138	150	173	211	207	209	1018
+Horsham	matched	horsham	1	False	0	0	0	0	0	0	4	0	3	1	5	7	8	9	17	24	15	6	13	23	45	36	29	28	29	34	32	41	45	80	121	84	138	206	93	990
+Uttlesford	matched	uttlesford	1	False	0	0	0	0	0	0	2	2	3	3	7	5	19	21	12	16	14	4	14	11	35	104	31	25	19	50	27	42	60	91	119	75	121	154	104	982
+Bournemouth, Christchurch and Poole	matched	bcp	1	False	0	0	0	0	0	0	3	1	1	1	4	2	10	7	21	16	8	0	13	28	22	24	24	21	7	19	11	26	27	74	104	90	195	291	74	976
+Derbyshire Dales	matched	derbyshire dales	1	False	0	0	0	0	0	0	2	0	0	1	2	0	6	7	14	12	10	4	14	28	32	23	22	30	14	29	29	33	59	94	150	93	145	176	54	975
+Lewes	matched	lewes	1	False	0	0	0	0	0	0	0	0	0	0	0	0	1	9	3	4	4	3	8	10	16	88	68	148	30	20	22	27	36	87	77	86	99	146	21	971
+Malvern Hills	matched	malvern hills	1	False	0	0	0	0	0	0	0	4	2	0	0	1	12	3	3	5	6	7	13	34	54	26	42	53	26	43	18	40	56	66	121	60	148	158	36	965
+Isle of Wight	matched	isle of wight	1	False	0	0	0	0	0	0	3	2	2	2	2	3	4	3	3	7	5	5	23	30	160	92	25	9	9	8	12	30	23	30	63	53	193	175	36	940
+Stafford	matched	stafford	1	False	0	0	0	0	0	0	5	0	0	1	2	0	1	2	8	6	3	3	13	31	51	25	64	18	23	18	15	33	29	43	77	98	179	212	28	932
+Bath and North East Somerset	matched	bath	1	False	0	0	0	0	0	0	3	0	0	1	5	8	13	27	28	28	33	1	10	17	26	16	27	28	11	10	16	31	41	92	99	115	152	224	146	916
+Wakefield	matched	wakefield	1	False	0	0	0	0	0	0	0	0	0	0	6	4	6	9	5	14	8	3	5	28	83	19	7	7	31	34	33	26	45	118	76	73	153	174	52	915
+Waverley	matched	waverley	1	False	0	0	0	0	0	0	0	0	2	0	2	11	6	19	18	33	35	4	25	30	26	29	18	20	21	15	11	24	31	84	83	65	175	251	126	912
+York	matched	york	1	False	0	0	0	0	0	0	2	1	0	1	3	4	2	13	13	29	15	1	5	11	20	26	13	6	12	52	13	37	34	62	87	100	163	266	83	908
+Colchester	matched	colchester	1	False	0	0	0	0	0	0	3	3	0	0	1	1	4	5	8	8	6	1	5	21	55	26	70	55	21	33	22	38	23	98	74	51	119	172	39	884
+West Devon	matched	south west devon	1	True	0	0	0	0	0	0	1	3	1	3	2	2	7	6	6	10	5	3	7	22	33	26	28	22	33	45	45	36	59	78	80	80	126	160	46	883
+Harborough	matched	harborough	1	False	0	0	0	0	0	0	0	1	0	1	9	1	8	1	4	11	3	1	11	14	25	12	24	27	48	48	80	29	33	65	125	84	113	140	39	879
+Sunderland	matched	sunderland	1	False	0	0	0	0	0	0	0	0	0	0	1	3	8	2	3	6	5	1	1	3	2	0	1	1	0	2	0	4	273	169	133	30	136	118	28	874
+Ashford	matched	ashford	1	False	0	0	0	0	0	0	0	0	2	2	4	6	11	6	8	16	12	2	15	11	28	42	24	25	22	19	35	40	30	64	91	81	170	168	67	867
+Bedford	matched	bedford	1	False	0	0	0	0	0	0	0	0	1	5	1	1	8	7	15	16	11	2	7	16	45	29	74	68	68	29	22	45	25	67	41	66	122	141	65	867
+North Hertfordshire	matched	north hertfordshire	1	False	0	0	0	0	0	0	1	0	0	0	6	5	9	7	12	27	27	3	4	24	162	107	27	14	16	16	12	24	22	53	64	49	130	134	94	861
+Boston	matched	boston	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	4	1	0	2	0	3	6	28	32	27	18	40	55	80	25	14	42	101	73	175	140	7	859
+Enfield	matched	enfield	1	False	0	0	0	0	0	0	0	2	0	0	3	4	14	4	10	9	6	0	0	6	1	2	5	1	189	2	364	21	5	26	69	62	51	54	52	858
+East Hertfordshire	matched	east hertfordshire	1	False	0	0	0	0	0	0	1	1	2	2	9	5	24	18	65	79	70	3	13	25	20	25	42	73	20	23	21	36	49	76	80	87	102	159	276	854
+Sevenoaks	matched	sevenoaks	1	False	0	0	0	0	0	0	4	5	1	4	3	4	11	10	21	31	23	2	7	17	24	55	39	19	18	16	40	69	38	55	89	78	135	152	117	853
+Chelmsford	matched	chelmsford	1	False	0	0	0	0	0	0	3	1	3	0	1	2	9	3	14	18	13	3	7	31	60	21	13	21	23	34	29	31	40	79	59	86	122	190	67	849
+Wrexham	matched	wrexham	1	False	0	0	0	0	0	0	0	0	2	0	1	0	3	0	2	13	14	0	21	39	22	18	4	12	14	11	17	16	17	38	60	73	231	256	35	849
+Pendle	matched	pendle	1	False	0	0	0	0	0	0	0	0	1	0	0	2	1	1	2	7	3	0	3	3	5	10	5	4	1	1	7	3	12	43	37	335	150	229	17	848
+Rotherham	matched	rotherham	1	False	0	0	0	0	0	0	0	0	1	0	1	3	0	3	1	16	5	1	6	6	2	13	6	6	22	33	32	41	36	55	60	89	260	173	30	841
+Birmingham	matched	birmingham	1	False	0	0	0	0	0	0	2	1	1	1	2	1	6	7	26	33	20	4	1	7	3	4	7	9	7	6	6	4	5	49	57	132	331	208	100	840
+Swansea	matched	swansea	1	False	0	0	0	0	0	0	0	1	3	0	2	3	8	17	17	22	52	1	8	13	30	23	9	14	25	15	20	24	37	44	74	126	197	173	125	833
+South Ayrshire	matched	south ayrshire	1	False	0	0	0	0	0	0	1	0	0	0	2	0	4	1	10	2	6	1	10	8	6	10	36	18	9	2	67	20	24	46	64	200	170	114	26	805
+East Staffordshire	matched	east staffordshire	1	False	0	0	0	0	0	0	0	1	1	0	2	8	6	15	7	6	10	2	6	2	8	12	17	194	17	12	11	51	40	70	51	53	133	104	56	783
+Mid Sussex	matched	mid sussex	1	False	0	0	0	0	0	0	2	3	2	0	0	2	8	10	13	15	13	4	12	19	25	14	23	21	11	27	17	32	45	77	74	85	133	163	68	782
+Milton Keynes	matched	milton keynes	1	False	0	0	0	0	0	0	0	2	0	1	2	2	4	11	19	27	18	3	11	20	21	10	38	9	7	9	28	57	20	43	63	65	123	242	86	769
+Newcastle upon Tyne	matched	newcastle upon tyne	1	False	0	0	0	0	0	0	0	1	0	1	1	2	15	19	15	18	12	0	4	0	2	2	1	4	14	8	2	6	25	209	220	38	105	128	84	768
+East Lothian	matched	east lothian	1	False	0	0	0	0	0	0	2	4	4	4	5	4	20	19	11	21	17	2	8	9	10	44	38	13	11	28	68	22	29	82	77	74	131	118	111	764
+Wigan	matched	wigan	1	False	0	0	0	0	0	0	0	2	0	0	1	2	5	4	1	7	5	0	6	3	11	9	15	192	162	5	9	4	4	54	29	43	100	108	27	754
+Great Yarmouth	matched	great yarmouth	1	False	0	0	0	0	0	0	0	0	4	1	1	1	0	0	6	6	3	11	8	8	10	23	28	9	18	45	36	39	33	43	53	109	120	158	22	751
+Maidstone	matched	mid kent	1	True	0	0	0	0	0	0	1	0	0	0	1	2	6	3	10	9	6	2	29	33	15	47	19	41	20	30	26	13	28	42	48	78	143	119	38	733
+North Ayrshire	matched	north ayrshire	1	False	0	0	0	0	0	0	1	0	0	0	3	0	2	1	3	2	4	0	12	13	6	19	7	4	14	33	25	56	51	77	86	80	130	112	16	725
+Braintree	matched	braintree	1	False	0	0	0	0	0	0	0	2	2	3	9	1	10	8	13	0	0	3	10	11	14	22	36	28	19	14	19	31	40	89	74	67	118	117	48	712
+Rother	matched	rother	1	False	0	0	0	0	0	0	0	1	1	1	1	6	3	4	8	10	8	3	13	14	21	22	39	20	31	43	58	29	23	77	40	63	103	106	43	705
+Brighton and Hove	matched	brighton	1	False	0	0	0	0	0	0	1	0	0	1	0	4	11	9	12	27	15	3	2	2	3	6	92	5	2	3	4	9	18	49	84	129	112	175	80	698
+Tunbridge Wells	matched	mid kent; tunbridge wells	2	True	0	0	0	0	0	0	5	1	5	3	7	6	16	6	19	37	24	5	12	9	30	21	42	19	42	19	15	20	27	51	67	61	110	142	129	692
+West Lothian	matched	west lothian	1	False	0	0	0	0	0	0	3	2	0	0	1	0	1	4	5	5	7	6	7	9	9	8	14	9	5	12	13	68	46	55	68	109	125	118	28	681
+Salford	matched	salford	1	False	0	0	0	0	0	0	0	0	1	0	0	2	13	2	7	7	4	0	2	1	4	1	0	1	1	3	101	129	138	32	37	82	62	84	36	678
+Wokingham	matched	wokingham	1	False	0	0	0	0	0	0	1	0	0	0	5	7	7	10	16	21	19	1	15	32	25	20	28	10	15	19	11	13	7	33	50	64	131	184	86	658
+Rushcliffe	matched	rushcliffe	1	False	0	0	0	0	0	0	0	3	0	1	1	5	12	7	15	22	9	4	2	5	16	16	10	14	15	28	30	24	33	76	70	57	107	139	75	646
+Staffordshire Moorlands	matched	staffordshire moorlands	1	False	0	0	0	0	0	0	1	1	0	0	1	5	2	2	3	7	2	5	9	10	11	30	35	36	15	26	18	21	36	56	69	61	97	107	24	642
+South Derbyshire	matched	south derbyshire	1	False	0	0	0	0	0	0	0	0	0	3	2	7	10	6	8	14	2	0	8	5	18	13	6	27	37	55	31	28	35	45	50	56	110	104	52	628
+Dacorum	matched	dacorum	1	False	0	0	0	0	0	0	1	3	2	3	2	2	10	8	17	31	19	3	11	5	7	31	32	34	15	12	19	9	14	34	72	57	95	163	98	613
+Windsor and Maidenhead	matched	windsor	1	False	0	0	0	0	0	0	0	0	1	2	3	5	3	6	14	47	49	1	6	23	34	14	38	17	10	9	7	53	31	34	51	62	108	111	130	609
+Wirral	matched	wirral	1	False	0	0	0	0	0	0	0	1	0	1	2	2	2	4	2	19	7	0	0	6	5	2	7	4	5	5	2	9	31	33	52	107	203	135	40	606
+Amber Valley	matched	amber valley	1	False	0	0	0	0	0	0	1	0	0	1	1	0	3	1	7	12	10	0	21	7	9	8	6	10	13	15	13	46	39	50	53	72	110	134	36	606
+Bolton	matched	bolton	1	False	0	0	0	0	0	0	0	0	0	0	1	4	11	1	3	7	6	2	2	45	6	6	4	41	4	3	3	72	6	48	34	94	120	116	33	606
+Warwick	matched	warwick	1	False	0	0	0	0	0	0	3	1	7	4	5	2	2	6	10	27	19	2	12	9	20	24	21	18	23	24	12	26	21	60	76	41	87	121	86	597
+Falkirk	matched	falkirk	1	False	0	0	0	0	0	0	0	0	1	1	2	1	2	2	0	10	3	2	3	5	4	5	3	13	10	21	40	23	22	48	76	169	67	73	22	584
+Stockport	matched	stockport	1	False	0	0	0	0	0	0	1	0	0	1	0	1	16	6	8	10	11	0	4	2	2	7	4	7	3	9	4	13	33	112	70	74	114	122	54	580
+Tonbridge and Malling	matched	tonbridge	1	False	0	0	0	0	0	0	1	0	0	0	1	0	4	4	9	20	7	1	9	5	10	10	9	19	21	15	13	17	28	56	45	55	143	120	46	576
+Neath Port Talbot	matched	neath	1	False	0	0	0	0	0	0	0	0	0	0	0	0	3	2	6	7	12	0	3	2	23	14	3	10	14	11	6	2	3	14	25	134	191	120	30	575
+Nottingham	matched	nottingham	1	False	0	0	0	0	0	0	1	0	2	0	3	2	0	5	8	18	13	0	0	2	16	14	4	2	5	9	13	18	26	47	58	120	125	109	52	568
+West Lancashire	matched	west lancashire	1	False	0	0	0	0	0	0	0	0	0	0	2	1	2	1	2	13	6	0	4	40	110	9	15	17	4	11	4	11	6	42	36	39	95	121	27	564
+Epping Forest	matched	epping forest	1	False	0	0	0	0	0	0	1	0	2	0	0	3	0	7	4	10	3	2	4	23	50	15	4	62	43	21	13	15	36	42	33	30	81	87	30	561
+Cambridge	matched	cambridge	1	False	0	0	0	0	0	0	1	0	4	1	1	20	22	23	32	63	70	4	3	10	2	3	6	4	2	8	5	10	8	32	69	60	120	208	237	554
+Liverpool	matched	liverpool	1	False	0	0	0	0	0	0	0	0	5	1	1	2	9	3	21	15	17	3	0	1	2	2	0	2	1	5	0	4	7	35	68	125	159	126	74	540
+Derby	matched	derby	1	False	0	0	0	0	0	0	0	0	0	0	0	0	3	1	12	13	9	0	0	0	39	1	1	2	5	32	33	23	42	44	23	49	91	155	38	540
+Tewkesbury	matched	tewkesbury	1	False	0	0	0	0	0	0	0	0	2	0	0	2	4	2	8	4	0	2	10	18	17	30	9	6	9	9	9	13	28	41	71	65	73	129	22	539
+North East Lincolnshire	matched	north east lincs	1	False	0	0	0	0	0	0	1	0	0	0	0	1	2	1	3	1	3	0	2	2	0	9	6	9	12	15	13	12	19	45	40	112	122	120	12	538
+Warrington	matched	warrington	1	False	0	0	0	0	0	0	2	0	0	0	0	3	1	1	5	9	4	0	2	8	9	6	1	4	5	14	2	4	3	29	119	124	79	116	25	525
+Peterborough	matched	peterborough	1	False	0	0	0	0	0	0	0	0	3	1	6	1	1	5	7	10	23	2	1	15	11	15	17	7	7	12	16	25	17	29	42	70	131	106	57	523
+Rossendale	matched	rossendale	1	False	0	0	0	0	0	0	0	0	0	0	1	0	0	2	3	11	6	1	4	4	5	3	4	3	3	1	2	5	5	19	79	134	133	117	23	522
+Canterbury	matched	canterbury	1	False	0	0	0	0	0	0	0	0	0	0	0	5	6	4	8	19	10	4	10	2	7	12	11	17	5	20	11	14	13	35	53	48	114	144	52	520
+Mole Valley	matched	mole valley	1	False	0	0	0	0	0	0	0	1	1	2	4	3	4	6	10	16	13	5	11	10	6	28	13	12	13	22	14	21	25	35	70	43	81	104	60	513
+Gedling	matched	gedling	1	False	0	0	0	0	0	0	1	3	0	0	2	2	1	0	4	6	0	0	2	3	7	11	2	3	26	12	32	17	18	128	38	55	77	75	19	506
+Telford and Wrekin	matched	telford	1	False	0	0	0	0	0	0	2	0	0	0	8	4	3	3	9	12	3	1	5	10	4	21	8	10	10	13	14	9	12	34	55	39	94	166	44	505
+Hinckley and Bosworth	matched	hinckley and bosworth	1	False	0	0	0	0	0	0	0	0	0	0	7	1	2	1	4	4	4	2	9	13	28	6	9	13	7	24	39	36	23	32	40	45	72	95	23	493
+Reading	matched	reading	1	False	0	0	0	0	0	0	0	0	0	0	2	0	2	14	30	20	10	0	2	3	12	5	15	16	2	4	5	8	4	52	78	89	90	100	78	485
+Redcar and Cleveland	matched	redcar and cleveland	1	False	0	0	0	0	0	0	1	0	0	0	0	3	3	0	3	1	0	3	1	6	16	3	3	15	13	33	9	50	18	42	83	40	76	71	11	482
+Ealing	matched	ealing	1	False	0	0	0	0	0	0	1	0	1	0	1	3	21	20	32	38	46	0	2	8	2	13	1	3	1	4	1	3	2	13	27	188	139	74	163	481
+Oxford	matched	oxford	1	False	0	0	0	0	0	0	2	2	1	0	3	15	26	42	62	84	73	1	4	4	6	4	2	2	1	5	4	2	9	92	47	61	117	119	310	480
+Folkestone and Hythe	matched	shepway	1	False	0	0	0	0	0	0	2	0	2	0	2	2	2	8	4	7	6	4	4	9	13	12	9	13	11	9	9	12	30	42	39	76	81	107	35	480
+East Ayrshire	matched	east ayrshire	1	False	0	0	0	0	0	0	0	2	0	3	3	8	4	2	3	0	7	0	3	5	4	15	5	16	8	20	11	11	11	31	62	95	99	81	32	477
+Ribble Valley	matched	ribble valley	1	False	0	0	0	0	0	0	0	1	0	1	1	1	3	4	7	20	11	2	7	18	27	14	24	22	8	17	15	28	19	49	45	32	51	97	49	475
+Lancaster	matched	lancaster	1	False	0	0	0	0	0	0	6	0	0	0	4	10	5	14	12	29	20	1	5	9	8	8	6	17	13	4	13	10	18	34	41	50	105	129	100	471
+Charnwood	matched	charnwood	1	False	0	0	0	0	0	0	0	0	0	0	3	0	4	5	19	10	10	3	9	9	7	5	3	6	24	21	12	19	9	37	36	45	94	132	51	471
+St Albans	matched	st albans	1	False	0	0	0	0	0	0	1	0	0	2	1	6	20	12	19	44	33	0	2	14	6	5	4	3	8	8	3	9	12	34	57	48	110	142	138	465
+North East Derbyshire	matched	north east derbyshire	1	False	0	0	0	0	0	0	1	0	0	2	1	0	4	3	3	6	0	1	1	12	8	5	13	9	14	22	20	18	36	46	55	50	70	81	20	461
+Leicester	matched	leicester	1	False	0	0	0	0	0	0	0	1	1	0	0	0	34	0	8	5	1	0	0	0	44	6	7	4	23	6	37	4	13	35	25	61	103	92	50	460
+Dover	matched	dover	1	False	0	0	0	0	0	0	1	1	1	2	1	3	2	6	5	8	7	0	6	15	14	7	5	7	5	11	9	9	10	45	68	58	113	78	37	460
+Rhondda Cynon Taf	matched	rhondda	1	False	0	0	0	0	0	0	0	0	0	0	0	0	2	0	6	12	16	1	3	10	32	10	5	11	4	7	3	3	20	54	64	33	91	104	36	455
+Tandridge	matched	tandridge	1	False	0	0	0	0	0	0	1	1	3	0	3	4	10	4	8	17	9	6	11	13	13	17	10	6	15	19	6	26	17	39	59	45	84	67	60	453
+Swale	matched	mid kent	1	True	0	0	0	0	0	0	0	0	0	0	1	1	4	2	6	6	4	2	6	8	9	21	11	19	16	6	10	18	10	23	45	50	97	96	24	447
+Chorley	matched	chorley	1	False	0	0	0	0	0	0	0	0	0	0	0	0	3	1	3	8	6	1	7	3	8	19	17	20	12	13	14	10	12	28	38	56	76	102	21	436
+Rugby	matched	rugby	1	False	0	0	0	0	0	0	0	2	1	0	3	2	1	11	10	14	9	2	6	14	6	18	13	21	6	8	9	14	24	24	47	34	61	124	53	431
+Bromley	matched	bromley	1	False	0	0	0	0	0	0	1	0	1	0	3	4	6	14	19	33	22	1	2	10	7	5	4	3	8	3	6	2	7	30	47	61	85	144	103	425
+Stockton-on-Tees	matched	stockton-on-tees	1	False	0	0	0	0	0	0	0	1	1	0	3	0	2	2	6	5	5	1	6	8	26	4	1	8	4	40	25	40	6	37	39	31	75	74	25	425
+Vale of Glamorgan	matched	glamorgan	1	False	0	0	0	0	0	0	1	2	0	4	3	1	2	10	10	14	30	1	6	7	6	6	12	9	12	9	8	7	11	58	47	39	62	124	77	424
+South Staffordshire	matched	south staffordshire	1	False	0	0	0	0	0	0	0	0	0	0	4	0	11	1	2	5	4	2	2	7	16	44	24	6	7	16	3	9	7	33	45	44	81	78	27	424
+North Tyneside	matched	north tyneside	1	False	0	0	0	0	0	0	1	0	1	0	1	0	7	3	10	7	6	0	0	0	3	2	1	5	0	1	2	7	8	88	103	42	62	98	36	422
+Southampton	matched	southampton	1	False	0	0	0	0	0	0	0	0	0	0	1	0	0	1	8	11	8	1	2	2	9	27	2	2	0	6	3	4	3	18	17	56	131	139	29	422
+Croydon	matched	croydon	1	False	0	0	0	0	0	0	0	0	2	1	3	2	4	4	16	24	20	1	1	8	6	3	3	4	8	4	2	7	47	13	41	53	121	98	76	420
+Arun	matched	arun	1	False	0	0	0	0	0	0	0	1	0	2	2	1	4	5	6	16	10	2	2	8	7	13	6	10	4	5	8	7	16	27	42	47	94	122	47	420
+Newcastle-under-Lyme	matched	newcastle under lyme	1	False	0	0	0	0	0	0	0	1	0	0	3	4	0	3	1	2	2	0	7	5	77	4	8	14	3	9	5	13	16	28	31	47	67	85	16	419
+Lichfield	matched	lichfield	1	False	0	0	0	0	0	0	0	0	1	2	5	1	3	0	7	8	6	1	3	8	5	6	52	15	8	7	10	23	39	18	40	40	73	70	33	418
+Swindon	matched	swindon	1	False	0	0	0	0	0	0	0	0	0	0	0	1	0	0	5	12	8	0	2	37	0	9	5	3	4	0	5	6	52	34	27	33	87	110	26	414
+Melton	matched	melton	1	False	0	0	0	0	0	0	0	0	0	0	2	1	2	3	3	4	6	4	7	7	4	7	9	6	15	22	20	14	32	41	29	67	55	74	21	413
+Erewash	matched	erewash	1	False	0	0	0	0	0	0	0	0	0	0	0	0	1	0	1	3	5	0	0	2	5	12	2	3	10	63	45	36	20	45	27	20	48	75	10	413
+Bury	matched	bury	1	False	0	0	0	0	0	0	0	1	0	0	0	2	0	0	3	5	3	0	2	0	1	3	3	11	80	8	3	5	13	20	24	72	92	74	14	411
+Ashfield	matched	ashfield	1	False	0	0	0	0	0	0	2	0	1	1	0	0	1	0	4	2	1	1	2	4	3	4	25	9	10	8	11	33	15	30	37	42	94	81	12	409
+Mansfield	matched	mansfield	1	False	0	0	0	0	0	0	0	0	1	0	0	0	0	1	2	5	1	0	1	61	1	2	6	37	18	14	26	28	19	32	28	24	51	50	10	398
+South Tyneside	matched	south tyneside	1	False	0	0	0	0	0	0	0	1	0	0	1	1	2	2	2	3	3	0	51	4	91	1	3	28	37	1	5	4	7	58	40	15	26	22	15	393
+Trafford	matched	trafford	1	False	0	0	0	0	0	0	0	0	0	0	0	1	15	10	8	18	9	0	1	1	5	6	3	5	2	5	2	10	14	21	45	55	86	130	61	391
+Woking	matched	woking	1	False	0	0	0	0	0	0	1	1	1	2	3	0	6	4	4	9	17	0	3	6	16	6	5	9	6	9	2	34	6	26	46	91	66	60	48	391
+Thurrock	matched	thurrock	1	False	0	0	0	0	0	0	0	0	1	0	1	0	1	1	0	3	1	0	3	0	3	0	0	4	6	1	3	10	0	5	5	283	33	34	8	390
+Worcester	matched	worcester	1	False	0	0	0	0	0	0	0	0	0	1	0	0	1	0	2	4	3	0	0	0	1	3	4	2	1	2	35	1	26	8	42	108	109	47	11	389
+Sefton	matched	sefton	1	False	0	0	0	0	0	0	1	2	1	0	0	0	0	1	8	7	10	0	1	7	9	4	10	4	3	5	1	4	4	32	38	64	115	85	30	386
+Hartlepool	matched	hartlepool	1	False	0	0	0	0	0	0	0	0	0	1	1	1	0	2	1	1	4	0	1	0	2	1	0	11	0	2	4	1	3	88	59	36	115	63	11	386
+Hart	matched	hart	1	False	0	0	0	0	0	0	0	3	0	1	1	1	4	2	7	16	19	0	16	11	24	10	3	17	16	7	6	8	7	31	35	44	61	86	54	382
+Cardiff	matched	cardiff	1	False	0	0	0	0	0	0	2	0	1	1	2	1	1	5	17	29	65	0	5	2	17	0	3	4	3	5	3	7	8	31	27	43	70	136	124	364
+Reigate and Banstead	matched	reigate	1	False	0	0	0	0	0	0	4	0	1	1	4	12	9	22	12	16	19	0	2	7	9	8	6	3	5	9	8	1	18	34	34	45	79	96	100	364
+High Peak	matched	high peak	1	False	0	0	0	0	0	0	0	0	1	2	1	0	0	0	2	8	6	1	4	8	8	11	6	2	3	13	3	18	14	28	54	40	79	70	20	362
+Wyre	matched	wyre	1	False	0	0	0	0	0	0	0	1	0	0	2	2	2	1	4	4	3	0	2	6	12	27	4	12	11	9	6	6	9	26	20	47	77	84	19	358
+Preston	matched	preston	1	False	0	0	0	0	0	0	0	2	0	0	0	2	3	3	0	0	0	0	2	5	11	8	3	7	8	4	12	9	14	48	28	26	97	75	10	357
+Elmbridge	matched	elmbridge	1	False	0	0	0	0	0	0	1	1	1	2	7	4	5	10	16	36	38	1	6	7	15	24	7	2	10	11	1	7	8	21	49	46	58	80	121	353
+Haringey	matched	haringey	1	False	0	0	0	0	0	0	1	0	2	3	0	3	11	21	21	36	46	0	4	37	3	1	4	2	4	2	8	2	3	14	39	76	82	70	144	351
+Gosport	matched	gosport	1	False	0	0	0	0	0	0	0	0	0	0	0	0	1	0	1	3	5	0	1	0	5	0	0	1	1	2	0	1	2	7	36	70	149	76	10	351
+Blaby	matched	blaby	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	3	1	2	3	0	1	1	1	10	17	1	3	34	29	2	18	45	32	30	57	68	9	349
+Coventry	matched	coventry	1	False	0	0	0	0	0	0	0	2	0	0	0	0	10	4	7	7	14	0	1	2	21	23	8	0	3	7	11	1	5	22	17	34	73	120	44	348
+Barnet	matched	barnet	1	False	0	0	0	0	0	0	1	2	0	4	2	10	7	18	28	59	46	0	5	12	7	6	4	2	6	3	7	7	6	12	25	49	79	117	177	347
+Rutland	matched	rutland	1	False	0	0	0	0	0	0	0	1	1	2	2	1	11	5	13	11	9	3	6	11	12	11	12	14	11	13	6	14	17	33	38	30	66	47	56	344
+Hillingdon	matched	hillingdon	1	False	0	0	0	0	0	0	0	1	0	0	2	0	3	3	15	16	19	2	6	4	6	2	26	6	3	3	3	2	5	17	21	38	98	95	59	337
+Kingston upon Hull, City of	matched	hull	1	False	0	0	0	0	0	0	0	1	0	0	1	2	2	0	5	1	0	0	0	1	1	3	3	2	24	22	8	17	19	31	23	57	75	49	12	335
+Bromsgrove	matched	bromsgrove redditch	1	True	0	0	0	0	0	0	0	1	0	1	0	0	4	2	0	5	3	2	4	6	10	5	14	8	5	12	8	9	6	29	17	78	48	72	16	333
+Richmond upon Thames	matched	richmond	1	False	0	0	0	0	0	0	4	3	4	3	3	8	13	35	41	69	60	0	5	1	3	8	0	5	4	3	7	5	10	14	55	45	72	94	243	331
+Bolsover	matched	bolsover	1	False	0	0	0	0	0	0	0	1	0	0	0	1	2	0	1	2	3	0	0	4	1	1	1	4	6	11	13	17	19	17	27	58	81	71	10	331
+Southwark	matched	southwark	1	False	0	0	0	0	0	0	10	6	5	2	5	13	26	47	48	99	70	0	1	2	3	6	0	5	0	1	2	3	6	29	37	61	76	98	331	330
+Caerphilly	matched	caerphilly	1	False	0	0	0	0	0	0	0	0	0	0	0	1	2	5	1	6	11	0	3	11	4	5	5	1	3	3	2	4	6	53	56	37	62	73	26	328
+Aberdeen City	matched	aberdeen	1	False	0	0	0	0	0	0	2	2	3	0	1	1	2	5	6	8	9	1	6	8	1	7	7	2	3	7	6	10	7	25	40	35	108	54	39	327
+Cheltenham	matched	cheltenham	1	False	0	0	0	0	0	0	1	0	0	0	2	3	6	7	10	28	11	0	7	7	23	7	7	5	1	0	3	3	8	19	28	57	70	79	68	324
+Middlesbrough	matched	middlesbrough	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	2	1	0	1	0	2	1	0	0	46	21	21	24	18	19	15	28	13	18	49	48	4	323
+Solihull	matched	solihull	1	False	0	0	0	0	0	0	0	0	0	0	1	2	2	5	5	7	9	2	18	5	21	6	8	12	3	2	4	3	9	27	27	40	64	68	31	319
+Walsall	matched	walsall	1	False	0	0	0	0	0	0	0	0	0	0	0	0	1	1	0	7	3	1	2	1	2	0	23	1	1	0	4	1	1	17	16	83	107	57	12	317
+Bracknell Forest	matched	bracknell	1	False	0	0	0	0	0	0	0	0	0	0	2	1	2	2	4	10	8	2	9	8	10	9	6	6	8	4	2	1	5	17	37	38	52	97	29	311
+Bridgend	matched	bridgend	1	False	0	0	0	0	0	0	0	0	1	1	0	0	0	1	2	2	16	0	2	1	2	3	3	5	3	74	5	9	3	6	23	26	60	86	23	311
+Norwich	matched	norwich	1	False	0	0	0	0	0	0	1	1	1	2	1	2	9	3	7	18	13	1	2	7	17	17	4	4	4	9	8	12	17	23	20	22	58	81	58	306
+Midlothian	matched	midlothian	1	False	0	0	0	0	0	0	4	0	1	0	1	8	2	4	7	5	8	2	1	3	1	0	4	10	7	5	13	4	12	33	49	45	61	55	40	305
+Lewisham	matched	lewisham	1	False	0	0	0	0	0	0	0	0	0	0	0	0	9	15	26	48	38	0	2	2	1	0	0	2	3	4	1	2	6	16	28	52	96	88	136	303
+Ipswich	matched	ipswich	1	False	0	0	0	0	0	0	0	0	1	0	0	2	1	1	3	4	3	0	2	4	1	3	4	5	25	12	5	22	6	69	29	22	50	44	15	303
+Merton	matched	merton	1	False	0	0	0	0	0	0	0	0	0	2	7	2	6	11	19	37	39	0	3	21	5	4	4	4	2	3	6	3	9	16	34	38	68	80	123	300
+Luton	matched	luton	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	1	1	3	0	0	0	0	2	0	0	0	0	3	1	2	0	9	10	174	42	56	5	299
+Fareham	matched	fareham	1	False	0	0	0	0	0	0	0	0	0	0	1	1	1	3	6	11	2	0	0	2	3	3	3	7	5	2	3	6	4	20	25	46	77	92	25	298
+Darlington	matched	darlington	1	False	0	0	0	0	0	0	1	0	0	1	2	2	2	6	3	5	4	3	1	7	9	4	4	9	8	14	5	7	7	20	21	37	85	54	26	295
+Thanet	matched	thanet	1	False	0	0	0	0	0	0	0	0	0	0	0	3	1	1	3	18	7	0	2	1	1	0	2	2	2	3	1	7	7	15	24	38	72	113	33	290
+Broxtowe	matched	broxtowe	1	False	0	0	0	0	0	0	0	0	0	0	0	0	2	6	6	7	6	1	1	1	3	7	1	1	5	3	3	9	10	32	41	40	49	83	27	290
+Chesterfield	matched	chesterfield	1	False	0	0	0	0	0	0	0	0	0	0	1	2	2	3	1	7	3	0	0	1	5	1	3	1	5	18	23	16	18	27	22	22	56	72	19	290
+Stoke-on-Trent	matched	stoke on trent	1	False	0	0	0	0	0	0	0	0	0	0	0	0	4	2	4	1	0	0	0	3	1	1	2	1	1	2	1	2	10	29	48	38	76	75	11	290
+Runnymede	matched	runnymede	1	False	0	0	0	0	0	0	7	3	4	3	0	5	0	3	7	16	11	2	12	17	20	12	6	14	8	13	5	8	12	16	15	40	35	53	59	288
+Eastleigh	matched	eastleigh	1	False	0	0	0	0	0	0	0	0	0	2	0	0	1	0	7	11	2	0	1	2	0	7	12	5	6	3	6	8	3	31	23	26	66	86	23	285
+Rochdale	matched	rochdale	1	False	0	0	0	0	0	0	0	0	2	0	1	0	15	1	5	5	0	2	5	4	4	20	0	3	4	7	0	6	13	20	29	18	79	69	29	283
+Medway	matched	medway	1	False	0	0	0	0	0	0	0	0	1	1	2	1	3	13	33	10	8	0	1	1	0	3	2	2	7	13	7	9	4	13	18	31	71	100	72	282
+East Dunbartonshire	matched	east dunbartonshire	1	False	0	0	0	0	0	0	0	0	0	0	1	0	0	2	1	6	1	1	6	3	4	2	3	10	7	7	4	15	9	21	37	50	54	48	11	281
+Greenwich	matched	greenwich	1	False	0	0	0	0	0	0	0	0	1	4	2	2	18	26	20	30	38	0	1	2	56	2	0	0	2	3	1	0	4	40	17	29	36	86	141	279
+Exeter	matched	exeter	1	False	0	0	0	0	0	0	1	0	0	0	0	4	11	7	7	10	5	0	1	6	2	1	2	6	0	5	3	5	13	27	15	39	62	90	45	277
+Brent	matched	brent	1	False	0	0	0	0	0	0	2	2	3	4	1	1	9	15	23	24	32	0	2	3	2	0	0	3	4	0	4	3	1	11	28	85	52	78	116	276
+South Ribble	matched	south ribble	1	False	0	0	0	0	0	0	1	0	0	0	2	1	5	2	2	9	4	0	1	7	9	9	7	10	8	11	5	9	4	21	14	32	64	65	26	276
+Kingston upon Thames	matched	kingston	1	False	0	0	0	0	0	0	6	2	3	0	0	0	4	7	6	11	27	0	6	6	26	11	2	5	2	2	6	2	5	15	21	31	55	76	66	271
+Plymouth	matched	plymouth	1	False	0	0	0	0	0	0	1	0	0	1	0	8	9	7	7	10	9	1	16	8	1	13	0	15	2	5	3	4	2	15	14	28	61	82	52	270
+Renfrewshire	matched	renfrewshire	1	False	0	0	0	0	0	0	2	0	0	0	0	4	0	2	2	6	10	1	3	1	5	2	6	5	5	5	17	5	7	23	39	44	54	47	26	269
+Hackney	matched	hackney	1	False	0	0	0	0	0	0	1	6	3	0	2	1	13	29	23	39	33	0	3	32	0	8	1	3	2	4	1	2	5	18	32	33	60	61	150	265
+Wandsworth	matched	wandsworth	1	False	0	0	0	0	0	0	2	0	0	3	5	8	14	61	49	53	78	1	3	12	3	3	2	4	2	3	0	3	5	15	23	44	62	78	273	263
+Gateshead	matched	gateshead	1	False	0	0	0	0	0	0	0	0	2	0	0	2	1	2	2	9	1	0	10	3	19	7	3	0	2	1	2	13	5	48	13	19	45	73	19	263
+Welwyn Hatfield	matched	welwyn hatfield	1	False	0	0	0	0	0	0	0	0	0	0	1	2	5	11	14	25	16	0	1	2	4	4	8	6	8	6	4	3	6	18	32	25	64	71	74	262
+Havant	matched	havant	1	False	0	0	0	0	0	0	0	0	0	0	0	1	1	3	3	4	3	0	3	0	3	1	3	3	3	3	2	2	5	25	11	30	53	113	15	260
+Dudley	matched	dudley	1	False	0	0	0	0	0	0	0	0	0	0	1	1	4	1	3	5	2	0	1	0	1	1	0	3	2	1	0	2	3	21	15	38	76	95	17	259
+Gravesham	matched	gravesham	1	False	0	0	0	0	0	0	0	0	0	0	1	1	4	3	4	3	1	0	1	11	2	4	3	7	7	7	4	1	6	8	32	21	61	80	17	255
+Lambeth	matched	lambeth	1	False	0	0	0	0	0	0	1	0	0	1	3	5	13	47	52	65	44	2	3	3	3	2	5	1	5	2	0	5	4	10	25	45	63	76	231	254
+Oldham	matched	oldham	1	False	0	0	0	0	0	0	0	0	0	0	0	0	3	0	2	9	2	0	4	8	18	5	0	2	4	4	1	3	9	34	26	30	51	53	16	252
+Torbay	matched	torbay	1	False	0	0	0	0	0	0	0	0	0	0	2	1	0	3	5	13	4	0	0	2	2	1	3	0	6	5	1	2	13	11	16	50	89	50	28	251
+Wyre Forest	matched	wyre forest	1	False	0	0	0	0	0	0	0	0	0	0	0	0	2	2	1	4	3	1	6	10	4	6	4	11	5	8	6	4	10	23	26	25	53	47	12	249
+Havering	matched	havering	1	False	0	0	0	0	0	0	0	2	0	0	1	0	2	1	5	9	11	1	24	1	2	1	2	0	7	17	11	11	3	9	15	48	42	51	31	245
+Basildon	matched	basildon	1	False	0	0	0	0	0	0	0	0	0	0	1	0	0	4	4	8	12	0	3	1	1	1	1	3	10	39	8	10	1	21	18	10	56	60	29	243
+Harrow	matched	harrow	1	False	0	0	0	0	0	0	0	0	0	1	2	0	4	11	4	21	10	0	3	2	0	3	5	4	2	5	3	4	4	13	18	31	68	77	53	242
+Dundee City	matched	dundee	1	False	0	0	0	0	0	0	0	1	1	2	1	3	1	1	9	4	6	0	4	3	2	17	2	8	2	5	3	3	7	15	23	39	52	54	29	239
+Newry, Mourne and Down	matched	newry mourne down	1	False	0	0	0	0	0	0	1	0	0	0	0	1	2	3	0	0	0	0	3	10	36	33	47	45	54	3	0	0	0	1	2	1	1	2	7	238
+Nuneaton and Bedworth	mcs_only		0	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	5	2	3	3	2	2	2	11	9	22	56	117	0	235
+Newport	matched	newport	1	False	0	0	0	0	0	0	0	0	0	0	0	0	1	4	17	16	22	1	3	2	0	5	18	6	4	3	2	3	8	10	11	20	55	80	60	231
+Sandwell	matched	sandwell	1	False	0	0	0	0	0	0	0	0	0	0	0	1	2	1	2	15	2	0	0	0	1	0	1	1	0	0	1	1	2	16	9	30	93	72	23	227
+Lincoln	matched	lincoln	1	False	0	0	0	0	0	0	0	0	0	0	0	1	3	2	1	3	1	1	0	1	0	9	1	3	1	4	5	7	11	18	17	32	44	73	11	227
+Gloucester	matched	gloucester	1	False	0	0	0	0	0	0	0	1	0	0	0	0	1	0	1	6	4	0	1	0	29	31	0	1	0	0	2	2	2	3	28	16	35	76	13	226
+Waltham Forest	matched	waltham forest	1	False	0	0	0	0	0	0	0	0	0	0	1	2	12	17	19	22	22	0	0	0	1	0	0	1	2	4	1	3	4	11	21	36	63	77	95	224
+North Warwickshire	matched	north warwickshire	1	False	0	0	0	0	0	0	1	0	0	1	0	0	0	0	1	2	0	1	2	3	5	4	6	4	3	1	7	10	8	15	49	25	38	43	5	224
+St. Helens	matched	st helens	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	3	2	0	2	2	4	2	1	0	2	3	1	4	2	17	21	32	70	53	6	216
+Hounslow	matched	hounslow	1	False	0	0	0	0	0	0	3	4	1	2	9	1	17	15	27	22	33	0	1	1	6	0	4	0	1	10	3	2	4	12	19	37	64	50	134	214
+Epsom and Ewell	matched	epsom and ewell	1	False	0	0	0	0	0	0	0	1	0	0	0	1	1	0	8	5	6	0	32	22	21	26	1	4	1	0	0	0	3	15	11	24	32	22	22	214
+Camden	matched	camden	1	False	0	0	0	0	0	0	4	10	6	13	5	17	36	67	59	49	0	0	1	1	9	19	6	7	2	2	1	2	5	15	24	30	40	47	266	211
+Three Rivers	matched	three rivers	1	False	0	0	0	0	0	0	2	1	3	1	1	4	6	11	22	19	14	0	1	5	5	7	1	4	5	3	3	2	9	14	26	15	51	60	84	211
+Adur	matched	adur and worthing	1	True	0	0	0	0	0	0	0	0	0	1	1	1	4	4	3	9	5	2	1	3	0	7	1	1	2	1	0	1	7	15	24	59	38	45	28	207
+Fylde	matched	fylde	1	False	0	0	0	0	0	0	2	1	1	1	1	2	0	2	1	2	7	1	5	2	8	3	10	10	11	4	4	4	8	10	9	32	47	39	20	207
+Tameside	matched	tameside	1	False	0	0	0	0	0	0	1	0	0	0	1	1	10	4	3	4	3	0	2	1	8	7	5	4	2	4	2	5	3	21	17	20	47	58	27	206
+Knowsley	matched	knowsley	1	False	0	0	0	0	0	0	0	0	0	0	0	2	2	0	3	5	5	0	1	1	0	1	2	0	2	21	1	2	0	17	18	45	63	28	17	202
+Blackpool	matched	blackpool	1	False	0	0	0	0	0	0	0	0	0	0	0	1	0	0	2	9	2	0	0	0	0	3	0	0	0	3	1	3	0	10	5	30	71	76	14	202
+Southend-on-Sea	matched	southend	1	False	0	0	0	0	0	0	1	1	0	1	0	0	0	2	0	6	6	0	0	0	49	11	2	2	3	6	7	1	4	6	13	23	25	49	17	201
+Sutton	matched	sutton	1	False	0	0	0	0	0	0	0	0	1	2	2	1	2	18	15	16	18	1	2	2	1	0	9	1	3	1	1	7	3	17	19	15	52	63	75	197
+Hertsmere	matched	hertsmere	1	False	0	0	0	0	0	0	2	1	1	0	2	0	0	1	8	8	10	0	1	10	5	1	2	2	27	3	3	2	6	23	9	31	39	32	33	196
+Portsmouth	matched	portsmouth	1	False	0	0	0	0	0	0	0	0	0	0	1	5	2	0	2	10	7	1	1	0	0	1	0	2	0	3	0	0	4	9	15	37	34	89	27	196
+East Renfrewshire	matched	east renfrewshire	1	False	0	0	0	0	0	0	0	2	0	0	0	1	1	2	1	1	4	1	2	0	1	5	1	3	2	5	6	2	4	18	26	33	40	39	12	188
+Clackmannanshire	matched	clackmannanshire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	6	0	0	3	1	1	1	2	1	9	1	1	1	2	4	55	8	11	15	19	28	29	10	188
+Brentwood	matched	brentwood	1	False	0	0	0	0	0	0	0	2	0	0	0	1	4	5	3	7	12	2	2	3	2	2	1	7	3	7	6	5	5	37	18	24	25	38	34	187
+Halton	matched	halton	1	False	0	0	0	0	0	0	2	0	0	0	0	1	0	1	1	1	2	1	1	2	0	4	1	0	1	1	0	6	4	13	39	34	38	39	8	184
+Dartford	matched	dartford	1	False	0	0	0	0	0	0	0	0	2	1	0	2	0	4	5	10	3	0	7	2	28	1	0	0	2	4	2	1	1	7	8	11	36	62	27	172
+Surrey Heath	matched	surrey heath	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	2	4	10	9	0	2	0	2	3	2	2	4	4	3	2	1	12	20	23	34	57	25	171
+Worthing	matched	adur and worthing	1	True	0	0	0	0	0	0	0	0	0	0	0	1	3	3	3	8	5	0	3	3	1	2	3	3	2	1	1	2	4	12	10	16	41	66	23	170
+Wolverhampton	matched	wolverhampton	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	1	6	4	1	0	0	0	0	1	0	1	2	0	1	1	2	9	11	30	73	39	12	170
+Mid Ulster	matched	mid ulster	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	1	0	0	2	10	14	29	39	37	27	0	0	0	0	0	2	1	2	2	3	165
+Bexley	matched	bexley	1	False	0	0	0	0	0	0	1	0	0	1	0	1	2	6	7	8	7	0	2	0	1	1	1	2	2	2	0	1	3	11	11	27	48	50	33	162
+Hyndburn	matched	hyndburn	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	3	5	0	1	0	1	1	2	4	3	0	3	3	3	2	7	8	28	38	56	8	160
+Hammersmith and Fulham	matched	hammersmith and fulham	1	False	0	0	0	0	0	0	4	5	3	3	3	18	30	31	38	45	47	2	0	6	5	28	1	5	2	0	0	4	6	7	11	13	29	39	227	158
+Burnley	matched	burnley	1	False	0	0	0	0	0	0	1	0	1	0	0	1	1	0	0	1	0	1	0	1	3	0	2	0	3	0	1	3	4	11	5	40	50	30	5	154
+Redbridge	matched	redbridge	1	False	0	0	0	0	0	0	1	0	0	0	1	0	2	3	12	12	9	0	2	1	2	1	3	3	1	2	0	0	2	8	14	25	38	49	40	151
+Islington	matched	islington	1	False	0	0	0	0	0	0	2	1	2	1	7	7	9	28	46	93	84	2	0	2	4	0	0	0	1	0	1	1	9	6	11	31	31	51	280	150
+Kensington and Chelsea	matched	kensington	1	False	0	0	0	0	0	0	8	10	14	9	8	11	23	37	120	111	96	1	0	1	3	2	0	5	1	1	1	1	1	6	6	6	90	22	447	147
+Spelthorne	matched	spelthorne	1	False	0	0	0	0	0	0	0	0	0	0	0	1	4	4	4	8	6	0	0	5	8	5	5	5	8	5	1	2	4	5	12	13	29	36	27	143
+Rushmoor	matched	rushmoor	1	False	0	0	0	0	0	0	0	0	0	0	0	0	3	0	5	9	3	0	0	2	0	2	1	0	0	0	1	0	1	12	7	6	29	71	20	132
+Blaenau Gwent	matched	blaenau gwent	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	3	2	4	4	0	11	3	0	0	0	0	0	1	1	0	0	3	6	36	42	26	13	129
+Slough	matched	slough	1	False	0	0	0	0	0	0	1	0	0	0	0	0	3	1	0	2	2	0	1	0	0	0	10	2	0	1	1	0	0	5	7	21	44	36	9	128
+Rochford	matched	rochford	1	False	0	0	0	0	0	0	1	0	0	0	0	0	0	0	2	2	2	1	1	1	4	1	0	0	7	2	4	7	1	11	14	25	24	25	7	128
+Armagh City, Banbridge and Craigavon	matched	armagh banbridge craigavon	1	False	0	0	0	0	0	0	1	0	0	0	0	1	0	2	0	3	1	0	0	29	10	7	12	26	27	1	0	0	0	0	1	1	2	5	8	121
+Broxbourne	matched	broxbourne	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	5	2	0	1	0	6	0	1	1	1	1	0	3	7	2	9	7	50	31	9	120
+Stevenage	matched	stevenage	1	False	0	0	0	0	0	0	0	0	0	0	0	9	3	1	0	3	1	0	0	0	0	2	3	0	2	3	1	3	3	4	5	8	22	63	17	119
+Cannock Chase	matched	cannock chase	1	False	0	0	0	0	0	0	0	1	0	0	0	0	1	0	0	2	1	0	2	0	1	2	0	1	2	1	0	1	7	10	7	18	38	27	5	117
+Castle Point	matched	castle point	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	4	1	0	0	1	0	3	4	6	5	6	5	6	0	11	6	13	29	19	6	114
+Hastings	matched	hastings	1	False	0	0	0	0	0	0	0	0	0	0	0	3	2	4	5	6	2	0	2	1	1	0	3	3	4	5	2	1	3	9	4	15	32	28	22	113
+Redditch	matched	bromsgrove redditch	1	True	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	2	1	0	3	0	0	0	1	7	3	2	2	10	3	9	9	15	22	24	4	110
+Inverclyde	matched	inverclyde	1	False	0	0	0	0	0	0	0	0	0	0	0	0	3	3	0	4	1	1	2	1	2	0	1	3	4	2	4	3	5	13	25	11	14	17	11	108
+Tower Hamlets	matched	tower hamlets	1	False	0	0	0	0	0	0	6	0	3	1	2	8	9	7	12	16	28	0	0	0	1	4	0	2	0	1	1	4	3	11	9	6	28	32	92	102
+Newham	matched	newham	1	False	0	0	0	0	0	0	2	0	3	2	0	2	1	7	8	8	9	0	1	0	0	0	1	0	0	0	0	0	2	2	10	13	29	38	42	96
+Torfaen	matched	torfaen	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	9	14	1	1	1	6	0	4	2	1	0	2	0	1	0	4	9	31	33	24	96
+Fermanagh and Omagh	matched	fermanagh and omagh	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	10	0	0	0	0	0	7	13	8	11	25	20	0	0	0	0	0	2	2	2	1	10	91
+Eastbourne	matched	eastbourne	1	False	0	0	0	0	0	0	1	1	2	0	1	0	0	3	7	4	1	1	0	0	0	0	3	0	1	1	0	0	4	4	12	9	21	34	20	90
+Westminster	matched	westminster	1	False	0	0	0	0	0	0	24	16	10	7	8	16	60	90	81	121	112	1	2	0	4	3	5	2	2	1	2	1	1	10	7	18	11	17	545	87
+Ards and North Down	matched	ards and north down	1	False	0	0	0	0	0	0	0	1	0	0	0	2	0	9	0	1	0	0	1	5	6	4	9	10	12	0	0	0	0	2	2	1	17	18	13	87
+Crawley	matched	crawley	1	False	0	0	0	0	0	0	0	0	0	0	0	0	1	0	3	2	4	0	0	1	0	0	0	1	1	3	1	0	0	5	13	8	22	32	10	87
+Merthyr Tydfil	matched	merthyr tydfil	1	False	0	0	0	0	0	0	0	0	0	0	0	1	0	1	5	5	4	0	2	2	0	2	3	0	3	12	1	1	2	3	1	9	23	21	16	85
+Causeway Coast and Glens	matched	causeway and glens	1	False	0	0	0	0	0	0	0	4	0	1	0	0	3	2	1	2	1	0	1	3	9	11	18	18	18	0	0	1	0	0	2	0	3	1	14	85
+Oadby and Wigston	matched	oadby and wigston	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	4	0	0	1	1	1	0	1	0	0	4	0	2	1	0	3	14	9	8	16	22	5	82
+Tamworth	matched	tamworth	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	1	1	1	11	7	14	27	18	1	81
+West Dunbartonshire	matched	west dunbartonshire	1	False	0	0	0	0	0	0	0	0	1	0	1	1	1	1	1	1	0	0	0	0	1	1	2	3	3	0	1	3	2	8	11	10	14	21	7	80
+Watford	matched	watford	1	False	0	0	0	0	0	0	0	0	1	0	0	0	4	3	5	5	7	0	0	0	2	0	0	0	0	0	0	2	0	6	3	18	24	21	25	76
+Derry City and Strabane	matched	derry and strabane	1	False	0	0	0	0	0	0	1	0	1	0	0	0	0	2	0	0	0	0	0	3	9	9	13	16	17	0	0	0	0	0	1	0	3	1	4	72
+Barking and Dagenham	matched	barking and dagenham	1	False	0	0	0	0	0	0	0	0	0	1	1	0	1	0	2	6	4	0	1	3	0	0	0	0	1	1	7	0	0	1	2	18	22	14	15	70
+Harlow	matched	harlow	1	False	0	0	0	0	0	0	0	0	0	1	0	0	1	0	0	4	0	1	0	0	0	1	0	2	4	3	1	0	0	8	7	5	7	29	6	68
+Antrim and Newtownabbey	matched	antrim and newtownabbey	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	1	1	0	1	3	5	5	8	11	10	0	0	0	0	0	2	0	3	16	3	64
+Lisburn and Castlereagh	matched	lisburn and castlereagh	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	3	0	0	0	0	0	4	7	7	13	9	14	0	0	0	0	0	3	2	0	1	3	60
+Belfast	matched	belfast	1	False	0	0	0	0	0	0	0	0	0	0	0	1	1	3	1	0	5	0	0	17	12	1	1	0	2	0	0	0	0	1	1	0	11	1	11	47
+Mid and East Antrim	matched	mid east antrim	1	False	0	0	0	0	0	0	0	1	0	0	0	0	0	2	1	1	1	0	0	0	6	8	13	6	10	0	0	0	0	1	0	0	1	1	6	46
+Isles of Scilly	matched	scilly isles	1	False	0	0	0	0	0	0	0	1	0	0	0	0	1	3	2	0	0	0	1	1	1	0	0	0	0	0	1	0	2	7	1	0	6	7	7	27
+Douglas	mcs_only		0	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	2
+Lonan	mcs_only		0	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0	2
+Onchan	mcs_only		0	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0	2
+Bride	mcs_only		0	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1
+German	mcs_only		0	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+Ramsey	mcs_only		0	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1
+south downs national park	planning_only	south downs	1	False	0	0	0	0	0	0	1	8	6	9	16	52	34	39	40	47	50	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	302	0
+yorkshire dales national park	planning_only	yorkshire dales	1	False	0	0	0	0	0	0	8	6	4	10	8	19	24	28	31	35	30	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	203	0
+guernsey	planning_only_no_mcs_match	guernsey	1	False	0	0	0	0	0	0	18	12	15	16	14	18	24	16	15	20	23	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	191	0
+lake district national park	planning_only	lake district	1	False	0	0	0	0	0	0	3	3	6	9	7	15	26	23	20	18	23	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	153	0
+isle of man	planning_only_no_mcs_match	isle of man	1	False	0	0	0	0	0	0	0	3	4	2	30	18	10	24	13	11	11	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	126	0
+peak district national park	planning_only	peak district	1	False	0	0	0	0	0	0	2	1	0	7	8	9	19	13	13	17	20	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	109	0
+snowdonia national park	planning_only	snowdonia	1	False	0	0	0	0	0	0	1	0	1	6	2	2	3	6	8	27	26	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	82	0
+the cairngorms national park	planning_only	cairngorms	1	False	0	0	0	0	0	0	2	4	3	1	8	3	14	5	12	19	8	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	79	0
+north york moors national park	planning_only	north york moors	1	False	0	0	0	0	0	0	5	2	2	0	4	9	13	8	8	9	14	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	74	0
+new forest national park	planning_only	new forest (park)	1	False	0	0	0	0	0	0	3	0	2	0	1	5	11	7	9	21	14	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	73	0
+dartmoor national park	planning_only	dartmoor	1	False	0	0	0	0	0	0	1	5	0	0	5	8	6	6	10	10	12	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	63	0
+jersey	planning_only_no_mcs_match	jersey	1	False	0	0	0	0	0	0	3	1	2	5	2	6	5	5	8	14	8	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	59	0
+essex	planning_only_no_mcs_match	essex	1	False	0	0	0	0	0	0	0	0	0	0	1	0	1	9	4	7	27	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	49	0
+brecon beacons national park	planning_only	brecon beacons	1	False	0	0	0	0	0	0	0	1	1	3	2	4	2	3	4	7	9	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	36	0
+exmoor national park	planning_only	exmoor	1	False	0	0	0	0	0	0	0	0	2	2	2	1	12	11	1	2	3	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	36	0
+pembrokeshire coast national park	planning_only	pembroke coast	1	False	0	0	0	0	0	0	1	0	0	0	1	1	4	3	2	10	12	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	34	0
+city of london	planning_only	city	1	False	0	0	0	0	0	0	0	0	1	0	2	2	2	1	7	5	9	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	29	0
+the loch lomond and the trossachs national park	planning_only	loch lomond	1	False	0	0	0	0	0	0	8	2	0	1	1	0	3	1	6	5	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	27	0
+cambridgeshire	planning_only_no_mcs_match	cambridgeshire	1	False	0	0	0	0	0	0	0	0	0	0	0	4	6	3	2	3	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	20	0
+the broads authority	planning_only	broads	1	False	0	0	0	0	0	0	0	0	0	2	0	1	3	1	3	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	12	0
+northumberland national park	planning_only	northumberland (park)	1	False	0	0	0	0	0	0	0	0	0	0	0	3	0	3	1	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	9	0
+norfolk	planning_only_no_mcs_match	norfolk	1	False	0	0	0	0	0	0	0	1	0	0	0	0	0	1	0	4	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	8	0
+east sussex	planning_only_no_mcs_match	east sussex	1	False	0	0	0	0	0	0	1	0	0	0	0	0	1	0	3	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	6	0
+kent	planning_only_no_mcs_match	kent	1	False	0	0	0	0	0	0	1	0	1	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	4	0
+london legacy development corporation	planning_only	london legacy	1	False	0	0	0	0	0	0	0	0	0	0	0	0	1	0	1	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	4	0
+suffolk	planning_only_no_mcs_match	suffolk	1	False	0	0	0	0	0	0	0	1	0	0	0	0	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	4	0
+west sussex	planning_only_no_mcs_match	west sussex	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	4	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	4	0
+derbyshire	planning_only_no_mcs_match	derbyshire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	3	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	3	0
+leicestershire	planning_only_no_mcs_match	leicestershire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	3	0
+devon	planning_only_no_mcs_match	devon	1	False	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
+nottinghamshire	planning_only_no_mcs_match	nottinghamshire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
+old oak and park royal development corporation	planning_only	old oak park royal	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
+staffordshire	planning_only_no_mcs_match	staffordshire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
+gloucestershire	planning_only_no_mcs_match	gloucestershire	1	False	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+hertfordshire	planning_only_no_mcs_match	hertfordshire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+lancashire	planning_only_no_mcs_match	lancashire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+lincolnshire	planning_only_no_mcs_match	lincolnshire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+oxfordshire	planning_only_no_mcs_match	oxfordshire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+warwickshire	planning_only_no_mcs_match	warwickshire	1	False	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
