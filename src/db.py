@@ -200,6 +200,127 @@ CREATE INDEX IF NOT EXISTS idx_dl_attempts_app ON download_attempts(application_
 CREATE INDEX IF NOT EXISTS idx_dl_attempts_status ON download_attempts(status);
 """
 
+DOWNLOAD_PROGRESS_VIEWS_SQL = """
+DROP VIEW IF EXISTS authority_portal_download_progress_map;
+DROP VIEW IF EXISTS applications_download_progress_map;
+
+CREATE VIEW applications_download_progress_map AS
+WITH best AS (
+    SELECT
+        application_uid,
+        CASE
+            WHEN SUM(status = 'success')  > 0 THEN 'success'
+            WHEN SUM(status = 'partial')  > 0 THEN 'partial'
+            WHEN SUM(status = 'no_files') > 0 THEN 'no_docs_available'
+            ELSE 'failed'
+        END AS docs_progress_bucket,
+        MAX(attempted_at) AS last_attempted_at,
+        COUNT(*) AS download_attempt_count,
+        MAX(documents_listed) AS documents_listed_max,
+        MAX(files_downloaded) AS files_downloaded_max,
+        MAX(bytes_downloaded) AS bytes_downloaded_max
+    FROM download_attempts
+    GROUP BY application_uid
+)
+SELECT
+    a.uid,
+    a.reference,
+    a.authority_name,
+    COALESCE(a.authority_name, '(unknown)') || ' | ' || COALESCE(a.portal_type, '(unknown)') AS authority_portal,
+    a.address_text,
+    a.postcode,
+    a.portal_type,
+    a.documentation_url,
+    a.n_documents,
+    a.start_date,
+    a.decision_date,
+    a.planning_application_status,
+    a.planning_decision,
+    a.lat,
+    a.lng,
+    COALESCE(b.docs_progress_bucket, 'not_attempted') AS docs_progress_bucket,
+    CASE
+        WHEN COALESCE(b.docs_progress_bucket, 'not_attempted') IN ('success', 'partial') THEN 1
+        ELSE 0
+    END AS has_downloaded_docs,
+    CASE
+        WHEN COALESCE(b.docs_progress_bucket, 'not_attempted') IN ('success', 'partial', 'no_docs_available') THEN 1
+        ELSE 0
+    END AS docs_download_phase_done,
+    COALESCE(b.download_attempt_count, 0) AS download_attempt_count,
+    b.last_attempted_at,
+    COALESCE(b.documents_listed_max, 0) AS documents_listed_max,
+    COALESCE(b.files_downloaded_max, 0) AS files_downloaded_max,
+    COALESCE(b.bytes_downloaded_max, 0) AS bytes_downloaded_max,
+    CASE COALESCE(b.docs_progress_bucket, 'not_attempted')
+        WHEN 'success' THEN '#1a9850'
+        WHEN 'partial' THEN '#fdae61'
+        WHEN 'no_docs_available' THEN '#2b83ba'
+        WHEN 'failed' THEN '#d7191c'
+        ELSE '#7f7f7f'
+    END AS "marker-color",
+    'small' AS "marker-size",
+    json_object(
+        'type', 'Point',
+        'coordinates', json_array(a.lng, a.lat)
+    ) AS geometry
+FROM applications a
+LEFT JOIN best b ON b.application_uid = a.uid
+WHERE a.lat IS NOT NULL AND a.lng IS NOT NULL;
+
+CREATE VIEW authority_portal_download_progress_map AS
+SELECT
+    COALESCE(authority_name, '(unknown)') AS authority_name,
+    COALESCE(portal_type, '(unknown)') AS portal_type,
+    COALESCE(authority_name, '(unknown)') || ' | ' || COALESCE(portal_type, '(unknown)') AS authority_portal,
+    AVG(lat) AS lat,
+    AVG(lng) AS lng,
+    COUNT(*) AS application_count,
+    SUM(CASE WHEN docs_progress_bucket = 'success' THEN 1 ELSE 0 END) AS success_count,
+    SUM(CASE WHEN docs_progress_bucket = 'partial' THEN 1 ELSE 0 END) AS partial_count,
+    SUM(CASE WHEN docs_progress_bucket = 'no_docs_available' THEN 1 ELSE 0 END) AS no_docs_available_count,
+    SUM(CASE WHEN docs_progress_bucket = 'failed' THEN 1 ELSE 0 END) AS failed_count,
+    SUM(CASE WHEN docs_progress_bucket = 'not_attempted' THEN 1 ELSE 0 END) AS not_attempted_count,
+    SUM(has_downloaded_docs) AS apps_with_downloaded_docs,
+    SUM(docs_download_phase_done) AS apps_download_phase_done,
+    ROUND(1.0 * SUM(has_downloaded_docs) / COUNT(*), 4) AS pct_with_downloaded_docs,
+    ROUND(1.0 * SUM(docs_download_phase_done) / COUNT(*), 4) AS pct_download_phase_done,
+    CASE
+        WHEN SUM(CASE WHEN docs_progress_bucket = 'not_attempted' THEN 1 ELSE 0 END) = COUNT(*) THEN 'not_started'
+        WHEN SUM(CASE WHEN docs_progress_bucket = 'failed' THEN 1 ELSE 0 END) = COUNT(*) THEN 'failed_only'
+        WHEN SUM(docs_download_phase_done) = COUNT(*) THEN 'phase_done'
+        ELSE 'in_progress'
+    END AS coverage_bucket,
+    SUM(download_attempt_count) AS download_attempt_count,
+    MAX(last_attempted_at) AS last_attempted_at,
+    SUM(documents_listed_max) AS documents_listed_total,
+    SUM(files_downloaded_max) AS files_downloaded_total,
+    SUM(bytes_downloaded_max) AS bytes_downloaded_total,
+    CASE
+        WHEN SUM(CASE WHEN docs_progress_bucket = 'not_attempted' THEN 1 ELSE 0 END) = COUNT(*) THEN '#7f7f7f'
+        WHEN SUM(CASE WHEN docs_progress_bucket = 'failed' THEN 1 ELSE 0 END) = COUNT(*) THEN '#d7191c'
+        WHEN SUM(docs_download_phase_done) = COUNT(*) THEN '#1a9850'
+        ELSE '#fdae61'
+    END AS "marker-color",
+    CASE
+        WHEN COUNT(*) >= 500 THEN 'large'
+        WHEN COUNT(*) >= 100 THEN 'medium'
+        ELSE 'small'
+    END AS "marker-size",
+    json_object(
+        'type', 'Point',
+        'coordinates', json_array(AVG(lng), AVG(lat))
+    ) AS geometry
+FROM applications_download_progress_map
+GROUP BY COALESCE(authority_name, '(unknown)'), COALESCE(portal_type, '(unknown)');
+"""
+
+
+def ensure_views(conn: sqlite3.Connection) -> None:
+    """Create or refresh derived SQLite views used for analysis and exploration."""
+    conn.executescript(DOWNLOAD_PROGRESS_VIEWS_SQL)
+    conn.commit()
+
 
 def get_db(db_path: Path | None = None) -> sqlite3.Connection:
     """Get a database connection, creating schema if needed."""
@@ -214,6 +335,7 @@ def get_db(db_path: Path | None = None) -> sqlite3.Connection:
     # OperationalError('database is locked') under normal contention.
     conn.execute("PRAGMA busy_timeout=30000")
     conn.executescript(SCHEMA)
+    ensure_views(conn)
     return conn
 
 
