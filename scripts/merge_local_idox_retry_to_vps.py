@@ -29,9 +29,9 @@ VPS_HOST = "root@178.104.201.79"
 VPS_DB = "/root/heat-pump-planning-scraping/_local/workstreams/01_heat_pump_applications/data/raw/ashp.db"
 VPS_STAGING = "/tmp/local_post_run.db"
 
-# Markers captured 2026-05-13 10:46 UTC, immediately before the local run started.
-VPS_MAX_ATTEMPT_ID_BEFORE = 39362
-VPS_MAX_SCRAPE_LOG_ID_BEFORE = 103
+# Markers captured 2026-05-14, immediately before the second local retry pass started.
+VPS_MAX_ATTEMPT_ID_BEFORE = 42044
+VPS_MAX_SCRAPE_LOG_ID_BEFORE = 105
 
 
 def run_ssh(cmd: str, *, check: bool = True) -> str:
