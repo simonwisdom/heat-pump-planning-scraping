@@ -1,4 +1,13 @@
-"""v4.11 60-field schema extraction over a stratified sample using gpt-4.1-mini.
+"""v4.12 60-field schema extraction over a stratified sample.
+
+v4.12 (model bake-off support): decision_outcome loses its ambiguous "ldc" value
+(a ROUTE, not an outcome — gpt-5.4-mini used it for every LDC app, refused
+certificates included, tripping the refusal-reason normaliser; the route lives in
+application_type). New HP_REASONING_EFFORT env var: when set, passes
+reasoning_effort and omits temperature (GPT-5.x models reject temperature!=0
+defaults). Bake-off on the audit ledger: gpt-4.1-mini 25/36, gpt-4.1 ~31/36,
+gpt-5.4-mini reasoning=low 31/36 at half gpt-4.1's price (~$26/1k apps std,
+~$13 batched).
 
 v4.11 (residuals from re-auditing the v4.10 diff): OFFICER_TYPES gains the
 "officers report" / "officer's report" doctype spellings (East Herts' officer
@@ -265,6 +274,10 @@ def LIST_OF_NULL(*xs):
 
 T0 = {
     "hp_relevance": ENUM("hp_relevant", "hp_incidental", "mixed"),
+    # v4.12: "ldc" removed from this enum — it named a ROUTE, not an outcome, and
+    # gpt-5.4-mini used it for every LDC app (refused certificates included), which
+    # then tripped the refusal-reason normaliser. The route lives in
+    # application_type; a refused certificate is "refused", a granted one "approved".
     "decision_outcome": ENUM(
         "approved",
         "refused",
@@ -273,7 +286,6 @@ T0 = {
         "prior_approval_granted",
         "prior_approval_refused",
         "prior_approval_not_required",
-        "ldc",
         "pending",
         "other",
     ),
@@ -582,7 +594,9 @@ SYSTEM_PROMPT = textwrap.dedent("""
 
     9) `decision_outcome`: reflect what the documents say. Use the raw
        planning_decision string supplied as a hint, but confirm against the text.
-       This is the APPLICATION-level outcome.
+       This is the APPLICATION-level outcome. The application ROUTE never goes
+       here (it lives in application_type): an LDC/CPU whose certificate was
+       refused is "refused"; a certificate granted is "approved".
 
     9b) `hp_component_stance`: the HP-ELEMENT verdict — the LPA's / consultee's view
         of the heat pump ITSELF, DECOUPLED from decision_outcome. Read officer
@@ -1077,7 +1091,7 @@ def extract_one(client: OpenAI, row: dict, uid_files: dict) -> dict:
         ---
     """).strip()
 
-    resp = client.chat.completions.create(
+    kwargs = dict(
         model=MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -1087,8 +1101,15 @@ def extract_one(client: OpenAI, row: dict, uid_files: dict) -> dict:
             "type": "json_schema",
             "json_schema": {"name": "hp_schema_v1", "schema": SCHEMA, "strict": True},
         },
-        temperature=0,
     )
+    # GPT-5.x reasoning models reject temperature!=1; they take reasoning_effort
+    # instead. HP_REASONING_EFFORT=none turns reasoning off for extraction runs.
+    effort = os.environ.get("HP_REASONING_EFFORT")
+    if effort:
+        kwargs["reasoning_effort"] = effort
+    else:
+        kwargs["temperature"] = 0
+    resp = client.chat.completions.create(**kwargs)
     out = normalize_conditions(json.loads(resp.choices[0].message.content))
     out["_files_used"] = used
     out["_usage"] = {
