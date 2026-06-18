@@ -11,6 +11,10 @@ uv sync --extra dev
 uv run pre-commit install
 ```
 
+The `dev` extra includes the `pins` dependencies (pandas, pyarrow, openpyxl)
+needed by the Planning Inspectorate appeals pipeline under `scripts/pins/`. To
+install just those at runtime without the dev tooling, use `uv sync --extra pins`.
+
 ## Project structure
 
 ```
@@ -28,8 +32,18 @@ scripts/                    # Runnable pipeline scripts
   scrape_applications_heat_pump_broad.py # Broader heat pump search
   scrape_applications_noise.py          # Noise/sound assessment apps
   scrape_document_listings.py           # Fetch doc metadata from Idox portals
-  download_documents_idox.py                 # Download document zips from Idox
-  extract_decision_texts.py             # Build machine-readable text corpus for priority docs
+  download_documents_idox.py            # Download document zips from Idox
+  extract_decision_texts.py             # Text corpus for priority docs (decision notices, reports)
+  extract_full_corpus_texts.py          # PDF text extraction across the whole document corpus
+  extract_nonpdf_texts.py               # Word/RTF/HTML/email text (+ docx/converter companions)
+  llm/                                  # LLM relevance classification + decision-schema extraction
+    sample_100_apps.py                  #   Stratified app sample for LLM runs
+    classify_sample_100.py              #   3-class heat-pump relevance classifier
+    build_staging.py                    #   Build per-app staging (selection.json + texts/)
+    extract_schema_v1.py                #   64-field decision-schema extraction
+    verify_quotes.py                    #   Ground verbatim-quote fields against source texts
+    check_consistency.py                #   Cross-field consistency checks
+    build_schema_tsv.py                 #   Reviewer-facing schema TSV
   pins/                                 # Planning Inspectorate appeals pipeline
     pins_01_parse_xlsx.py               #   Raw XLSX -> parquet
     pins_02_type_tables.py              #   Typed parquet with header inference
@@ -81,6 +95,30 @@ extractor:
 ```bash
 uv run --with pymupdf --with docling python scripts/extract_decision_texts.py \
   --rescue-extractor docling
+```
+
+Run PDF text extraction across the whole document corpus, then the non-PDF
+companion passes (Word/RTF/HTML/email, plus binary Office via external
+converters), to build the `full_corpus_texts/summary.csv` manifest the LLM
+pipeline reads:
+
+```bash
+uv run --with pymupdf python scripts/extract_full_corpus_texts.py
+uv run python scripts/extract_nonpdf_texts.py
+```
+
+Extract a structured 64-field decision schema with an LLM. This stage reads a
+stratified sample, builds a per-app staging directory of selected document
+texts, calls the model once per app, then validates the output. It needs an
+`OPENAI_API_KEY` (read from the environment or a local `.env`):
+
+```bash
+export OPENAI_API_KEY=sk-...                       # or put it in .env
+uv run python scripts/llm/sample_100_apps.py       # pick the stratified sample
+uv run python scripts/llm/build_staging.py         # selection.json + texts/
+uv run --with openai --with python-dotenv python scripts/llm/extract_schema_v1.py
+uv run python scripts/llm/verify_quotes.py         # ground verbatim-quote fields
+uv run python scripts/llm/check_consistency.py     # cross-field consistency checks
 ```
 
 To enable rclone sync, install [rclone](https://rclone.org/install/) and configure a remote with `rclone config`. Then set `SYNC_REMOTE` to your remote path to automatically sync downloaded files every 50 apps (configurable via `SYNC_EVERY`).

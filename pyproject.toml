@@ -12,11 +12,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Planning Inspectorate appeals pipeline (scripts/pins/): reads XLSX, writes parquet.
+pins = [
+    "pandas>=2.0",
+    "pyarrow>=15.0",
+    "openpyxl>=3.1",
+]
 dev = [
     "pre-commit>=4.0",
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "ruff>=0.11.6",
+    # Pulls in the pins deps so the full test suite (incl. test_pins_match_appeals) collects.
+    "ashp-planning-scraper[pins]",
 ]
 
 [tool.pytest.ini_options]
