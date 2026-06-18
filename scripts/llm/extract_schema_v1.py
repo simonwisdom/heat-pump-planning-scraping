@@ -1,4 +1,164 @@
-"""v4.12 60-field schema extraction over a stratified sample.
+"""v4.18 64-field schema extraction over a stratified sample.
+
+v4.18 (second wave of held-out-audit fixes — the rule-fixable residue after v4.17b
+left 20/38 errors): targets the systematic, stable ones, leaving the model-recall
+ceiling (mounting/level on Cotswold/Durham, Hart receptor-vs-unit, Dundee truncated
+spec) for a reasoning-tier change rather than more rules. Prompt: (1) hp_relevance —
+"mixed" needs substantial BUILDING works, not bundled low-carbon kit (roof-flush PV /
+battery / EV charger don't make an app mixed), and a Parish/consultee merely noting HP
+noise is not HP-specific scrutiny (-> incidental); (2) applicant_acoustic_mitigations —
+new ACTOR gate excluding council-conditioned measures and un-adopted consultee-suggested
+alternatives; (3) public reps — a Parish/Town/Community Council or Ward Councillor is a
+CONSULTEE not the public, and n_public_objections is null (not 0) when only a consultee
+commented; (4) numeric RECITED-RULE trap — a "within 1 m of the boundary" / "0.6 m^3"
+rule threshold is the legislative limit, not a measured value; (5) acoustic_standards —
+a standard named only inside recited GPDO/Class-6H legislation is not a citation;
+(6) building_age — an early/mid/late century qualifier maps to that third, not the full
+century ("late C17" -> 1670-1699); (7) lbc_decision — granted-subject-to-conditions is
+granted_with_conditions. Post-processing: enforce the documented council_refusal_reasons
+⊆ council_considerations invariant deterministically. Field count unchanged at 64.
+Two further fixes were trialled and DROPPED as net-neutral/negative under the ~14%
+run-to-run noise floor at reasoning=low: a policy_conflict tightening (fixed two apps'
+over-tagging but re-broke a third's real policy conflict — a lateral trade on an
+inherently noisy field) and an hp_component_stance downgrade gate (the model emits an
+"accord with the approved noise document" hp_specific_condition that defeats the guard,
+so it fired only 1/3 runs). Both removed rather than chase individual cells with rules
+whose effect is smaller than the field's run-to-run variance.
+
+v4.17 64-field schema extraction over a stratified sample.
+
+v4.17 (held-out audit fixes — two error clusters from a 10-app blind audit of the
+v4.16 gpt-5.4-mini run; 93.1% field accuracy, 38/550 genuine errors): the largest
+cluster (10 errors) was the install_*/hp_mounting_type cascade — rule 13 told the
+model "when hp_mounting_type is unknown you cannot know install_above_ground_floor,
+answer unknown", so a single missing mounting quote dropped 4 install_* facts to
+"unknown" on apps (Cotswold, Durham, Dundee) whose text plainly stated ground
+mounting ("flush concrete base", MCS-020 "installed on the ground against a wall").
+Fix: (a) rule 13 decouples each install_* from the fixing method — above_ground_floor
+turns on level, principal on elevation, pitched_roof on surface; (b) rule 17 lists
+the ground/wall/roof trigger phrases the model kept failing to quote (raising mounting
+recall so the evidence gate stops firing falsely); (c) a deterministic post-proc
+coupling forces install_above_ground_floor/on_pitched_roof = "no" on a confirmed
+ground mount (correct direction; fires only on a surviving positive). The second
+cluster (6 errors) was noise_limit_basis/relative defaulting to other/not_stated:
+rule 12c now makes la_local_plan fire on a named plan policy / SPD / council-set NR
+target, makes bs_4142_background_relative fire on "X dB below/above background" with
+the relative-string mapping, and reinforces that a sound-POWER cap on the unit is not
+noise_limit_db. Field count unchanged at 64.
+Validation (same 10 held-out apps, 3x re-run at the production config; noise floor
+12.5% of cells vary run-to-run, so single-run diffs are read against that band):
+Fix 2 is a stable win — noise_limit_basis/relative/db now correct and identical across
+all 3 runs on Wakefield (3 fields) and Dundee (basis); the residual miss is Hart's
+"rating <= background" phrasing, which the "X dB below/above background" cue doesn't
+catch. Fix 1 is partial — the rule-13 decoupling reliably fixes install_* where the
+model answers them directly (Cotswold pitched_roof/principal; Dacorum fronts_highway),
+and the rule-17 trigger phrases recovered Dundee's ground mounting, but mounting RECALL
+remains the bottleneck on Cotswold/Durham (the model still emits hp_mounting_type=
+"unknown", so the evidence-gate fires and the deterministic ground coupling can't
+trigger). No stable regressions in the targeted field space.
+v4.17b then relaxed the mounting evidence-gate ASYMMETRICALLY (keep an unquoted
+"ground"; still gate "wall"/"roof"/"mixed"). Re-validated 3x: safe by construction (no
+path to a regression) and it made Dundee's ground mounting stable at 3/3 (it had been
+picking ground-without-evidence) and nudged Cotswold install_above_ground_floor to 2/3.
+But Cotswold and Durham mounting stayed "unknown" 0/3 — confirming the model emits
+"unknown" DIRECTLY there (not a gate erasure), i.e. a RECALL ceiling at reasoning=low,
+not a gating problem. The remaining stuck cells (Cotswold/Durham mounting, Durham
+install_above_ground_floor, Hart install_above_ground_floor — the last a receptor-vs-unit
+misread) would need higher reasoning effort or a mounting-specific extraction pass, not
+more post-processing.
+
+v4.16 64-field schema extraction over a stratified sample.
+
+v4.16 (primary_planning_trigger — collapse to the structural axis + dedupe): the
+v4.15 priority ladder cut this field's noise 13->9 but the residual was the model
+choosing among CO-PRESENT true triggers (a listed house in a conservation area; a
+school that is also in a CA). Crucially, the specific GPDO/policy constraint is
+ALREADY captured, more granularly and less noisily, by `designations`,
+`listed_status`, the `install_*` booleans, `val_distance_to_boundary_m`,
+`n_hp_units`, and `includes_wind_turbine` — encoding it again in the trigger was
+redundant AND the source of the wobble. So the enum is reduced to the one question
+nothing else answers — WHY permission was needed at all: hp_needed_permission /
+bundled_development / new_build / non_domestic / retrospective / unknown. The
+specific-constraint view is reconstructed at analysis time (e.g. HP-driven apps
+where conservation_area in designations). A deterministic post-processing coupling
+also forces non_domestic whenever building_use_class is non-residential (the
+model's main perception wobble). Field count unchanged at 64.
+Also hp_type: 13/15 of its disagreements were a2w<->unknown (never a2w<->a2a) —
+the model fighting v4.13's strict "never default to a2w" rule against its correct
+prior that UK domestic ASHPs are air-to-water. Reversed for DWELLINGS only: a bare
+domestic ASHP now defaults to a2w unless an a2a/ac distribution signal is present;
+unknown is reserved for unclear source family or non-dwelling plant (where a2a/VRF
+is common). gshp/wshp/hybrid stay evidence-driven.
+
+v4.15 (three more definitional-noise fixes, same method as v4.14): a 3x
+self-consistency run flagged three structured fields whose run-to-run wobble was
+binning, not facts. (1) alternative_siting_discussed: every disagreement (20/30)
+was False<->null on apps where no alternatives were discussed — the "explicitly
+not considered" False category is functionally dead. Collapsed to a plain
+boolean: True only for a real alternative-LOCATION discussion, False otherwise
+(incl. "never arises"). (2) appearance_concern_level (8/30, all not_raised<->
+raised_not_decisive): collapsed those two non-decisive levels into a single
+not_decisive — the surviving distinction (did appearance DRIVE the outcome?) is
+what reporting needs; enum is now not_decisive / addressed_by_condition /
+reason_for_refusal. (3) primary_planning_trigger (13->9/30): rewritten as a strict
+PRIORITY LADDER (non_domestic > new_build > bundled_development > the HP-specific
+triggers in fixed order > retrospective > unknown), so co-present triggers (a
+listed building in a conservation area; a non-dwelling that is also listed) always
+resolve the same way; follow-on/admin apps classify by parent character. Residual
+9 are building-TYPE perception wobble (model doesn't always read a school/library/
+church as non-dwelling) plus ~3 genuinely multi-trigger/insufficient-info apps;
+the remaining lever is a deterministic post-processing coupling to building_use_class.
+Field count unchanged at 64.
+
+v4.14 (hp_relevance stability — definitional fix): a 3x self-consistency run at
+reasoning=low showed hp_relevance disagreeing on 14/30 apps while the factual
+summaries were identical run-to-run — i.e. the wobble was a fuzzy category
+boundary, not sampling. Two causes fixed: (a) the mixed/incidental line was
+under-defined for bundled schemes (the HP had its own noise condition yet the
+decision was "driven by other works" — both definitions were true at once); and
+(b) all three definitions anchored on "what the decision turned on", which is
+undefined for withdrawn / NMA / condition-discharge / s73-variation apps. Rule 1
+now anchors on the APPLICATION and on whether the HP drew its OWN scrutiny
+(assessment / condition / objection / refusal ground), giving a bright-line
+mixed/incidental test and a definition that holds with no merits decision. New
+field hp_relevance_basis (one-sentence rationale) makes the call auditable and
+lets check_consistency.py flag label-vs-signal mismatches. Field count 63 -> 64.
+
+v4.13 (reviewer-audit fixes — grounding & explicit "unknown"): the four install_*
+facts become explicit "yes"/"no"/"unknown" enums (were boolean|null; the model
+defaulted to "no"/false when the fact was undeterminable — e.g. when
+hp_mounting_type is itself unknown, so install_above_ground_floor cannot be
+known). Three error-prone subjective fields gain a paired verbatim *_evidence
+field on the building_age_evidence model (hp_placement_evidence,
+hp_mounting_type_evidence, applicant_acoustic_mitigations_evidence): no evidence
+=> the value is dropped to "unknown"/[] in post-processing, so the model can't
+assert a positive it cannot quote (it was emitting an unstated "wall" mounting
+and phantom siting_choice mitigations). New general "adjacency trap" rule (2b) +
+negative examples codify the recurring confusions reviewers caught: a
+boundary-distance figure is not hp_placement; a "must not exceed" threshold is a
+LIMIT not a measured level; demolition-plant noise is not the HP's; a battery
+brand ("Tesla Powerwall") is not the HP manufacturer; visual-only siting is not
+an acoustic mitigation.
+Per-field value fixes from the same audit: dwelling_type does not tag new_build
+for an existing house; new designations rule (21b) requires the site itself to
+carry a designation (no AONB inferred from a nearby listed building);
+appearance_concern_level distinguishes a volunteered amendment
+(raised_not_decisive) and generic boilerplate conditions from a real HP
+appearance condition; alternative_siting_discussed excludes detail-requests and
+visual screening; noise_assessment_outcome maps an explicit consultee "no
+objection on noise" to pass (not not_mentioned). The decision_bucket "Grant
+subject to conditions" -> other bug is fixed in sample_100_apps.bucket_decision
+(the "granted" key missed the bare "grant" stem); existing samples need
+re-bucketing to benefit.
+Schema shape changes: `policies_cited` removed (not needed — it was never
+reliably exhaustive). `dwelling_type` split into `building_use_class` (coarse:
+residential / commercial / industrial / institutional / agricultural / mixed_use
+/ other / unknown) + a residential-only `dwelling_type` FORM (null for
+non-residential). LDC handling: application_type=ldc now force-empties
+n_conditions / condition_types / hp_specific_conditions in post-processing — a
+certificate of lawfulness imposes no planning conditions (its "conditions"
+language recites the Class G test). Net field count unchanged at 63
+(-policies_cited, +building_use_class).
 
 v4.12 (model bake-off support): decision_outcome loses its ambiguous "ldc" value
 (a ROUTE, not an outcome — gpt-5.4-mini used it for every LDC app, refused
@@ -274,6 +434,10 @@ def LIST_OF_NULL(*xs):
 
 T0 = {
     "hp_relevance": ENUM("hp_relevant", "hp_incidental", "mixed"),
+    # v4.14: one-sentence rationale for the hp_relevance call — what the app
+    # centrally seeks + whether the HP drew its own scrutiny. Auditable, and
+    # check_consistency.py can flag it against stance / refusal / conditions.
+    "hp_relevance_basis": {"type": "string"},
     # v4.12: "ldc" removed from this enum — it named a ROUTE, not an outcome, and
     # gpt-5.4-mini used it for every LDC app (refused certificates included), which
     # then tripped the refusal-reason normaliser. The route lives in
@@ -326,7 +490,6 @@ T0 = {
         "policy_conflict",
         "other",
     ),
-    "policies_cited": {"type": ["array", "null"], "items": {"type": "string"}},
     "application_type": ENUM(
         "full",
         "householder",
@@ -346,6 +509,19 @@ T0 = {
 
 T1 = {
     "hp_type": ENUM_NULL("a2w", "a2a", "gshp", "wshp", "hybrid", "ac", "unknown"),
+    # v4.13: split from the old combined dwelling_type. building_use_class is the
+    # coarse category (carries the non-domestic types); dwelling_type is the
+    # residential FORM only, null for non-residential buildings.
+    "building_use_class": ENUM_NULL(
+        "residential",
+        "commercial",  # retail / office / hospitality (Use Class E)
+        "industrial",  # storage / manufacturing / warehouse (B2/B8)
+        "institutional",  # school, healthcare, community, place of worship (Use Class F)
+        "agricultural",  # farm buildings, agricultural holdings
+        "mixed_use",  # combined residential + commercial
+        "other",
+        "unknown",
+    ),
     "dwelling_type": ENUM_NULL(
         "detached",
         "semi",
@@ -356,19 +532,15 @@ T1 = {
         "bungalow",
         "maisonette",
         "new_build",
-        # --- non-domestic building types (pairs with primary_planning_trigger=non_domestic) ---
-        "commercial",  # retail / office / hospitality (Use Class E)
-        "industrial",  # storage / manufacturing / warehouse (B2/B8)
-        "institutional",  # school, healthcare, community, place of worship (Use Class F)
-        "agricultural",  # farm buildings, agricultural holdings
-        "mixed_use",  # combined residential + commercial
         "other",
         "unknown",
     ),
     "building_age": {"type": ["string", "null"]},
     "building_age_evidence": {"type": ["string", "null"]},
     "hp_placement": ENUM_NULL("front", "rear", "side", "roof", "gable", "courtyard", "multiple", "unknown"),
+    "hp_placement_evidence": {"type": ["string", "null"]},
     "hp_mounting_type": ENUM_NULL("ground", "wall", "roof", "mixed", "unknown"),
+    "hp_mounting_type_evidence": {"type": ["string", "null"]},
     "n_hp_units": {"type": ["integer", "null"]},
     "n_dwellings_served": {"type": ["integer", "null"]},
     "hp_manufacturer": {"type": ["string", "null"]},
@@ -379,15 +551,23 @@ T1 = {
     "lbc_required": ENUM_NULL("required", "not_required", "unclear"),
     "lbc_decision": ENUM_NULL("granted", "granted_with_conditions", "refused", "pending", "withdrawn"),
     "lbc_reference": {"type": ["string", "null"]},
-    "install_above_ground_floor": {"type": ["boolean", "null"]},
-    "install_on_principal_elevation": {"type": ["boolean", "null"]},
-    "install_fronts_highway": {"type": ["boolean", "null"]},
-    "install_on_pitched_roof": {"type": ["boolean", "null"]},
-    "appearance_concern_level": ENUM_NULL(
-        "not_raised", "raised_not_decisive", "addressed_by_condition", "reason_for_refusal"
+    "install_above_ground_floor": ENUM_NULL("yes", "no", "unknown"),
+    "install_on_principal_elevation": ENUM_NULL("yes", "no", "unknown"),
+    "install_fronts_highway": ENUM_NULL("yes", "no", "unknown"),
+    "install_on_pitched_roof": ENUM_NULL("yes", "no", "unknown"),
+    "appearance_concern_level": ENUM(
+        # v4.15: not_raised + raised_not_decisive collapsed -> not_decisive
+        # (the boundary generated all 8/30 of this field's run-to-run noise and
+        # carried no reporting weight; the two DECISIVE levels are what matter).
+        "not_decisive",
+        "addressed_by_condition",
+        "reason_for_refusal",
     ),
     "includes_wind_turbine": {"type": ["boolean", "null"]},
-    "alternative_siting_discussed": {"type": ["boolean", "null"]},
+    # v4.15: collapsed to a plain boolean. The old null/False split was a dead
+    # category — every run-to-run disagreement (20/30) was False<->null, never
+    # involving True. Only "discussed vs not" carries signal.
+    "alternative_siting_discussed": {"type": "boolean"},
     "val_setback_from_edge_m": {"type": ["number", "null"]},
     "val_distance_to_boundary_m": {"type": ["number", "null"]},
     "val_distance_to_receptor_m": {"type": ["number", "null"]},
@@ -423,6 +603,7 @@ T1 = {
         "anti_vibration",
         "siting_choice",
     ),
+    "applicant_acoustic_mitigations_evidence": {"type": ["string", "null"]},
     "noise_nuisance_mentioned": {"type": ["boolean", "null"]},
     "n_conditions": {"type": ["integer", "null"]},
     "hp_specific_conditions": {"type": ["array", "null"], "items": {"type": "string"}},
@@ -457,29 +638,18 @@ T1 = {
         "outhouse",
     ),
     "primary_planning_trigger": ENUM_NULL(
-        # --- HP-driven triggers: the HP itself is why permission was needed ---
-        "conservation_area",
-        "article_4",
-        "protected_landscape",  # AONB / National Park / World Heritage Site / SSSI
-        "listed",
-        "curtilage_listed",
-        "flat",
-        "above_ground_floor",
-        "within_1m_boundary",
-        "oversized",
-        "mcs_noise_fail",
-        "front_elevation",
-        "wind_turbine_combo",
-        "multiple_units",
-        "pitched_roof",
-        "amenity",
-        # --- non-HP triggers: the HP is NOT why permission was needed ---
-        "bundled_development",  # driven by extension/conversion/demolition; HP incidental
-        "new_build",  # new or replacement dwelling; HP part of original build
-        "non_domestic",  # commercial/industrial/non-dwellinghouse; Class G PD inapplicable
-        "retrospective",  # retention of an already-installed HP
-        # --- catch-alls ---
-        "other",
+        # v4.16: collapsed to the STRUCTURAL axis only — "why was permission needed
+        # at all?" The specific GPDO/policy constraint (conservation_area, listed,
+        # above_ground_floor, pitched_roof, within_1m_boundary, multiple_units,
+        # wind_turbine_combo, ...) is NOT recorded here: it is already captured,
+        # more granularly and less noisily, by `designations`, `listed_status`,
+        # the `install_*` booleans, `val_distance_to_boundary_m`, `n_hp_units`, and
+        # `includes_wind_turbine`. Reconstruct the constraint view at analysis time.
+        "hp_needed_permission",  # the HP ITSELF removed PD rights (a GPDO/policy limit applied)
+        "bundled_development",  # dwellinghouse driven by OTHER works; HP incidental/mixed
+        "new_build",  # new/replacement dwelling; HP part of original build
+        "non_domestic",  # not a dwellinghouse; Class G PD never applied
+        "retrospective",  # retention of an already-installed HP, no other trigger
         "unknown",
     ),
 }
@@ -499,16 +669,62 @@ SYSTEM_PROMPT = textwrap.dedent("""
 
     Output a JSON object matching the schema. Rules:
 
-    1) FIRST decide `hp_relevance`:
-       - hp_relevant: decision rationale turns on the HP itself
-       - mixed: bundled with substantial other works AND the HP is one of several
-         distinct decision grounds
-       - hp_incidental: HP is part of the application but the decision is driven
-         by other works (extension, listed building, change of use, etc.)
+    1) Decide `hp_relevance`. Anchor on the APPLICATION and on whether the HP drew
+       its OWN scrutiny — do NOT anchor on "what the decision turned on" (many apps
+       are withdrawn, non-material amendments, condition discharges or s73
+       variations with no merits decision to anchor on). "HP-specific scrutiny"
+       means the HP attracted any of: its own assessment (e.g. a noise/acoustic
+       assessment or an Environmental Health consultation on the HP), its own
+       planning condition, its own objection, or its own refusal ground. Decide
+       top-down and STOP at the first match:
+       - hp_relevant: the HP — together with works that only exist to enable it
+         (louvres, a plant enclosure, acoustic screening, a plant room) — is the
+         MAIN or ONLY thing the application seeks; OR the HP is the only element
+         that drew HP-specific scrutiny.
+       - mixed: the application also seeks substantial OTHER works (extension,
+         conversion, dormers, a new/replacement dwelling, change of use) AND the
+         HP drew HP-specific scrutiny (assessment / condition / objection /
+         refusal ground). "Substantial OTHER works" means building works of that
+         kind — NOT other low-carbon kit bundled with the HP: roof-flush solar PV,
+         a battery, an EV charger or similar microgeneration do NOT make an app
+         "mixed". An application for the HP + its enabling works + such renewables,
+         with no extension/conversion/new-dwelling, is hp_relevant, not mixed.
+       - hp_incidental: the HP is a minor part of a scheme dominated by other
+         works AND the HP drew NO HP-specific scrutiny — no HP assessment, no HP
+         condition, no HP objection, no HP refusal ground. A consultee (e.g. a
+         Parish/Town Council) merely NOTING possible HP noise while recommending
+         approval, with no officer assessment/condition/objection/refusal ground,
+         is NOT HP-specific scrutiny — such an app stays hp_incidental.
+       Consistency check: if hp_component_stance is `unacceptable`, or
+       hp_refusal_ground is set, or hp_specific_conditions is non-empty, or
+       noise_assessment_outcome is `pass`/`fail`, then the HP drew scrutiny — the
+       app is hp_relevant or mixed, NEVER hp_incidental.
+    1b) `hp_relevance_basis`: in ONE sentence (<=160 chars) state the deciding
+        factor — what the application centrally seeks and whether the HP drew its
+        own scrutiny. E.g. "HP one of several works but drew its own noise
+        condition => mixed"; "HP minor part of extension scheme, no HP-specific
+        assessment => incidental"; "application is solely for the HP + louvres =>
+        hp_relevant".
 
     2) Attempt ALL fields for EVERY app, regardless of hp_relevance. If the
        documents are silent on a field, set it to null (or "unknown" where the
        enum has that value, or [] for arrays). Do NOT invent values.
+
+    2b) ADJACENCY TRAP (applies to every field): never read a value off a phrase
+        that is actually about a DIFFERENT attribute. The honest answer when the
+        only support is an adjacent-but-different fact is null / "unknown" / [].
+        In particular:
+        - a distance-to-boundary / distance-to-neighbour figure ("over 2m from
+          the rear boundary") is about PROXIMITY, not hp_placement — it does not
+          establish front/rear/side;
+        - a threshold or limit the unit "must not exceed" is a LIMIT
+          (noise_limit_db / noise_limit_relative), NOT a measured emission
+          (noise_source_power_db) or receptor level (noise_specific_level_db);
+        - noise / vibration from demolition or construction PLANT is NOT the heat
+          pump's noise;
+        - a battery / PV-inverter / EV-charger brand (e.g. "Tesla Powerwall") is
+          NOT the HP's manufacturer or model;
+        - siting done to reduce VISUAL impact is NOT an acoustic mitigation.
 
     3) ACTOR matters — three different parties, NEVER conflate them:
        - council_* = the LPA's own decision / reasoning.
@@ -554,13 +770,19 @@ SYSTEM_PROMPT = textwrap.dedent("""
     5) PUBLIC REPRESENTATIONS — read the "Public Responses / Representations /
        Consultation" section:
        - public_objections_received: were objections/representations received from
-         neighbours or the public. EXCLUDE statutory consultee responses
-         (Environmental Health, Highways, Conservation Officer, etc.).
+         neighbours or the public. EXCLUDE statutory/standing consultee responses —
+         Environmental Health, Highways, Conservation Officer, AND a Parish/Town/
+         Community Council or a Ward/County Councillor commenting in their official
+         consultee role (these are consultees, NOT members of the public), even when
+         they raise a concern. A Parish Council noting HP noise is a consultee
+         comment, not a public objection.
        - n_public_objections: the count when stated. Distinguish a real count
          ("one representation received from local residents") from a boilerplate
          template line ("...any representations that may have been received..."),
          which is NOT a count. Count objections, NOT letters of support. 0 is a
-         valid, meaningful answer.
+         valid, meaningful answer ONLY when the documents affirmatively state none
+         were received; if the only representation is a consultee comment and no
+         public count is stated, n_public_objections is null, NOT 0.
        - public_objections_grounds: what the public objected ABOUT. Distinct from
          council_refusal_reasons (different actor; populates regardless of outcome).
 
@@ -577,6 +799,12 @@ SYSTEM_PROMPT = textwrap.dedent("""
        GROUNDING GATE: include a value ONLY when a document presents that feature
        AS a noise measure — if you cannot point to acoustic reasoning attached to
        the feature, leave it out.
+       ACTOR GATE: the feature must be something the APPLICANT adopted/proposed.
+       EXCLUDE (i) a measure IMPOSED by a council condition (that is condition_types,
+       not an applicant mitigation), and (ii) an ALTERNATIVE a consultee/EH/officer
+       merely SUGGESTED or modelled (e.g. "a 3 m acoustic barrier would be needed")
+       that the applicant did not take up. Only mitigations the applicant actually
+       built into the proposed scheme count.
        - siting_choice = the unit was located to the rear / away from receptors
          AS A NOISE MEASURE — covers both relocating an existing unit and
          deliberately quiet siting of a new one. A unit that merely happens to be
@@ -586,6 +814,11 @@ SYSTEM_PROMPT = textwrap.dedent("""
          reasons (e.g. "XL super low noise configuration ... reduces break-out
          noise by 12 dB(A)").
        - absorption = acoustic absorptive panels / lining of surrounding surfaces.
+       EVIDENCE: set `applicant_acoustic_mitigations_evidence` to the verbatim
+       phrase that presents the feature(s) AS a noise measure (≤200 chars). If you
+       cannot quote such a phrase, the list MUST be [] and evidence null. Siting a
+       unit to reduce VISUAL impact is not an acoustic mitigation; do not list
+       siting_choice for it.
 
     8) `bundled_works`: controlled-vocab list of other works bundled with the HP.
        Use the enum values; pick the closest or "other" if nothing matches.
@@ -651,16 +884,28 @@ SYSTEM_PROMPT = textwrap.dedent("""
         opined on the HP's own merits.
 
     10) `key_evidence_quote`: ONE verbatim sentence from the supplied text
-        (≤300 chars) that best supports your overall picture of the case.
+        (≤300 chars) that best supports your overall picture of the case. It MUST
+        concern the heat pump or its assessment / decision — a line about
+        unrelated works (e.g. noise/vibration from demolition plant) is not HP
+        evidence.
 
     11) `hp_specific_conditions`: short paraphrases of conditions that specifically
         reference the heat pump. Each ≤120 chars. Empty list if none.
 
     12) Numeric fields (val_*_m setbacks, noise dB, counts): capture only values
-        the documents explicitly state. Never infer, and NEVER compute a value
+        the documents explicitly state. A "≥X" / "X or more" / "at least X" phrasing
+        records X (the stated minimum). Never infer, and NEVER compute a value
         yourself (do not add a penalty to a specific level to produce a rating
         level, and do not subtract levels to produce an exceedance — if the
-        documents don't state the number, it is null). The noise dB quantities are
+        documents don't state the number, it is null).
+        RECITED-RULE TRAP: a figure that is the GPDO Class G RULE THRESHOLD being
+        stated as the test — "within 1 metre of the boundary", "must be at least 1 m
+        from the curtilage boundary", "0.6 cubic metres" — is the LIMIT in the
+        legislation, NOT a measured dimension of THIS unit. Record val_distance_to_
+        boundary_m / volumes ONLY from a measured statement about the actual unit
+        ("the unit sits 2.3 m from the rear boundary"); if the only "1 m" in the text
+        is the rule being recited or applied as a pass/fail test, leave the field null.
+        The noise dB quantities are
         decomposed in 12c — keep them separate and do not cross-fill one into another.
         The three distance fields are distinct — do not reuse one figure across them:
         - val_distance_to_boundary_m: unit to the SITE/CURTILAGE BOUNDARY only
@@ -676,7 +921,9 @@ SYSTEM_PROMPT = textwrap.dedent("""
         distinct dB quantities. Capture only stated values:
         - noise_source_power_db: the unit's A-weighted SOUND POWER level (Lw) from
           the spec/brochure (e.g. "64 dB(A) sound power", "Lw"). Source emission,
-          independent of distance/screening — NOT the level at a neighbour.
+          independent of distance/screening — NOT the level at a neighbour. A
+          threshold the unit "must not exceed" (e.g. "shall not exceed 54 dB") is a
+          LIMIT (noise_limit_db / noise_limit_relative), not the source power.
         - noise_specific_level_db: the BS 4142 "Specific Sound Level" (LAs) — the
           level attributable to the heat pump AT the nearest receptor, BEFORE any
           character correction.
@@ -713,15 +960,29 @@ SYSTEM_PROMPT = textwrap.dedent("""
         - noise_limit_relative: the limit when expressed RELATIVE to background with
           no single number, as a short string: "background-5" (5 dB below background),
           "background" (at/below), "background+5". Null if an absolute number is given.
-        - noise_limit_basis: WHICH limit regime applies:
+        - noise_limit_basis: WHICH limit regime applies. Decide top-down and STOP at
+          the first match; reserve other/not_stated for the genuinely unclassifiable:
           * mcs_020_pd_limit           — national fixed MCS-020 PD limit (not
             LA-specific): 42 dB(A) pre-20-Sep-2025, 37 dB(A) under MCS-020(a) after.
             Put the number in noise_limit_db; this basis is version-neutral.
-          * bs_4142_background_relative — limit relative to background (use with
-            noise_limit_relative).
-          * la_local_plan              — limit set by the LPA's own plan policy/SPG.
+          * la_local_plan              — the limit is tied to a NAMED development-plan
+            policy / SPD / SPG / council standard ("Policy 39", "Policy D20", "the
+            council's external-plant standard"), OR is a council-set Noise Rating curve
+            target ("NR 35", "NR 45 design target"). A council-set NR target is
+            la_local_plan, NOT other. (NR curve targets have no single dB(A) number, so
+            leave noise_limit_db null.)
+          * bs_4142_background_relative — the limit is expressed RELATIVE to background
+            with no fixed number ("X dB below/above background", "0-5 dB below the
+            measured background", "rating level not to exceed background"). Set
+            noise_limit_relative too: "0-5 dB below background" or "5 dB below
+            background" => "background-5"; "at or below background" => "background";
+            "5 dB above background" => "background+5". Leave noise_limit_db null.
           * bs_8233_internal           — an internal-room limit (BS 8233 / WHO).
           * other / not_stated.
+          TRAP: a sound-POWER cap on the unit itself ("the ASHP shall not exceed 75
+          dB(A) sound power", "Lw <= X") is a SOURCE cap to achieve compliance, NOT the
+          rating-level limit the noise is judged against — it does NOT go in
+          noise_limit_db and does NOT by itself set noise_limit_basis.
 
     12d) NOISE OUTCOME vs METHOD — two orthogonal fields:
         - noise_assessment_outcome: the pass/fail STATUS — not_required, pass, fail,
@@ -732,7 +993,10 @@ SYSTEM_PROMPT = textwrap.dedent("""
           conclusion. not_mentioned means noise was never discussed at all; when
           an assessment WAS submitted but the council neither accepted nor decided
           on it (e.g. refused for insufficient noise information without ruling on
-          the submitted calc), use submitted_no_outcome.
+          the submitted calc), use submitted_no_outcome. An explicit consultee / EH
+          statement of NO OBJECTION on noise grounds ("no objection in relation to
+          noise from the proposed ASHP") IS a verdict that the noise position is
+          acceptable => pass, even without a numeric assessment — not not_mentioned.
         - noise_assessment_method: HOW the compliance position was reached
           (orthogonal — an asserted_only claim can still pass or attract a condition).
           Classify by the BACKGROUND's provenance — the plant-specific level is
@@ -773,6 +1037,13 @@ SYSTEM_PROMPT = textwrap.dedent("""
           standard citation;
         - a bare "MCS" mention with no noise content ("MCS-certified installer",
           "MCS certificate") — MCS certification alone does NOT imply MCS 020;
+        - a standard named ONLY inside recited legislation / permitted-development
+          criteria — e.g. an MCS reference appearing within a quoted GPDO Class G /
+          Scottish Class 6H test, or the PD conditions being recited rather than an
+          assessment actually applying the standard to this proposal. A real
+          citation needs the documents to USE the standard (an assessment to it, or
+          "the proposal complies with MCS Planning Standards" as a finding), not just
+          quote the rule that mentions it;
         - a generic "noise assessment" / "acoustic report" with no named standard.
         If you cannot point to the standard's name in the supplied text, leave it
         out. Empty list when none are named.
@@ -797,43 +1068,73 @@ SYSTEM_PROMPT = textwrap.dedent("""
           no stated supersession, prefer the officer report / decision over
           applicant drawings, and note that drawings labelled with one rating
           outweigh a single stray figure elsewhere.
-        - hp_type — decide a2w vs a2a only from the heat DISTRIBUTION medium:
-          radiators / underfloor heating / hot-water cylinder / "wet system" /
-          "provide the hot water and domestic heating" => a2w; internal fan coil
-          units / warmed-and-cooled AIR / comfort cooling / a retained gas boiler
-          doing the wet heating alongside => a2a (or ac if it is purely an air
-          conditioner). A bare "air source heat pump" with no medium evidence =>
-          unknown — never default to a2w.
+        - hp_type — first fix the SOURCE family, then the distribution medium:
+          ground loop / borehole / "ground source" => gshp; water source / lake /
+          river => wshp; HP + retained fossil boiler sharing the load => hybrid.
+          For an AIR-source unit, decide a2w vs a2a from the heat DISTRIBUTION
+          medium: internal fan coil units / warmed-and-cooled AIR / comfort cooling
+          / pure air conditioner => a2a (or ac if purely an air conditioner);
+          radiators / underfloor heating / hot-water cylinder / "wet system" => a2w.
+          v4.16 (default for DWELLINGS): a bare "air source heat pump" serving a
+          DWELLINGHOUSE with no distribution evidence => a2w (UK domestic ASHPs are
+          air-to-water by default; only an a2a/ac signal above overrides this).
+          Reserve `unknown` for when even the SOURCE family (air vs ground vs water)
+          is genuinely unclear, or for a NON-dwelling/commercial plant system where
+          the medium is unstated (there a2a/VRF is common, so do NOT assume a2w).
 
-    13) install_* booleans are FACTS about where the HP is installed, independent
-        of whether the council took issue:
+    13) install_* are FACTS about where the HP is installed, independent of whether
+        the council took issue. Each is "yes" / "no" / "unknown":
         - install_above_ground_floor: HP at first-floor level, upper storey, or roof.
         - install_on_principal_elevation: HP on the principal (public-facing) elevation.
         - install_fronts_highway: the wall/roof the unit is on faces a PUBLIC HIGHWAY
           (incl. footpath/pavement); EXCLUDES private roads/drives. This is the Class G
           legal trigger. BEWARE the GPDO-boilerplate trap: the phrase "a wall which
           fronts a highway" appears verbatim in the legislation text — extract the
-          PROPERTY FACT, not the rule citation. "Visible from the streetscene" => True;
-          a wall facing a private drive => False. Prefer the officer's stated conclusion.
+          PROPERTY FACT, not the rule citation. "Visible from the streetscene" => yes;
+          a wall facing a private drive => no. Prefer the officer's stated conclusion.
         - install_on_pitched_roof: HP mounted on a pitched roof.
-        Leave null only if the documents are silent.
+        Decide EACH install_* from its OWN evidence, INDEPENDENT of how the unit is
+        affixed — do NOT couple them to hp_mounting_type. above_ground_floor turns on
+        the LEVEL/storey, principal_elevation on WHICH elevation, fronts_highway on
+        whether that elevation faces a public highway, pitched_roof on the SURFACE — the
+        fixing method (bracket vs plinth) does not bear on any of them. A ground-standing
+        OR ground-level unit is "no" for install_above_ground_floor and "no" for
+        install_on_pitched_roof regardless of mounting; a unit on a stated elevation
+        answers install_on_principal_elevation from that placement. Answer "unknown" only
+        when the unit's OWN level/elevation/surface is genuinely undeterminable — NOT
+        merely because hp_mounting_type came out "unknown". Do NOT default to "no".
+        Reserve null for when the topic is entirely absent.
 
     14) `includes_wind_turbine`: True if the application also includes a wind turbine
         (cumulative-noise scenario). When True, "wind_turbine" must also appear in
         bundled_works (rule 8).
 
-    15) `appearance_concern_level` — route VISUAL vs NOISE, and grade escalation:
-        - not_raised             : visual/appearance not raised
-        - raised_not_decisive    : raised but did not drive the outcome
-        - addressed_by_condition : units pushed to rear / conditioned for appearance
-        - reason_for_refusal     : visual/appearance is an actual stated refusal reason
+    15) `appearance_concern_level` — route VISUAL vs NOISE, and grade escalation.
+        THREE levels only (v4.15 collapsed not_raised + raised_not_decisive into
+        the single non-decisive level, because that boundary was unstable and
+        carried no reporting weight — what matters is whether appearance DROVE
+        the outcome):
+        - not_decisive           : visual/appearance did NOT drive the outcome.
+                                   Covers BOTH "never raised" and "raised/assessed
+                                   but not decisive" — including an officer merely
+                                   assessing visual amenity and finding it
+                                   acceptable, and an applicant-volunteered
+                                   screening amendment not imposed by the LPA.
+        - addressed_by_condition : the LPA IMPOSED a condition controlling the HP's
+                                   appearance (units pushed to rear / screening
+                                   required by condition).
+        - reason_for_refusal     : visual/appearance is an actual stated refusal reason.
         ONLY about visual / external-appearance / character OF THE HEAT PUMP /
         its plant equipment — appearance concerns about other bundled elements
         (fenestration, an extension) do NOT count. Noise-driven reasoning goes
         to the sound fields (and council_refusal_reasons=sound_noise), NOT here.
-        Neighbour disturbance goes to public_objections_grounds. An officer
-        merely assessing visual amenity and finding it acceptable, with no
-        concern RAISED by anyone, is not_raised.
+        Neighbour disturbance goes to public_objections_grounds.
+        addressed_by_condition requires an IMPOSED condition that controls the HP's
+        appearance. A change the APPLICANT volunteered (e.g. an amended scheme adding
+        screening), not imposed by the LPA, is not_decisive — not
+        addressed_by_condition. A generic boilerplate materials condition that does
+        not name the HP / its plant (e.g. "all new external work to match existing")
+        does NOT qualify (it is not_decisive).
 
     16) `building_age` + `building_age_evidence`: the dwelling's ORIGINAL
         construction date, as a single string — either a 4-digit year ("1936")
@@ -846,7 +1147,11 @@ SYSTEM_PROMPT = textwrap.dedent("""
           georgian 1714-1837; victorian 1837-1901; edwardian 1901-1914;
           interwar 1918-1939; post_war 1945-1979; modern 1980-2010;
           new_build 2010-2026. Centuries/decades map literally: "17th century"
-          -> 1600-1699; "late 19th century" -> 1875-1900; "1930s" -> 1930-1939.
+          -> 1600-1699; "1930s" -> 1930-1939. A century with an early/mid/late
+          qualifier maps to that THIRD of the century, not the whole century:
+          "late 19th century" -> 1875-1900; "late C17" / "late 17th century" ->
+          1670-1699; "early C18" -> 1700-1730; "mid C19" -> 1830-1870. Do NOT widen
+          a qualified century back to the full 100-year span.
           A single stated year stays a single year ("built in 1936" -> "1936").
         - Use ORIGIN, not later alterations/extensions: "18th century origin with
           19th century alterations" -> "1700-1799" (or the stated "dates from
@@ -861,6 +1166,29 @@ SYSTEM_PROMPT = textwrap.dedent("""
     17) `hp_mounting_type`: how the unit is affixed — ground (pad/plinth), wall
         (bracket), roof, mixed (multiple units, different mountings), unknown.
         Orthogonal to `hp_placement` (location front/rear/side).
+        EVIDENCE: set `hp_mounting_type_evidence` to the verbatim phrase stating the
+        mounting (≤200 chars). If you cannot quote one, set hp_mounting_type to
+        "unknown" and evidence null — do NOT guess "wall"/"ground" from context.
+        ("a timber screened ASHP on the west gable elevation" => ground, evidence
+        that phrase; silence on how it is fixed => unknown.)
+        These phrases DO state the mounting — capture them as evidence rather than
+        defaulting to unknown: "on a plinth / concrete base / slab / pad / paving /
+        hardstanding", "ground-standing", "free-standing", "at ground level", "on the
+        ground", "stands on the ground" => ground; "wall-mounted", "fixed to / on the
+        wall", "on brackets", "bracket-mounted" => wall; "on the (flat/pitched) roof",
+        "roof-mounted" => roof.
+
+    17b) `hp_placement`: where on the property the unit sits (front / rear / side /
+        roof / gable / courtyard / multiple / unknown). Set `hp_placement_evidence`
+        to the verbatim phrase locating it (≤200 chars). A distance figure ("over 2m
+        from the rear boundary", "1m from the boundary") is about PROXIMITY, not
+        placement — it does NOT establish front/rear/side (rule 2b). If no phrase
+        states the location, set hp_placement="unknown" and evidence null.
+
+    17c) `hp_manufacturer` / `hp_model`: the make/model of the HEAT PUMP unit only.
+        Ancillary equipment named in the docs — a battery (e.g. "Tesla Powerwall"),
+        PV inverter, or EV charger — is NOT the heat pump; if only ancillary brands
+        appear, leave both null.
 
     18) `n_dwellings_served`: dwellings the HP system serves. Single home = 1;
         communal HP for a block = count of flats served; per-flat array =
@@ -881,58 +1209,71 @@ SYSTEM_PROMPT = textwrap.dedent("""
         refused (that signal lives in hp_component_stance=acceptable_with_condition);
         mitigation recommendations inside an acoustic report. A refusal imposes no
         conditions — on any refusal these two fields must be empty (also enforced
-        in post-processing).
+        in post-processing). An LDC (certificate of lawfulness) likewise imposes no
+        conditions: any "conditions" / "Class G" language in it is the
+        permitted-development test being recited, not conditions imposed — leave
+        these fields empty for application_type=ldc (also enforced in post-processing).
 
-    20) `primary_planning_trigger`: the SINGLE primary reason THIS application
-        required planning permission. Work top-down and STOP at the first match —
-        the non-HP routers (a-c) take precedence, because the goal is to separate
-        HP-driven applications from ones where the HP is incidental.
+    20) `primary_planning_trigger`: the STRUCTURAL reason THIS application needed
+        planning permission — ONE of six values. This field answers ONLY "why was
+        permission required at all", NOT "which GPDO/policy limit applied" (the
+        specific constraint — conservation_area, listed, above_ground_floor,
+        pitched_roof, within-1m, multiple units, wind turbine — is recorded in
+        `designations`, `listed_status`, the `install_*` fields, `n_hp_units`, and
+        `includes_wind_turbine`; do NOT try to encode it here). Take the FIRST match
+        top-down — the rungs are strict precedence:
 
-        FIRST, follow-on / administrative records have NO trigger of their own:
-        if application_type is condition_discharge, non_material_amendment, ldc, or
-        reserved_matters (discharge/approval of conditions, approval of details, NMA,
-        certificate of lawfulness), or the application is a s73 VARIATION/REMOVAL
-        of a condition, the consent was already granted (or is asserted not to be
-        needed). Report the PARENT permission's trigger when the documents state
-        why that permission was needed (a s73 on a school plant permission =>
-        non_domestic); otherwise `unknown`. NEVER invent one.
+        RUNG 0 — follow-on / administrative records (application_type is
+          condition_discharge, non_material_amendment, ldc, reserved_matters, or a
+          s73 VARIATION/REMOVAL of a condition): classify by the PARENT scheme's
+          character — non-dwelling parent => `non_domestic`; new/replacement dwelling
+          scheme => `new_build`; dwelling driven by OTHER works with the HP incidental
+          => `bundled_development`; the HP itself was why the parent permission was
+          needed => `hp_needed_permission`. `unknown` only if the parent character
+          genuinely cannot be told.
+        RUNG 1 — `non_domestic`: the building is NOT a dwellinghouse (commercial,
+          industrial, institutional, agricultural, school, library, leisure centre,
+          church). Class G PD never applied. OUTRANKS everything below — a non-dwelling
+          that is also listed / in a conservation area / in a National Park is STILL
+          `non_domestic`. (A church being CONVERTED to a dwelling is non_domestic.)
+        RUNG 2 — `new_build`: a new or replacement dwelling (or multi-unit dwelling
+          scheme) with the HP part of that original build.
+        RUNG 3 — `bundled_development`: a DWELLINGHOUSE app whose permission is driven
+          by OTHER works (extension, conversion, loft/garage, demolition, dormers)
+          with the HP tacked on; i.e. hp_relevance is hp_incidental or mixed.
+        RUNG 4 — `hp_needed_permission`: the HEAT PUMP ITSELF is why a dwellinghouse
+          app needed permission — some GPDO Part 14 Class G limit or a local policy
+          removed PD rights (it sits in a conservation area / on a listed building /
+          above ground floor / on a pitched roof / within 1m of the boundary / is
+          oversized / there are multiple units / an MCS-020 noise calc fails / etc.).
+          You do NOT choose which limit — just record that the HP was the reason.
+        RUNG 5 — `retrospective`: explicitly a retention case AND no RUNG 1-4 trigger.
+        RUNG 6 — `unknown`: HP clearly needed permission but docs don't say why
+          (incl. a refusal merely for INSUFFICIENT information). NEVER invent one.
 
-        OTHERWISE work down these routers:
-        (a) new_build       — the proposal is a new or replacement dwelling (or a
-            multi-unit scheme) and the HP is part of that original build.
-        (b) non_domestic    — the building is not a dwellinghouse (commercial,
-            industrial, institutional, agricultural, car park, plant compound), so
-            householder PD (GPDO Part 14 Class G) never applied. Record the building
-            type in `dwelling_type`, not here.
-        (c) bundled_development — a householder/full app whose permission is driven by
-            OTHER works (extension, garage/loft conversion, demolition, dormers) with
-            the HP tacked on; i.e. hp_relevance is hp_incidental or mixed.
-        If none of (a)-(c) apply, the HP itself is the reason permission was needed —
-        pick the specific GPDO/policy trigger:
-          listed / curtilage_listed; conservation_area; article_4;
-          protected_landscape (AONB, National Park, World Heritage Site, SSSI);
-          flat; above_ground_floor; pitched_roof; front_elevation;
-          within_1m_boundary; oversized (exceeds the volume/size limit);
-          mcs_noise_fail (the MCS-020 noise calculation FAILS the PD limit, so
-          Class G PD is unavailable — e.g. an applicant's calc sheet stating
-          "If NO - the air source heat pump will not be permitted development
-          ... Fail at 44dB, 2dB over". Prefer this over a siting value when the
-          documents state the noise fail is why the application was made);
-          multiple_units (more than one HP unit); wind_turbine_combo;
-          amenity (general visual-amenity grounds with no specific GPDO limit cited).
-        Use `retrospective` only when the app is explicitly a retention/retrospective
-        case AND no specific trigger above is evident.
-        Use `unknown` when the HP clearly needed permission but the documents do not
-        say why. Reserve `other` for a genuine HP trigger that fits none of the above.
+    21) `building_use_class` + `dwelling_type` — two fields:
+        - `building_use_class`: the COARSE category — residential (any home),
+          commercial (retail/office/hospitality, Use Class E), industrial
+          (storage/manufacturing/warehouse, B2/B8), institutional
+          (school/healthcare/community/place of worship, Use Class F), agricultural
+          (farm buildings), mixed_use (residential + commercial), other, or unknown.
+        - `dwelling_type`: the residential building FORM (detached, semi,
+          mid_terrace, end_terrace, flat, duplex, bungalow, maisonette, new_build,
+          other). Populate ONLY when building_use_class is residential or mixed_use;
+          set it null for a non-residential building (the category is carried by
+          building_use_class). Use "unknown" when the building IS a home but the
+          form isn't determinable — do NOT collapse "we know it's residential" into
+          a wrong class.
+        Use `new_build` ONLY when the documents show the dwelling is itself new or a
+        replacement (the HP is part of the original build); a description of an
+        existing house ("a large detached dwelling") takes the matching form
+        (detached), NOT new_build.
 
-    21) `dwelling_type`: for a HOME use the residential values (detached, semi,
-        mid_terrace, end_terrace, flat, duplex, bungalow, maisonette, new_build).
-        When the building is NOT a dwelling, use the matching non-domestic value
-        rather than `other`: commercial (retail/office/hospitality, Use Class E),
-        industrial (storage/manufacturing/warehouse, B2/B8), institutional
-        (school/healthcare/community/place of worship, Use Class F), agricultural
-        (farm buildings), or mixed_use (residential combined with commercial).
-        Reserve `other` for a building that fits none of these.
+    21b) `designations`: tag a designation ONLY when the documents state THIS SITE
+        carries it. A listed building NEARBY, an adjacent conservation area, or a
+        rural / beyond-green-belt location does NOT make the site an AONB, National
+        Park or conservation area — those require an explicit statement that the
+        site itself lies within one. [] when none is stated for the site.
 
     22) HERITAGE — `listed_status` and the LBC fields. Listed Building Consent (LBC)
         is a SEPARATE consent regime from planning permission; treat them as two
@@ -954,6 +1295,10 @@ SYSTEM_PROMPT = textwrap.dedent("""
           / refused / pending / withdrawn). null unless an LBC was actually required or
           a separate LBC application was lodged. This is INDEPENDENT of decision_outcome:
           the planning application can be refused while LBC is not required, or vice versa.
+          When the consent was granted SUBJECT TO conditions (any conditions listed on
+          the LBC decision notice — heritage, materials, accord-with-plans, etc.), use
+          `granted_with_conditions`, NOT a bare `granted`. For an application_type=lbc
+          app, the decision notice's conditions ARE the LBC's conditions.
         - `lbc_reference`: the linked LBC application reference verbatim if one is named
           (e.g. "UTT/19/2742/LB"); often in the officer report's site-history table.
         Worked example (Uttlesford UTT/19/2431/HHF): property is itself Grade II listed,
@@ -963,24 +1308,19 @@ SYSTEM_PROMPT = textwrap.dedent("""
         lbc_required=not_required, lbc_decision=null, lbc_reference="UTT/19/2742/LB",
         decision_outcome=refused, application_type=householder.
 
-    23) `policies_cited`: verbatim development-plan / national-policy identifiers
-        the LPA's DECISION OR OFFICER REASONING actually relies on (e.g.
-        "NPF4 Policy 23", "LDP2023 Policy P4", "Policy 33", "Local Plan Policy
-        DM1", "NPPF paragraph 130"). Max 6, most decision-relevant first.
-        Boilerplate trap: decision notices and officer reports often open with a
-        long "Relevant Policies" list — include ONLY policies the reasoning or
-        the stated reasons actually engage with, not every policy enumerated in
-        a header. Policies named in the decision notice's reasons/conditions take
-        priority over officer-report discussion. Identifiers verbatim as written.
-        null when no policy is relied on / determinable.
-
-    24) `alternative_siting_discussed`: True when the documents show ALTERNATIVE
-        locations for the HP were considered — the LPA / conservation officer
-        REQUESTED information on alternative locations (ground installation,
-        secondary elevation, different roof), or the applicant ASSESSED or
-        DEFENDED the chosen location against alternatives. Common in listed-
-        building cases. False only when the docs explicitly state alternatives
-        were NOT considered; null when the topic never arises.
+    23) `alternative_siting_discussed`: a plain boolean (v4.15 — no null).
+        TRUE when the documents show ALTERNATIVE locations for the HP were
+        considered — the LPA / conservation officer REQUESTED information on
+        alternative locations (ground installation, secondary elevation,
+        different roof), or the applicant ASSESSED or DEFENDED the chosen
+        location against alternatives. Common in listed-building cases.
+        FALSE in EVERY other case — including when the topic simply never arises.
+        Do NOT distinguish "explicitly not considered" from "never mentioned":
+        both are FALSE. Only an actual discussion of alternative LOCATIONS makes
+        it TRUE.
+        NOT alternative-siting discussion (=> FALSE): a request for more DETAIL
+        about the chosen location (without any alternative being raised), or
+        siting/screening done for VISUAL reasons.
 
     Return STRICT JSON. No prose outside the JSON.
 """).strip()
@@ -1064,10 +1404,70 @@ def normalize_conditions(out: dict) -> dict:
     if out.get("decision_outcome") not in REFUSAL_OUTCOMES:
         out["council_refusal_reasons"] = None
         out["council_refusal_quote"] = None
+    else:
+        # v4.18: the prompt states the invariant "council_refusal_reasons MUST be a
+        # subset of council_considerations" (a refusal ground is by definition a topic
+        # the LPA weighed). The audit caught the model dropping a ground from
+        # considerations while keeping it in the refusal list. Enforce it
+        # deterministically: every refusal reason is also a consideration.
+        rr = out.get("council_refusal_reasons") or []
+        cc = out.get("council_considerations") or []
+        out["council_considerations"] = cc + [r for r in rr if r not in cc]
+    # v4.13: an LDC (certificate of lawfulness) is a yes/no ruling on lawfulness,
+    # not a grant of permission — it imposes NO planning conditions. The "conditions"
+    # language in an LDC recites the Class G permitted-development criteria being
+    # tested, not conditions imposed. Force the condition fields empty so they
+    # aren't mis-counted (reviewer couldn't count them; they don't exist).
+    if out.get("application_type") == "ldc":
+        out["n_conditions"] = None
+        out["condition_types"] = []
+        out["hp_specific_conditions"] = []
     # hp_refusal_ground names WHY the HP itself was unacceptable; on any other
     # stance the question doesn't arise, so it must be null.
     if out.get("hp_component_stance") != "unacceptable":
         out["hp_refusal_ground"] = None
+    # v4.13: evidence-gated grounding — a subjective value with no supporting
+    # verbatim evidence is dropped to its empty option. The model must quote a
+    # span; if it can't, fall back rather than assert a positive it can't ground
+    # (mirrors the building_age / building_age_evidence gate).
+    if not out.get("hp_placement_evidence"):
+        out["hp_placement"] = "unknown"
+    # v4.17b: ASYMMETRIC mounting gate. The original v4.13 gate erased ANY unquoted
+    # mounting to "unknown" to stop the model emitting an unstated "wall". But the
+    # held-out audit showed the model UNDER-claims "ground" (it is correct whenever it
+    # picks it), and erasing those correct picks cascaded the install_* facts to
+    # "unknown". "wall"/"roof"/"mixed" remain the over-claimed values the gate was built
+    # to catch, so they still require a verbatim quote; an unquoted "ground" is KEPT
+    # (ground is the dominant prior for a domestic ASHP, and the null evidence field
+    # still flags it as a prior-based call). This lets the ground coupling below fire.
+    if not out.get("hp_mounting_type_evidence") and out.get("hp_mounting_type") in ("wall", "roof", "mixed"):
+        out["hp_mounting_type"] = "unknown"
+    if not out.get("applicant_acoustic_mitigations_evidence"):
+        out["applicant_acoustic_mitigations"] = []
+    # v4.17: a confirmed GROUND mounting fixes two install_* facts deterministically —
+    # a ground-standing unit cannot be above the ground floor and cannot be on a pitched
+    # roof. This runs AFTER the mounting evidence-gate above, so it fires only on a
+    # surviving positive "ground" finding, breaking the cascade that the held-out audit
+    # showed dropping these to "unknown" on apps where ground mounting was clearly stated.
+    if out.get("hp_mounting_type") == "ground":
+        out["install_above_ground_floor"] = "no"
+        out["install_on_pitched_roof"] = "no"
+    # v4.13: dwelling_type is the residential FORM; it can't co-exist with a
+    # clearly non-residential use class. (mixed_use / other / unknown may legitimately
+    # carry a residential form, so they're left alone.)
+    if out.get("building_use_class") in ("commercial", "industrial", "institutional", "agricultural"):
+        out["dwelling_type"] = None
+        # v4.16: a non-dwelling structurally never had Class G PD, so the structural
+        # trigger is non_domestic regardless of co-present designations. Enforce
+        # deterministically (RUNG 1) — this was the model's main perception wobble.
+        # Skip follow-on records whose PARENT may have been a dwelling.
+        if out.get("application_type") not in (
+            "condition_discharge",
+            "non_material_amendment",
+            "ldc",
+            "reserved_matters",
+        ):
+            out["primary_planning_trigger"] = "non_domestic"
     return out
 
 

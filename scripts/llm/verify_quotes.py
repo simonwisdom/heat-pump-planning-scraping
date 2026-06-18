@@ -1,8 +1,10 @@
 """Grep the verbatim-quote fields of a schema-extraction run back against the
 staged source texts, to catch hallucinated quotes.
 
-Checks key_evidence_quote, council_refusal_quote and building_age_evidence —
-the fields the schema promises are verbatim — against the application
+Checks key_evidence_quote, council_refusal_quote, building_age_evidence and the
+v4.13 grounding-evidence fields (hp_placement_evidence, hp_mounting_type_evidence,
+applicant_acoustic_mitigations_evidence) — the fields the schema promises are
+verbatim — against the application
 description plus every staged text file for that uid (the full files, not the
 clipped slices, so a quote is "grounded" if it appears anywhere in a document
 the model was shown part of). Matching is whitespace/quote/dash-insensitive,
@@ -35,7 +37,14 @@ SAMPLE_ROOT = Path(os.environ.get("HP_SAMPLE_ROOT") or (ROOT / "_local/llm_pilot
 SELECTION_JSON = SAMPLE_ROOT / "selection.json"
 TEXTS_DIR = SAMPLE_ROOT / "texts"
 
-QUOTE_FIELDS = ["key_evidence_quote", "council_refusal_quote", "building_age_evidence"]
+QUOTE_FIELDS = [
+    "key_evidence_quote",
+    "council_refusal_quote",
+    "building_age_evidence",
+    "hp_placement_evidence",
+    "hp_mounting_type_evidence",
+    "applicant_acoustic_mitigations_evidence",
+]
 
 # PDF extraction and LLM output disagree on quote marks, dashes and whitespace;
 # normalise both sides before substring matching.
@@ -126,7 +135,7 @@ def main() -> int:
     print(f"Quote grounding check — {len(results)} apps, run {RUN_DIR.name}\n")
     for field, c in counts.items():
         print(
-            f"  {field:28s} ok={c['ok']:3d}  near_verbatim={c['near']:3d}  "
+            f"  {field:40s} ok={c['ok']:3d}  near_verbatim={c['near']:3d}  "
             f"MISSING={c['missing']:3d}  null/empty={c['null']:3d}"
         )
         n_missing += c["missing"]

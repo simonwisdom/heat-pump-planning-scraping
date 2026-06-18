@@ -56,6 +56,7 @@ DECISION_BUCKETS = {
         "approve",
         "approved",
         "conditional",
+        "grant",  # "Grant subject to conditions" — "granted" missed the bare stem, bucketing it as other
         "granted",
         "discharge",
     ],
