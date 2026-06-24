@@ -1,280 +1,4 @@
-"""v4.18 64-field schema extraction over a stratified sample.
-
-v4.18 (second wave of held-out-audit fixes — the rule-fixable residue after v4.17b
-left 20/38 errors): targets the systematic, stable ones, leaving the model-recall
-ceiling (mounting/level on Cotswold/Durham, Hart receptor-vs-unit, Dundee truncated
-spec) for a reasoning-tier change rather than more rules. Prompt: (1) hp_relevance —
-"mixed" needs substantial BUILDING works, not bundled low-carbon kit (roof-flush PV /
-battery / EV charger don't make an app mixed), and a Parish/consultee merely noting HP
-noise is not HP-specific scrutiny (-> incidental); (2) applicant_acoustic_mitigations —
-new ACTOR gate excluding council-conditioned measures and un-adopted consultee-suggested
-alternatives; (3) public reps — a Parish/Town/Community Council or Ward Councillor is a
-CONSULTEE not the public, and n_public_objections is null (not 0) when only a consultee
-commented; (4) numeric RECITED-RULE trap — a "within 1 m of the boundary" / "0.6 m^3"
-rule threshold is the legislative limit, not a measured value; (5) acoustic_standards —
-a standard named only inside recited GPDO/Class-6H legislation is not a citation;
-(6) building_age — an early/mid/late century qualifier maps to that third, not the full
-century ("late C17" -> 1670-1699); (7) lbc_decision — granted-subject-to-conditions is
-granted_with_conditions. Post-processing: enforce the documented council_refusal_reasons
-⊆ council_considerations invariant deterministically. Field count unchanged at 64.
-Two further fixes were trialled and DROPPED as net-neutral/negative under the ~14%
-run-to-run noise floor at reasoning=low: a policy_conflict tightening (fixed two apps'
-over-tagging but re-broke a third's real policy conflict — a lateral trade on an
-inherently noisy field) and an hp_component_stance downgrade gate (the model emits an
-"accord with the approved noise document" hp_specific_condition that defeats the guard,
-so it fired only 1/3 runs). Both removed rather than chase individual cells with rules
-whose effect is smaller than the field's run-to-run variance.
-
-v4.17 64-field schema extraction over a stratified sample.
-
-v4.17 (held-out audit fixes — two error clusters from a 10-app blind audit of the
-v4.16 gpt-5.4-mini run; 93.1% field accuracy, 38/550 genuine errors): the largest
-cluster (10 errors) was the install_*/hp_mounting_type cascade — rule 13 told the
-model "when hp_mounting_type is unknown you cannot know install_above_ground_floor,
-answer unknown", so a single missing mounting quote dropped 4 install_* facts to
-"unknown" on apps (Cotswold, Durham, Dundee) whose text plainly stated ground
-mounting ("flush concrete base", MCS-020 "installed on the ground against a wall").
-Fix: (a) rule 13 decouples each install_* from the fixing method — above_ground_floor
-turns on level, principal on elevation, pitched_roof on surface; (b) rule 17 lists
-the ground/wall/roof trigger phrases the model kept failing to quote (raising mounting
-recall so the evidence gate stops firing falsely); (c) a deterministic post-proc
-coupling forces install_above_ground_floor/on_pitched_roof = "no" on a confirmed
-ground mount (correct direction; fires only on a surviving positive). The second
-cluster (6 errors) was noise_limit_basis/relative defaulting to other/not_stated:
-rule 12c now makes la_local_plan fire on a named plan policy / SPD / council-set NR
-target, makes bs_4142_background_relative fire on "X dB below/above background" with
-the relative-string mapping, and reinforces that a sound-POWER cap on the unit is not
-noise_limit_db. Field count unchanged at 64.
-Validation (same 10 held-out apps, 3x re-run at the production config; noise floor
-12.5% of cells vary run-to-run, so single-run diffs are read against that band):
-Fix 2 is a stable win — noise_limit_basis/relative/db now correct and identical across
-all 3 runs on Wakefield (3 fields) and Dundee (basis); the residual miss is Hart's
-"rating <= background" phrasing, which the "X dB below/above background" cue doesn't
-catch. Fix 1 is partial — the rule-13 decoupling reliably fixes install_* where the
-model answers them directly (Cotswold pitched_roof/principal; Dacorum fronts_highway),
-and the rule-17 trigger phrases recovered Dundee's ground mounting, but mounting RECALL
-remains the bottleneck on Cotswold/Durham (the model still emits hp_mounting_type=
-"unknown", so the evidence-gate fires and the deterministic ground coupling can't
-trigger). No stable regressions in the targeted field space.
-v4.17b then relaxed the mounting evidence-gate ASYMMETRICALLY (keep an unquoted
-"ground"; still gate "wall"/"roof"/"mixed"). Re-validated 3x: safe by construction (no
-path to a regression) and it made Dundee's ground mounting stable at 3/3 (it had been
-picking ground-without-evidence) and nudged Cotswold install_above_ground_floor to 2/3.
-But Cotswold and Durham mounting stayed "unknown" 0/3 — confirming the model emits
-"unknown" DIRECTLY there (not a gate erasure), i.e. a RECALL ceiling at reasoning=low,
-not a gating problem. The remaining stuck cells (Cotswold/Durham mounting, Durham
-install_above_ground_floor, Hart install_above_ground_floor — the last a receptor-vs-unit
-misread) would need higher reasoning effort or a mounting-specific extraction pass, not
-more post-processing.
-
-v4.16 64-field schema extraction over a stratified sample.
-
-v4.16 (primary_planning_trigger — collapse to the structural axis + dedupe): the
-v4.15 priority ladder cut this field's noise 13->9 but the residual was the model
-choosing among CO-PRESENT true triggers (a listed house in a conservation area; a
-school that is also in a CA). Crucially, the specific GPDO/policy constraint is
-ALREADY captured, more granularly and less noisily, by `designations`,
-`listed_status`, the `install_*` booleans, `val_distance_to_boundary_m`,
-`n_hp_units`, and `includes_wind_turbine` — encoding it again in the trigger was
-redundant AND the source of the wobble. So the enum is reduced to the one question
-nothing else answers — WHY permission was needed at all: hp_needed_permission /
-bundled_development / new_build / non_domestic / retrospective / unknown. The
-specific-constraint view is reconstructed at analysis time (e.g. HP-driven apps
-where conservation_area in designations). A deterministic post-processing coupling
-also forces non_domestic whenever building_use_class is non-residential (the
-model's main perception wobble). Field count unchanged at 64.
-Also hp_type: 13/15 of its disagreements were a2w<->unknown (never a2w<->a2a) —
-the model fighting v4.13's strict "never default to a2w" rule against its correct
-prior that UK domestic ASHPs are air-to-water. Reversed for DWELLINGS only: a bare
-domestic ASHP now defaults to a2w unless an a2a/ac distribution signal is present;
-unknown is reserved for unclear source family or non-dwelling plant (where a2a/VRF
-is common). gshp/wshp/hybrid stay evidence-driven.
-
-v4.15 (three more definitional-noise fixes, same method as v4.14): a 3x
-self-consistency run flagged three structured fields whose run-to-run wobble was
-binning, not facts. (1) alternative_siting_discussed: every disagreement (20/30)
-was False<->null on apps where no alternatives were discussed — the "explicitly
-not considered" False category is functionally dead. Collapsed to a plain
-boolean: True only for a real alternative-LOCATION discussion, False otherwise
-(incl. "never arises"). (2) appearance_concern_level (8/30, all not_raised<->
-raised_not_decisive): collapsed those two non-decisive levels into a single
-not_decisive — the surviving distinction (did appearance DRIVE the outcome?) is
-what reporting needs; enum is now not_decisive / addressed_by_condition /
-reason_for_refusal. (3) primary_planning_trigger (13->9/30): rewritten as a strict
-PRIORITY LADDER (non_domestic > new_build > bundled_development > the HP-specific
-triggers in fixed order > retrospective > unknown), so co-present triggers (a
-listed building in a conservation area; a non-dwelling that is also listed) always
-resolve the same way; follow-on/admin apps classify by parent character. Residual
-9 are building-TYPE perception wobble (model doesn't always read a school/library/
-church as non-dwelling) plus ~3 genuinely multi-trigger/insufficient-info apps;
-the remaining lever is a deterministic post-processing coupling to building_use_class.
-Field count unchanged at 64.
-
-v4.14 (hp_relevance stability — definitional fix): a 3x self-consistency run at
-reasoning=low showed hp_relevance disagreeing on 14/30 apps while the factual
-summaries were identical run-to-run — i.e. the wobble was a fuzzy category
-boundary, not sampling. Two causes fixed: (a) the mixed/incidental line was
-under-defined for bundled schemes (the HP had its own noise condition yet the
-decision was "driven by other works" — both definitions were true at once); and
-(b) all three definitions anchored on "what the decision turned on", which is
-undefined for withdrawn / NMA / condition-discharge / s73-variation apps. Rule 1
-now anchors on the APPLICATION and on whether the HP drew its OWN scrutiny
-(assessment / condition / objection / refusal ground), giving a bright-line
-mixed/incidental test and a definition that holds with no merits decision. New
-field hp_relevance_basis (one-sentence rationale) makes the call auditable and
-lets check_consistency.py flag label-vs-signal mismatches. Field count 63 -> 64.
-
-v4.13 (reviewer-audit fixes — grounding & explicit "unknown"): the four install_*
-facts become explicit "yes"/"no"/"unknown" enums (were boolean|null; the model
-defaulted to "no"/false when the fact was undeterminable — e.g. when
-hp_mounting_type is itself unknown, so install_above_ground_floor cannot be
-known). Three error-prone subjective fields gain a paired verbatim *_evidence
-field on the building_age_evidence model (hp_placement_evidence,
-hp_mounting_type_evidence, applicant_acoustic_mitigations_evidence): no evidence
-=> the value is dropped to "unknown"/[] in post-processing, so the model can't
-assert a positive it cannot quote (it was emitting an unstated "wall" mounting
-and phantom siting_choice mitigations). New general "adjacency trap" rule (2b) +
-negative examples codify the recurring confusions reviewers caught: a
-boundary-distance figure is not hp_placement; a "must not exceed" threshold is a
-LIMIT not a measured level; demolition-plant noise is not the HP's; a battery
-brand ("Tesla Powerwall") is not the HP manufacturer; visual-only siting is not
-an acoustic mitigation.
-Per-field value fixes from the same audit: dwelling_type does not tag new_build
-for an existing house; new designations rule (21b) requires the site itself to
-carry a designation (no AONB inferred from a nearby listed building);
-appearance_concern_level distinguishes a volunteered amendment
-(raised_not_decisive) and generic boilerplate conditions from a real HP
-appearance condition; alternative_siting_discussed excludes detail-requests and
-visual screening; noise_assessment_outcome maps an explicit consultee "no
-objection on noise" to pass (not not_mentioned). The decision_bucket "Grant
-subject to conditions" -> other bug is fixed in sample_100_apps.bucket_decision
-(the "granted" key missed the bare "grant" stem); existing samples need
-re-bucketing to benefit.
-Schema shape changes: `policies_cited` removed (not needed — it was never
-reliably exhaustive). `dwelling_type` split into `building_use_class` (coarse:
-residential / commercial / industrial / institutional / agricultural / mixed_use
-/ other / unknown) + a residential-only `dwelling_type` FORM (null for
-non-residential). LDC handling: application_type=ldc now force-empties
-n_conditions / condition_types / hp_specific_conditions in post-processing — a
-certificate of lawfulness imposes no planning conditions (its "conditions"
-language recites the Class G test). Net field count unchanged at 63
-(-policies_cited, +building_use_class).
-
-v4.12 (model bake-off support): decision_outcome loses its ambiguous "ldc" value
-(a ROUTE, not an outcome — gpt-5.4-mini used it for every LDC app, refused
-certificates included, tripping the refusal-reason normaliser; the route lives in
-application_type). New HP_REASONING_EFFORT env var: when set, passes
-reasoning_effort and omits temperature (GPT-5.x models reject temperature!=0
-defaults). Bake-off on the audit ledger: gpt-4.1-mini 25/36, gpt-4.1 ~31/36,
-gpt-5.4-mini reasoning=low 31/36 at half gpt-4.1's price (~$26/1k apps std,
-~$13 batched).
-
-v4.11 (residuals from re-auditing the v4.10 diff): OFFICER_TYPES gains the
-"officers report" / "officer's report" doctype spellings (East Herts' officer
-report fell to rank 9 / the 12k clip and kept the superseded Daikin unit);
-stance hard-rule now covers refusals aimed at "plant equipment" that includes
-the HP, and LDCs refused partly on an HP Class G ground; explicit
-no-self-arithmetic example for noise_rating_level_db (Leeds kept outputting
-53+5=58); n_hp_units counts heat pumps only (not a bundled AC condenser);
-not_mentioned vs submitted_no_outcome clarified (assessment submitted but
-council didn't rule on it => submitted_no_outcome); s73 variation/removal apps
-added to the no-own-trigger rule (report the parent permission's trigger).
-
-v4.10 (audit-driven; +1 field, vocab changes): responds to a 10-app adversarial
-audit of the v4.9 run (6/10 apps had >=1 materially wrong analytical field; all
-quote fields verbatim-clean).
-- Staging: decision/officer-ranked files (REPORT_RANKS) now sent whole up to
-  REPORT_FILE_CHARS=40k (the 12k head-clip cut Caerphilly's Class G analysis ->
-  wrong refusal reason, and East Herts' superseded-unit correction -> wrong
-  manufacturer). MAX_DOC_CHARS 80k -> 150k so whole reports don't evict rank-9
-  files (budget exhaustion silently dropped Southwark's officer assessment and
-  Leeds' sound-data sheet). load_doc_text prints a COVERAGE WARNING whenever a
-  decision/officer/sound file is dropped or truncated.
-- Post-processing: non-granting outcomes now also empty condition_types and
-  hp_specific_conditions (v4.9 confabulated conditions on 4/10 refusals from
-  parent permissions and "recommended if approved" passages).
-- Prompt: hp_component_stance hard rules (HP-only proposal => the application
-  verdict IS the HP stance; a refusal reason naming the HP => unacceptable);
-  numeric grounding (never self-compute rating/exceedance; reflections
-  correction is not a character correction; MCS-020 STEP 6 = specific level,
-  FINAL RESULT = rating level); noise_assessment_outcome takes the council/EH
-  verdict over the applicant report's own conclusion; noise_assessment_method
-  classified by BACKGROUND provenance (surveyed background + calculated specific
-  level is still measured_on_site); mitigations grounding gate; hp_type decided
-  only on distribution-medium evidence; superseded-spec rule (capture the FINAL
-  confirmed unit); insufficiency refusals tag the missing-info TOPIC; Class G
-  boundary-rule failures are setback_boundary, not unit_size_volume; conditions
-  must be imposed by THIS decision; appearance_concern_level is HP-scoped.
-- Schema: new val_distance_to_receptor_m (the figure acoustic reports actually
-  state; v4.9 kept misfiling it as val_distance_to_boundary_m, 3/10 apps);
-  acoustic_standards_cited += iso_1996, bs_7445, cieh_ioa_guidance;
-  applicant_acoustic_mitigations: colour_finish dropped (appearance, not
-  acoustic; invited unsupported picks), low_noise_unit + absorption added;
-  primary_planning_trigger += mcs_noise_fail (Crawley-type "fails MCS-020 so
-  not PD" applications, previously mis-tagged front_elevation).
-- Companion script scripts/llm/check_consistency.py flags arithmetic /
-  cross-field inconsistencies in a run's results.json for review.
-
-v4.9 (no schema changes): sound-ranked files are sent whole instead of through
-the v4.5 value-density window. The window's bare-number density score is won by
-appendix raw-measurement logs, not the BS 4142 results tables, so it cropped out
-exactly the values the noise_* fields need (caught on Croydon 25/03516/CONR:
-sound power / specific / rating / correction all null, and a raw appendix Leq of
-42.4 reported as noise_background_night_db when the report's Table 8 modal LA90
-night backgrounds are 33/31). SOUND_FILE_CHARS 18k -> 60k (largest staged report
-is 59,650 chars), MAX_DOC_CHARS 50k -> 80k so whole reports don't crowd out the
-officer report / decision notice. ~5% more input tokens on the 30-app pilot.
-
-v4.8 (remaining review-comment fixes, +3 fields): `policies_cited` (verbatim
-development-plan policy identifiers the decision leans on), `hp_refusal_ground`
-(WHY the HP itself was unacceptable — only when hp_component_stance=unacceptable,
-Python-normalised to null otherwise), `alternative_siting_discussed` (LPA
-requested / applicant defended alternative HP locations — the recurring
-heritage-case dynamic). The `applicant_acoustic_mitigations` value `relocation`
-is renamed `siting_choice` (covers both moved units and deliberately quiet
-siting of new ones), and a prompt rule standardises NMAs refused as material:
-refused + reasons=["other"] + stance=not_separately_assessed unless the LPA
-opined on the HP's merits.
-
-v4.7 (review-comment fixes, no new fields): adds `wind_turbine` to the
-bundled_works vocab (paired with the includes_wind_turbine boolean) and a
-grounding rule for acoustic_standards_cited — a standard counts only when the
-documents NAME it; a local-plan policy number or a bare "MCS-certified
-installer" mention does not (the pilot's most-repeated reviewer correction).
-Companion script scripts/llm/verify_quotes.py greps the verbatim-quote fields
-back against the staged texts to catch hallucinated quotes.
-
-v4.6 adds `unit_size_volume` to the shared council_considerations /
-council_refusal_reasons vocab: the unit's physical size/volume/bulk as a topic
-the LPA weighed — both Class G 0.6 m³ volume-limit checks (common in LDC/CPU
-delegated reports) and merits-based bulk reasoning. Motivated by the PDR scoping
-question on raising the flats volume limit from 0.6 to 1.5 m³.
-
-v4.5 overhauls the noise block: clearer `noise_*` field names and a full BS 4142
-decomposition. The single `val_sound_level_db` splits into specific level +
-character correction + rating level; `sound_background_db` splits into day/night
-LA90; a signed `noise_exceedance_db` and a `noise_limit_relative` ("background-5")
-are added. `sound_assessment_status` becomes `noise_assessment_outcome`, and a new
-orthogonal `noise_assessment_method` (measured_on_site / modelled_from_spec /
-asserted_only) distinguishes a real on-site survey from a desk calc from a bare
-"complies with BS 4142" assertion ("assumed pass"). Sound-ranked files are now fed
-through a value-density window (see results_window) so the dB tables — which sit
-past the per-file head-clip in long acoustic reports — actually reach the model.
-
-v4.4 adds council_considerations: an outcome-independent list of every material
-consideration the LPA weighed (fires on approvals too, e.g. "no harm to character"),
-of which the refusal-only council_refusal_reasons is the subset that drove a refusal.
-
-v4.3 decomposes the LBC field: the single `lbc_outcome` enum is replaced by
-`lbc_required` + `lbc_decision` + `lbc_reference`, treating Listed Building Consent
-as a separate consent regime from planning permission, and `listed_status` is pinned
-to the application building's own listing (not neighbouring setting assets).
-
-v4.2 first added a sound decomposition (fields since renamed in v4.5, above):
-separates the unit's source sound power, the predicted level at the receptor, the
-background level + its basis (assumed vs measured), and the permitted limit + its
-basis (national fixed MCS-020 PD limit -- 42 dB pre-20-Sep-2025, 37 dB under
-MCS-020(a) after -- vs site-relative BS 4142 vs LA local-plan).
+"""64-field schema extraction over a stratified sample.
 
 Reads:
   - {SAMPLE_ROOT}/sample.csv  (50 uids picked from recipe_b)
@@ -314,20 +38,20 @@ SAMPLE_CSV = SAMPLE_ROOT / "sample.csv"
 SELECTION_JSON = SAMPLE_ROOT / "selection.json"
 TEXTS_DIR = SAMPLE_ROOT / "texts"
 
-MODEL = os.environ.get("HP_MODEL", "gpt-4.1-mini")
+MODEL = os.environ.get("HP_MODEL", "gpt-5.4-mini")
 OUT_DIR = ROOT / f"_local/llm_pilot/schema_{os.environ.get('HP_RUN_TAG', 'v2')}_50"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 PER_FILE_CHARS = 12_000
-# Sound-ranked files are sent whole (up to SOUND_FILE_CHARS). v4.5-v4.8 used a
-# value-density window instead, but appendix raw-measurement logs out-dense the
+# Sound-ranked files are sent whole (up to SOUND_FILE_CHARS). An earlier
+# value-density window was tried instead, but appendix raw-measurement logs out-dense the
 # BS 4142 results tables, so the window locked onto the wrong region (Croydon
 # 25/03516/CONR: missed sound power / rating / correction tables, and reported a
 # raw appendix Leq as the night background). At gpt-4.1-mini prices the whole
 # report costs ~5% more input than the window did. 60k covers the largest report
 # seen in staging (59,650 chars).
 SOUND_FILE_CHARS = 60_000
-# Decision/officer-ranked files get the same whole-file treatment (v4.10): the
+# Decision/officer-ranked files get the same whole-file treatment: the
 # 12k head-clip cut delegated reports exactly before their GPDO clause-by-clause
 # analysis (Caerphilly 22/0580/CLPU lost the whole Class G section -> wrong
 # refusal reason) and before late officer-report corrections (East Herts
@@ -415,7 +139,7 @@ REPORT_RANKS = {0, 1, 2, 5, 6}  # decision notices + officer/delegated reports
 CRITICAL_RANKS = REPORT_RANKS | SOUND_RANKS
 
 
-# === 56-field v4.5 schema (see _local/docs/llm_extraction_schema.md) ===
+# === 64-field schema (see _local/docs/llm_extraction_schema.md) ===
 def ENUM(*xs):
     return {"type": "string", "enum": list(xs)}
 
@@ -434,13 +158,13 @@ def LIST_OF_NULL(*xs):
 
 T0 = {
     "hp_relevance": ENUM("hp_relevant", "hp_incidental", "mixed"),
-    # v4.14: one-sentence rationale for the hp_relevance call — what the app
+    # One-sentence rationale for the hp_relevance call — what the app
     # centrally seeks + whether the HP drew its own scrutiny. Auditable, and
     # check_consistency.py can flag it against stance / refusal / conditions.
     "hp_relevance_basis": {"type": "string"},
-    # v4.12: "ldc" removed from this enum — it named a ROUTE, not an outcome, and
-    # gpt-5.4-mini used it for every LDC app (refused certificates included), which
-    # then tripped the refusal-reason normaliser. The route lives in
+    # "ldc" is deliberately not a value in this enum — it names a ROUTE, not an
+    # outcome, and gpt-5.4-mini used it for every LDC app (refused certificates
+    # included), which tripped the refusal-reason normaliser. The route lives in
     # application_type; a refused certificate is "refused", a granted one "approved".
     "decision_outcome": ENUM(
         "approved",
@@ -509,7 +233,7 @@ T0 = {
 
 T1 = {
     "hp_type": ENUM_NULL("a2w", "a2a", "gshp", "wshp", "hybrid", "ac", "unknown"),
-    # v4.13: split from the old combined dwelling_type. building_use_class is the
+    # Split from the old combined dwelling_type. building_use_class is the
     # coarse category (carries the non-domestic types); dwelling_type is the
     # residential FORM only, null for non-residential buildings.
     "building_use_class": ENUM_NULL(
@@ -556,7 +280,7 @@ T1 = {
     "install_fronts_highway": ENUM_NULL("yes", "no", "unknown"),
     "install_on_pitched_roof": ENUM_NULL("yes", "no", "unknown"),
     "appearance_concern_level": ENUM(
-        # v4.15: not_raised + raised_not_decisive collapsed -> not_decisive
+        # Not_raised + raised_not_decisive collapsed -> not_decisive
         # (the boundary generated all 8/30 of this field's run-to-run noise and
         # carried no reporting weight; the two DECISIVE levels are what matter).
         "not_decisive",
@@ -564,7 +288,7 @@ T1 = {
         "reason_for_refusal",
     ),
     "includes_wind_turbine": {"type": ["boolean", "null"]},
-    # v4.15: collapsed to a plain boolean. The old null/False split was a dead
+    # Collapsed to a plain boolean. The old null/False split was a dead
     # category — every run-to-run disagreement (20/30) was False<->null, never
     # involving True. Only "discussed vs not" carries signal.
     "alternative_siting_discussed": {"type": "boolean"},
@@ -638,7 +362,7 @@ T1 = {
         "outhouse",
     ),
     "primary_planning_trigger": ENUM_NULL(
-        # v4.16: collapsed to the STRUCTURAL axis only — "why was permission needed
+        # Collapsed to the STRUCTURAL axis only — "why was permission needed
         # at all?" The specific GPDO/policy constraint (conservation_area, listed,
         # above_ground_floor, pitched_roof, within_1m_boundary, multiple_units,
         # wind_turbine_combo, ...) is NOT recorded here: it is already captured,
@@ -1075,7 +799,7 @@ SYSTEM_PROMPT = textwrap.dedent("""
           medium: internal fan coil units / warmed-and-cooled AIR / comfort cooling
           / pure air conditioner => a2a (or ac if purely an air conditioner);
           radiators / underfloor heating / hot-water cylinder / "wet system" => a2w.
-          v4.16 (default for DWELLINGS): a bare "air source heat pump" serving a
+          Default for DWELLINGS: a bare "air source heat pump" serving a
           DWELLINGHOUSE with no distribution evidence => a2w (UK domestic ASHPs are
           air-to-water by default; only an a2a/ac signal above overrides this).
           Reserve `unknown` for when even the SOURCE family (air vs ground vs water)
@@ -1110,7 +834,7 @@ SYSTEM_PROMPT = textwrap.dedent("""
         bundled_works (rule 8).
 
     15) `appearance_concern_level` — route VISUAL vs NOISE, and grade escalation.
-        THREE levels only (v4.15 collapsed not_raised + raised_not_decisive into
+        THREE levels only (not_raised + raised_not_decisive are collapsed into
         the single non-decisive level, because that boundary was unstable and
         carried no reporting weight — what matters is whether appearance DROVE
         the outcome):
@@ -1308,7 +1032,7 @@ SYSTEM_PROMPT = textwrap.dedent("""
         lbc_required=not_required, lbc_decision=null, lbc_reference="UTT/19/2742/LB",
         decision_outcome=refused, application_type=householder.
 
-    23) `alternative_siting_discussed`: a plain boolean (v4.15 — no null).
+    23) `alternative_siting_discussed`: a plain boolean (no null).
         TRUE when the documents show ALTERNATIVE locations for the HP were
         considered — the LPA / conservation officer REQUESTED information on
         alternative locations (ground installation, secondary elevation,
@@ -1394,7 +1118,7 @@ REFUSAL_OUTCOMES = {"refused", "prior_approval_refused"}
 def normalize_conditions(out: dict) -> dict:
     if out.get("decision_outcome") not in GRANTING_OUTCOMES:
         # A refusal imposes no conditions, so the condition lists must be empty
-        # too — the v4.9 pilot confabulated condition_types on 4/10 refused apps
+        # too — the model otherwise confabulates condition_types on refused apps
         # from parent permissions and "recommended if approved" passages. (An
         # HP-friendly recommended condition still surfaces via
         # hp_component_stance=acceptable_with_condition.)
@@ -1405,7 +1129,7 @@ def normalize_conditions(out: dict) -> dict:
         out["council_refusal_reasons"] = None
         out["council_refusal_quote"] = None
     else:
-        # v4.18: the prompt states the invariant "council_refusal_reasons MUST be a
+        # The prompt states the invariant "council_refusal_reasons MUST be a
         # subset of council_considerations" (a refusal ground is by definition a topic
         # the LPA weighed). The audit caught the model dropping a ground from
         # considerations while keeping it in the refusal list. Enforce it
@@ -1413,7 +1137,7 @@ def normalize_conditions(out: dict) -> dict:
         rr = out.get("council_refusal_reasons") or []
         cc = out.get("council_considerations") or []
         out["council_considerations"] = cc + [r for r in rr if r not in cc]
-    # v4.13: an LDC (certificate of lawfulness) is a yes/no ruling on lawfulness,
+    # An LDC (certificate of lawfulness) is a yes/no ruling on lawfulness,
     # not a grant of permission — it imposes NO planning conditions. The "conditions"
     # language in an LDC recites the Class G permitted-development criteria being
     # tested, not conditions imposed. Force the condition fields empty so they
@@ -1426,13 +1150,13 @@ def normalize_conditions(out: dict) -> dict:
     # stance the question doesn't arise, so it must be null.
     if out.get("hp_component_stance") != "unacceptable":
         out["hp_refusal_ground"] = None
-    # v4.13: evidence-gated grounding — a subjective value with no supporting
+    # Evidence-gated grounding — a subjective value with no supporting
     # verbatim evidence is dropped to its empty option. The model must quote a
     # span; if it can't, fall back rather than assert a positive it can't ground
     # (mirrors the building_age / building_age_evidence gate).
     if not out.get("hp_placement_evidence"):
         out["hp_placement"] = "unknown"
-    # v4.17b: ASYMMETRIC mounting gate. The original v4.13 gate erased ANY unquoted
+    # ASYMMETRIC mounting gate. An earlier gate erased ANY unquoted
     # mounting to "unknown" to stop the model emitting an unstated "wall". But the
     # held-out audit showed the model UNDER-claims "ground" (it is correct whenever it
     # picks it), and erasing those correct picks cascaded the install_* facts to
@@ -1444,7 +1168,7 @@ def normalize_conditions(out: dict) -> dict:
         out["hp_mounting_type"] = "unknown"
     if not out.get("applicant_acoustic_mitigations_evidence"):
         out["applicant_acoustic_mitigations"] = []
-    # v4.17: a confirmed GROUND mounting fixes two install_* facts deterministically —
+    # A confirmed GROUND mounting fixes two install_* facts deterministically —
     # a ground-standing unit cannot be above the ground floor and cannot be on a pitched
     # roof. This runs AFTER the mounting evidence-gate above, so it fires only on a
     # surviving positive "ground" finding, breaking the cascade that the held-out audit
@@ -1452,12 +1176,12 @@ def normalize_conditions(out: dict) -> dict:
     if out.get("hp_mounting_type") == "ground":
         out["install_above_ground_floor"] = "no"
         out["install_on_pitched_roof"] = "no"
-    # v4.13: dwelling_type is the residential FORM; it can't co-exist with a
+    # Dwelling_type is the residential FORM; it can't co-exist with a
     # clearly non-residential use class. (mixed_use / other / unknown may legitimately
     # carry a residential form, so they're left alone.)
     if out.get("building_use_class") in ("commercial", "industrial", "institutional", "agricultural"):
         out["dwelling_type"] = None
-        # v4.16: a non-dwelling structurally never had Class G PD, so the structural
+        # A non-dwelling structurally never had Class G PD, so the structural
         # trigger is non_domestic regardless of co-present designations. Enforce
         # deterministically (RUNG 1) — this was the model's main perception wobble.
         # Skip follow-on records whose PARENT may have been a dwelling.
@@ -1503,8 +1227,10 @@ def extract_one(client: OpenAI, row: dict, uid_files: dict) -> dict:
         },
     )
     # GPT-5.x reasoning models reject temperature!=1; they take reasoning_effort
-    # instead. HP_REASONING_EFFORT=none turns reasoning off for extraction runs.
-    effort = os.environ.get("HP_REASONING_EFFORT")
+    # instead. Defaults to "low" to match the default gpt-5.4-mini model. Set
+    # HP_REASONING_EFFORT="" (empty) to fall back to temperature=0 for a
+    # non-reasoning model.
+    effort = os.environ.get("HP_REASONING_EFFORT", "low")
     if effort:
         kwargs["reasoning_effort"] = effort
     else:
