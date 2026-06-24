@@ -2,7 +2,7 @@
 staged source texts, to catch hallucinated quotes.
 
 Checks key_evidence_quote, council_refusal_quote, building_age_evidence and the
-v4.13 grounding-evidence fields (hp_placement_evidence, hp_mounting_type_evidence,
+grounding-evidence fields (hp_placement_evidence, hp_mounting_type_evidence,
 applicant_acoustic_mitigations_evidence) — the fields the schema promises are
 verbatim — against the application
 description plus every staged text file for that uid (the full files, not the

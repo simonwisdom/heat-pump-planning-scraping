@@ -280,17 +280,15 @@ T1 = {
     "install_fronts_highway": ENUM_NULL("yes", "no", "unknown"),
     "install_on_pitched_roof": ENUM_NULL("yes", "no", "unknown"),
     "appearance_concern_level": ENUM(
-        # Not_raised + raised_not_decisive collapsed -> not_decisive
-        # (the boundary generated all 8/30 of this field's run-to-run noise and
-        # carried no reporting weight; the two DECISIVE levels are what matter).
+        # Not_raised + raised_not_decisive collapsed -> not_decisive — that
+        # boundary carried no reporting weight; the two DECISIVE levels matter.
         "not_decisive",
         "addressed_by_condition",
         "reason_for_refusal",
     ),
     "includes_wind_turbine": {"type": ["boolean", "null"]},
-    # Collapsed to a plain boolean. The old null/False split was a dead
-    # category — every run-to-run disagreement (20/30) was False<->null, never
-    # involving True. Only "discussed vs not" carries signal.
+    # Collapsed to a plain boolean — the old null/False split was a dead
+    # category; only "discussed vs not" carries signal.
     "alternative_siting_discussed": {"type": "boolean"},
     "val_setback_from_edge_m": {"type": ["number", "null"]},
     "val_distance_to_boundary_m": {"type": ["number", "null"]},
