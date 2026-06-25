@@ -1,12 +1,15 @@
 """Pick 100 stratified apps from the corpus for an LLM classification sample.
 
-Run on the VPS. Reads:
-  - /root/full_corpus_texts/summary.csv (manifest: uid -> text_path, status)
-  - /root/heat-pump-planning-scraping/_local/.../ashp.db (decision, description)
+Reads:
+  - <corpus>/summary.csv (manifest: uid -> text_path, status)
+  - the local ashp.db (decision, description)
 
 Writes:
-  - /root/llm_sample_100/sample.csv  (one row per app, with text-file paths)
-  - /root/llm_sample_100/texts/...   (copies of just those apps' .txt files)
+  - <out_dir>/sample.csv  (one row per app, with text-file paths)
+  - <out_dir>/texts/...   (copies of just those apps' .txt files)
+
+Paths default to repo-local locations; override the database with the ASHP_DB
+environment variable.
 
 Stratification: 35 refused, 35 approved/conditional, 20 withdrawn, 10 other.
 Within each bucket, equal split between HP-only and bundled descriptions.
@@ -15,6 +18,7 @@ Within each bucket, equal split between HP-only and bundled descriptions.
 from __future__ import annotations
 
 import csv
+import os
 import random
 import re
 import shutil
@@ -25,10 +29,11 @@ from pathlib import Path
 
 random.seed(2026)
 
-CORPUS_ROOT = Path("/root/full_corpus_texts")
+ROOT = Path(__file__).resolve().parents[2]
+CORPUS_ROOT = Path(os.environ.get("CORPUS_ROOT", str(ROOT / "_local/full_corpus_texts")))
 SUMMARY_CSV = CORPUS_ROOT / "summary.csv"
-DB = Path("/root/heat-pump-planning-scraping/_local/workstreams/01_heat_pump_applications/data/raw/ashp.db")
-OUT_DIR = Path("/root/llm_sample_100")
+DB = Path(os.environ.get("ASHP_DB", str(ROOT / "_local/workstreams/01_heat_pump_applications/data/raw/ashp.db")))
+OUT_DIR = Path(os.environ.get("SAMPLE_OUT_DIR", str(ROOT / "_local/llm_sample_100")))
 OUT_TEXTS = OUT_DIR / "texts"
 
 BUNDLED_RE = re.compile(

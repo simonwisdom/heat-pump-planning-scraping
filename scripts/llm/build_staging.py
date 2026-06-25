@@ -18,15 +18,13 @@ lowest priority, so which ones fill the remaining slots is arbitrary), changing
 many apps that gained nothing. Merge mode confines the diff to the apps that
 actually have new content.
 
-Runs on the VPS (stdlib only) where the manifest + texts live; the resulting
-staging dir is pulled down to replace the local copy.
+Runs wherever the manifest + texts live (stdlib only).
 
 The ranking MIRRORS scripts/llm/extract_schema_v1.py:rank() — keep the two in
 sync. (Kept inline rather than imported because that module pulls in openai at
-import time, which isn't installed on the VPS.)
+import time, which may not be installed on the machine running this.)
 
-Usage on VPS:
-    cd /root/heat-pump-planning-scraping
+Usage:
     .venv/bin/python scripts/llm/build_staging.py \
         --uids-file /root/sample50.uids \
         --corpus-dir /root/full_corpus_texts \
