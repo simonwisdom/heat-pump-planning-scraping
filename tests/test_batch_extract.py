@@ -7,6 +7,7 @@ v4.18 live prompt. These tests pin that contract.
 
 from __future__ import annotations
 
+import scripts.llm.batch_extract as bx
 import scripts.llm.extract_schema_v1 as ex
 
 SAMPLE_ROW = {
@@ -61,3 +62,35 @@ def test_parse_result_attaches_files_and_normalizes():
     assert out["hp_specific_conditions"] == []
     # parse_result must NOT add _usage (caller supplies it)
     assert "_usage" not in out
+
+
+# --------------------------------------------------------------------------- #
+# Batch runner pure helpers
+# --------------------------------------------------------------------------- #
+def test_jsonl_request_shape():
+    body = {"model": "m", "messages": []}
+    req = bx.jsonl_request("uid-9", body)
+    assert req == {
+        "custom_id": "uid-9",
+        "method": "POST",
+        "url": "/v1/chat/completions",
+        "body": body,
+    }
+
+
+def test_pack_chunks_groups_under_cap_in_order():
+    # caps at 10: [4,4] = 8 ok; +5 would be 13 -> new chunk
+    groups = bx.pack_chunks([4, 4, 5, 5, 2], max_bytes=10)
+    assert groups == [[0, 1], [2, 3], [4]]
+    # every index appears exactly once, order preserved
+    assert [i for g in groups for i in g] == [0, 1, 2, 3, 4]
+
+
+def test_pack_chunks_oversize_request_gets_own_chunk():
+    # a single 20-byte request exceeds the 10-byte cap -> isolated, not dropped
+    groups = bx.pack_chunks([3, 20, 3], max_bytes=10)
+    assert groups == [[0], [1], [2]]
+
+
+def test_pending_uids_skips_collected_in_order():
+    assert bx.pending_uids(["a", "b", "c", "d"], {"b", "d"}) == ["a", "c"]
