@@ -18,13 +18,20 @@ pins = [
     "pyarrow>=15.0",
     "openpyxl>=3.1",
 ]
+# LLM schema-extraction pipeline (scripts/llm/): structured extraction over the
+# corpus via the OpenAI API, live or Batch. Install on the runner (incl. the VPS).
+llm = [
+    "openai>=1.40",
+    "python-dotenv>=1.0",
+]
 dev = [
     "pre-commit>=4.0",
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "ruff>=0.11.6",
-    # Pulls in the pins deps so the full test suite (incl. test_pins_match_appeals) collects.
+    # Pulls in the pins + llm deps so the full test suite collects.
     "ashp-planning-scraper[pins]",
+    "ashp-planning-scraper[llm]",
 ]
 
 [tool.pytest.ini_options]

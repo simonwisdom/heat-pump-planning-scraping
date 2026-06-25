@@ -1193,7 +1193,15 @@ def normalize_conditions(out: dict) -> dict:
     return out
 
 
-def extract_one(client: OpenAI, row: dict, uid_files: dict) -> dict:
+def build_request_body(row: dict, uid_files: dict) -> tuple[dict, list[dict]]:
+    """Build the /v1/chat/completions request body for one app.
+
+    Single source of truth for the v4.18 prompt, shared by the live path
+    (extract_one) and the batch path (batch_extract.py) so the two can never
+    drift. Returns (body, used) where `used` lists the files load_doc_text
+    actually included (the batch path stores this in a uid->used sidecar, since
+    batch results carry only the model response).
+    """
     selected = uid_files.get(row["uid"], [])[:MAX_FILES]
     doc_text, used = load_doc_text(selected, uid=row["uid"])
 
@@ -1213,7 +1221,7 @@ def extract_one(client: OpenAI, row: dict, uid_files: dict) -> dict:
         ---
     """).strip()
 
-    kwargs = dict(
+    body = dict(
         model=MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -1230,12 +1238,28 @@ def extract_one(client: OpenAI, row: dict, uid_files: dict) -> dict:
     # non-reasoning model.
     effort = os.environ.get("HP_REASONING_EFFORT", "low")
     if effort:
-        kwargs["reasoning_effort"] = effort
+        body["reasoning_effort"] = effort
     else:
-        kwargs["temperature"] = 0
-    resp = client.chat.completions.create(**kwargs)
-    out = normalize_conditions(json.loads(resp.choices[0].message.content))
+        body["temperature"] = 0
+    return body, used
+
+
+def parse_result(content: str, used: list[dict]) -> dict:
+    """Parse a model response into the normalized result dict.
+
+    Shared by the live path and the batch collector so both emit identical
+    output. Does not attach _usage — the caller supplies that from its own
+    usage object (live usage vs batch per-line usage).
+    """
+    out = normalize_conditions(json.loads(content))
     out["_files_used"] = used
+    return out
+
+
+def extract_one(client: OpenAI, row: dict, uid_files: dict) -> dict:
+    body, used = build_request_body(row, uid_files)
+    resp = client.chat.completions.create(**body)
+    out = parse_result(resp.choices[0].message.content, used)
     out["_usage"] = {
         "prompt_tokens": resp.usage.prompt_tokens,
         "completion_tokens": resp.usage.completion_tokens,
