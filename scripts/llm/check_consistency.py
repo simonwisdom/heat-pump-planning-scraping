@@ -42,7 +42,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TAG = os.environ.get("HP_RUN_TAG", "v4_10")
-RUN_DIR = ROOT / f"_local/llm_pilot/schema_{TAG}_50"
+# HP_RUN_DIR points QA directly at any run dir (e.g. the Batch corpus run);
+# otherwise fall back to the pilot tag template.
+RUN_DIR = Path(os.environ["HP_RUN_DIR"]) if os.environ.get("HP_RUN_DIR") else ROOT / f"_local/llm_pilot/schema_{TAG}_50"
 
 GRANTING_OUTCOMES = {"approved", "prior_approval_granted"}
 REFUSAL_OUTCOMES = {"refused", "prior_approval_refused"}

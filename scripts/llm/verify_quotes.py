@@ -32,7 +32,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TAG = os.environ.get("HP_RUN_TAG", "v5")
-RUN_DIR = ROOT / f"_local/llm_pilot/schema_{TAG}_50"
+# HP_RUN_DIR points QA directly at any run dir (e.g. the Batch corpus run);
+# otherwise fall back to the pilot tag template.
+RUN_DIR = Path(os.environ["HP_RUN_DIR"]) if os.environ.get("HP_RUN_DIR") else ROOT / f"_local/llm_pilot/schema_{TAG}_50"
 SAMPLE_ROOT = Path(os.environ.get("HP_SAMPLE_ROOT") or (ROOT / "_local/llm_pilot/schema_v1_50/staging"))
 SELECTION_JSON = SAMPLE_ROOT / "selection.json"
 TEXTS_DIR = SAMPLE_ROOT / "texts"
